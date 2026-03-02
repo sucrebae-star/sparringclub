@@ -11,8 +11,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
 <script type="module">
+  // Firebase 초기화 및 필수 함수 임포트
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, orderBy, doc, setDoc, updateDoc, deleteDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, getDoc, getDocs, onSnapshot, query, orderBy, doc, setDoc, updateDoc, deleteDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyB_-4dxADvEU1__WrhSYjn0RQ096Hj1fX4",
@@ -26,9 +27,12 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
+  // 전역 window 객체에 Firebase 함수 등록 (에러 방지를 위해 getDoc, getDocs 추가)
   window.db = db;
   window.collection = collection;
   window.addDoc = addDoc;
+  window.getDoc = getDoc;   // 🔥 [추가] 단일 문서 조회용
+  window.getDocs = getDocs; // 🔥 [추가] 매칭 번호 조회를 위해 반드시 필요
   window.onSnapshot = onSnapshot;
   window.query = query;
   window.orderBy = orderBy;
@@ -36,7 +40,7 @@
   window.setDoc = setDoc;
   window.updateDoc = updateDoc;
   window.deleteDoc = deleteDoc;
-  window.increment = increment; // 🔥 점수 합산을 위해 추가
+  window.increment = increment; 
 </script>
 
     <style>
@@ -487,6 +491,75 @@
             color: #ccc;
         }
 
+        /* 🔥 인기 스파링 섹션 스타일 */
+        .popular-sparring-section { margin-bottom: 25px; }
+        .popular-sparring-wrap { 
+            display: flex; 
+            gap: 12px; 
+            overflow-x: auto; 
+            padding: 5px 2px 15px 2px; 
+            -ms-overflow-style: none; 
+            scrollbar-width: none; 
+        }
+        .popular-sparring-wrap::-webkit-scrollbar { display: none; }
+        
+        .popular-card { 
+            min-width: 160px; 
+            max-width: 160px;
+            background: #1a1a1a; 
+            border-radius: 10px; 
+            overflow: hidden; 
+            border: 1px solid #333; 
+            position: relative;
+            transition: transform 0.2s;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .popular-card:hover { transform: translateY(-5px); border-color: var(--gold); }
+        
+        .popular-rank-badge {
+            position: absolute; top: 5px; left: 5px; 
+            background: rgba(214, 48, 49, 0.9); color: white; 
+            font-size: 0.7rem; font-weight: bold; padding: 2px 6px; 
+            border-radius: 4px; z-index: 2;
+        }
+        
+        .popular-thumb { 
+            width: 100%; height: 90px; 
+            background-size: cover; background-position: center; 
+            position: relative; display: flex; align-items: center; justify-content: center;
+        }
+        .popular-thumb::after {
+            content: '▶'; position: absolute; color: white; font-size: 1.2rem;
+            text-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+
+        .popular-info { padding: 10px; text-align: center; }
+        .popular-info .pop-title { 
+            display: block; font-size: 0.7rem; color: var(--gold); 
+            font-weight: bold; margin-bottom: 4px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .popular-info .pop-names { 
+            display: block; font-size: 0.8rem; color: #fff; font-weight: bold;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .popular-like-count {
+            display: block; font-size: 0.65rem; color: #ff7675; margin-top: 5px;
+        }
+
+        /* 좋아요 버튼 스타일 */
+        .like-btn-wrap { text-align: center; margin: 15px 0; }
+        .like-btn {
+            background: #333; color: #fff; border: 1px solid #444; 
+            padding: 10px 25px; border-radius: 30px; cursor: pointer;
+            font-weight: bold; font-size: 0.9rem; transition: all 0.2s;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        .like-btn.active {
+            background: rgba(214, 48, 49, 0.1); border-color: var(--primary-red); color: var(--primary-red);
+        }
+
     </style>
 </head>
 <body>
@@ -513,6 +586,12 @@
             <div style="font-size: 0.85rem; color: #ccc; margin-top: 8px;">
                 10% 할인 코드: <b style="color: var(--gold); text-decoration: underline; cursor: pointer;" onclick="copyDiscountCode('htboxing.school10')" title="클릭하여 복사">htboxing.school10</b>
             </div>
+        </div>
+
+        <div id="popular-sparring-section" class="popular-sparring-section" style="display: none;">
+            <h2 style="margin: 0 0 12px 0; font-size: 1.1rem; letter-spacing: -0.5px;">🔥 인기 스파링 🔥</h2>
+            <div id="popular-sparring-wrap" class="popular-sparring-wrap">
+                </div>
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px;">
@@ -556,27 +635,41 @@
     <div id="gym-top-podium" class="ranking-podium"></div>
 
     <div class="region-filter-wrap">
-        <div class="region-group">
-            <button class="region-btn active" onclick="renderGyms('all')">전체</button>
-            <button class="region-btn" onclick="renderGyms('서울')">서울</button>
-            <button class="region-btn" onclick="renderGyms('인천')">인천</button>
-            <button class="region-btn" onclick="renderGyms('대전')">대전</button>
-            <button class="region-btn" onclick="renderGyms('광주')">광주</button>
-            <button class="region-btn" onclick="renderGyms('대구')">대구</button>
-            <button class="region-btn" onclick="renderGyms('울산')">울산</button>
-            <button class="region-btn" onclick="renderGyms('부산')">부산</button>
-            <button class="region-btn" onclick="renderGyms('세종')">세종</button>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button class="region-btn active" onclick="renderGyms('all')" style="width: 100%; max-width: 280px; height: 45px; border-color: var(--gold); color: var(--gold); font-size: 1rem; background: rgba(253, 203, 110, 0.05);">🗺️ 전국 체육관 전체보기</button>
         </div>
-        <div class="region-group">
-            <button class="region-btn" onclick="renderGyms('경기')">경기</button>
-            <button class="region-btn" onclick="renderGyms('전북')">전북</button>
-            <button class="region-btn" onclick="renderGyms('전남')">전남</button>
-            <button class="region-btn" onclick="renderGyms('충북')">충북</button>
-            <button class="region-btn" onclick="renderGyms('충남')">충남</button>
-            <button class="region-btn" onclick="renderGyms('강원')">강원</button>
-            <button class="region-btn" onclick="renderGyms('경북')">경북</button>
-            <button class="region-btn" onclick="renderGyms('경남')">경남</button>
-            <button class="region-btn" onclick="renderGyms('제주')">제주</button>
+
+        <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid #444; margin-bottom: 15px;">
+            <div style="font-size: 0.8rem; color: var(--gold); margin-bottom: 12px; font-weight: bold; display: flex; align-items: center; gap: 5px;">
+                <span style="font-size: 1.1rem;">🏙️</span> 특별 / 광역시
+            </div>
+            <div class="region-group" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                <button class="region-btn" onclick="renderGyms('서울')">서울</button>
+                <button class="region-btn" onclick="renderGyms('인천')">인천</button>
+                <button class="region-btn" onclick="renderGyms('대전')">대전</button>
+                <button class="region-btn" onclick="renderGyms('광주')">광주</button>
+                <button class="region-btn" onclick="renderGyms('대구')">대구</button>
+                <button class="region-btn" onclick="renderGyms('울산')">울산</button>
+                <button class="region-btn" onclick="renderGyms('부산')">부산</button>
+                <button class="region-btn" onclick="renderGyms('세종')">세종</button>
+            </div>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid #444;">
+            <div style="font-size: 0.8rem; color: #74b9ff; margin-bottom: 12px; font-weight: bold; display: flex; align-items: center; gap: 5px;">
+                <span style="font-size: 1.1rem;">⛰️</span> 도(Province) 단위
+            </div>
+            <div class="region-group" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                <button class="region-btn" onclick="renderGyms('경기')">경기</button>
+                <button class="region-btn" onclick="renderGyms('강원')">강원</button>
+                <button class="region-btn" onclick="renderGyms('충북')">충북</button>
+                <button class="region-btn" onclick="renderGyms('충남')">충남</button>
+                <button class="region-btn" onclick="renderGyms('전북')">전북</button>
+                <button class="region-btn" onclick="renderGyms('전남')">전남</button>
+                <button class="region-btn" onclick="renderGyms('경북')">경북</button>
+                <button class="region-btn" onclick="renderGyms('경남')">경남</button>
+                <button class="region-btn" onclick="renderGyms('제주')">제주</button>
+            </div>
         </div>
     </div>
 
@@ -681,10 +774,19 @@
         </div>
     </div>
 
-    <div id="admin-dashboard" class="page">
+<div id="admin-dashboard" class="page">
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 15px;">
             <h2 style="color: var(--gold); margin:0;">🛠️ 관장님 관리페이지</h2>
-            <div style="display: flex; align-items: center; gap: 8px;">
+            
+            <div id="admin-join-toggle-wrap" style="display: none; align-items: center; gap: 8px;">
+                <span style="font-size: 0.8rem; color: #ccc;">가입 자동 승인</span>
+                <label class="switch">
+                    <input type="checkbox" id="admin-auto-join-toggle" onchange="toggleAutoJoinApprove()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div id="admin-record-toggle-wrap" style="display: none; align-items: center; gap: 8px;">
                 <span style="font-size: 0.8rem; color: #ccc;">기록 자동 승인</span>
                 <label class="switch">
                     <input type="checkbox" id="admin-auto-approve-toggle" onchange="toggleAutoApprove()">
@@ -692,12 +794,21 @@
                 </label>
             </div>
         </div>
-        
+
         <div class="login-tabs" style="margin-bottom: 20px;">
             <div id="admin-tab-auth" class="active" onclick="switchAdminTab('auth')">가입 관리</div>
             <div id="admin-tab-record" onclick="switchAdminTab('record')">기록 승인</div>
+            <div id="admin-tab-match" onclick="switchAdminTab('match')">매치 관리</div>
             <div id="admin-tab-notice" onclick="switchAdminTab('notice')">공지 관리</div>
             <div id="admin-tab-ui" onclick="switchAdminTab('ui')">UI/디자인 관리</div>
+        </div>
+
+        <div id="admin-match-section" style="display: none;">
+            <div class="card" style="border-top: 3px solid var(--primary-red);">
+                <h3 style="margin-top:0;">진행 중인 모든 매치 관리</h3>
+                <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 15px;">* 관리자는 성사 전/후 모든 매치를 강제 취소할 수 있습니다.</p>
+                <div id="admin-all-match-list"></div>
+            </div>
         </div>
 
         <div id="admin-auth-section">
@@ -1107,9 +1218,16 @@ window.onload = function() {
     }
 
     // 4. 관리자 설정(자동 승인 등) 로드
-    let autoApprove = localStorage.getItem('sparring_auto_approve') === 'true';
-    const toggleEl = document.getElementById('admin-auto-approve-toggle');
-    if (toggleEl) toggleEl.checked = autoApprove;
+// 4. 관리자 설정(자동 승인 등) 로드
+// 기록 자동 승인 상태 로드
+let autoApprove = localStorage.getItem('sparring_auto_approve') === 'true';
+const toggleRecordEl = document.getElementById('admin-auto-approve-toggle');
+if (toggleRecordEl) toggleRecordEl.checked = autoApprove;
+
+// 🔥 가입 자동 승인 상태 로드
+let autoJoin = localStorage.getItem('sparring_auto_join') === 'true';
+const toggleJoinEl = document.getElementById('admin-auto-join-toggle');
+if (toggleJoinEl) toggleJoinEl.checked = autoJoin;
 
     // 5. 초기 커뮤니티 데이터 세팅
     let communityPosts = JSON.parse(localStorage.getItem('sparring_community_posts'));
@@ -1132,7 +1250,7 @@ window.onload = function() {
     initBackground(); 
 };
 
-// 🔥 [실시간 엔진] 모든 변화가 감지될 때 'renderFeed()'를 실행하도록 수정
+// 🔥 [실시간 엔진] 체육관 레지스트리 동기화 추가 및 실시간 UI 갱신 로직
 function initFirebaseRealtime() {
     // 1. 커뮤니티 게시판 동기화
     window.onSnapshot(window.collection(window.db, "community_posts"), (snapshot) => {
@@ -1143,6 +1261,7 @@ function initFirebaseRealtime() {
         
         // 피드 및 관련 UI 갱신
         renderFeed(); 
+        renderPopularSparring(); // 🔥 [추가] 인기 스파링 실시간 갱신
         if (document.getElementById('board').classList.contains('active')) renderCommunity();
         if (document.getElementById('post-detail').classList.contains('active') && currentPostId) openPostDetail(currentPostId);
     });
@@ -1159,32 +1278,39 @@ function initFirebaseRealtime() {
         if (document.getElementById('matchStatusModal').style.display === 'flex') renderMatchList();
     });
 
-    // 3. 승인된 선수 명단 동기화
+    // 3. 승인된 선수 명단 동기화 (유저 삭제 시 포인트 자동 차감의 핵심)
     window.onSnapshot(window.collection(window.db, "users"), (snapshot) => {
         let players = [];
         snapshot.forEach((doc) => players.push(doc.data()));
         demoPlayers = players;
         localStorage.setItem('sparring_approved_users', JSON.stringify(players));
         
-        // 피드(이름/점수 변경 반영) 및 UI 갱신
+        // 유저 정보가 바뀌거나 삭제되면 피드, 선수목록, 체육관 랭킹을 모두 다시 계산
         renderFeed();
         renderPlayers();
-        renderGyms();
+        renderGyms(); // 포인트 합산 로직이 이 안에서 현재 활성 유저 기준으로 다시 돌아감
         if (currentUser) updateLoginStateUI();
     });
 
-    // 4. 경기 결과 기록 요청 동기화
+    // 4. 🔥 [신규] 체육관 레지스트리 동기화 (한 번 가입된 체육관은 영구 보존)
+    window.onSnapshot(window.collection(window.db, "gyms_registry"), (snapshot) => {
+        let gyms = [];
+        snapshot.forEach((doc) => gyms.push(doc.data()));
+        localStorage.setItem('sparring_gyms_registry', JSON.stringify(gyms));
+        renderGyms(); // 체육관 목록 갱신
+    });
+
+    // 5. 경기 결과 기록 요청 동기화
     window.onSnapshot(window.collection(window.db, "record_requests"), (snapshot) => {
         let reqs = [];
         snapshot.forEach((doc) => reqs.push(doc.data()));
         localStorage.setItem('sparring_record_requests', JSON.stringify(reqs));
         
-        // 피드(기록 상태 반영) 및 UI 갱신
         renderFeed();
         if (document.getElementById('admin-dashboard').classList.contains('active')) renderAdmin();
     });
 
-    // 5. 가입 신청 대기자 동기화
+    // 6. 가입 신청 대기자 동기화
     window.onSnapshot(window.collection(window.db, "pendingUsers"), (snapshot) => {
         let pending = [];
         snapshot.forEach((doc) => {
@@ -1219,23 +1345,21 @@ function getYoutubeEmbedUrl(url) {
     return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : null;
 }
 
-// --- 코어 렌더링 로직 ---
-// 🔥 [실시간 활동 피드] 승/패/무 라벨 위치 및 영구 데이터 참조 로직 강화 버전
+// 🔥 [실시간 활동 피드] 고유 번호(matchSeq) 기반 렌더링 버전 (삭제 시 번호 밀림 방지)
 function renderFeed() {
     const container = document.getElementById('feed-container');
     let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
     let recordReqs = JSON.parse(localStorage.getItem('sparring_record_requests')) || [];
     let communityPosts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
     
-    // 최신 신청 순서로 정렬
+    // 최신순 정렬
     allMatches.sort((a, b) => b.id - a.id);
 
     let html = '';
-    const totalCount = allMatches.length;
-
-    allMatches.forEach((m, index) => {
-        const currentMatchNum = totalCount - index; 
-        const matchCode = generateMatchCode(currentMatchNum);
+    allMatches.forEach((m) => {
+        // 🔥 [수정] 실시간 계산이 아닌, 데이터에 저장된 영구 번호(matchSeq)를 직접 사용
+        const isTest = m.senderRawName.toLowerCase().includes('test') || m.receiverRawName.toLowerCase().includes('test');
+        const matchCode = generateMatchCode(m.matchSeq || 0, isTest);
         
         const p1 = demoPlayers.find(p => p.rawName === m.senderRawName);
         const p2 = demoPlayers.find(p => p.rawName === m.receiverRawName);
@@ -1246,9 +1370,8 @@ function renderFeed() {
         let decisionType = "";
         let matchPostId = null;
 
-        // --- 승패 결과 판별 로직 (종료된 경기에 한함) ---
+        // --- 승패 결과 판별 로직 ---
         if (m.status === '종료') {
-            // 🔥 [1순위] 매칭 데이터 자체에 저장된 영구 결과값 확인 (승인 시 저장된 데이터)
             if (m.resultValue) {
                 if (m.resultValue === 'win') {
                     p1Label = '<span class="win-label" style="margin-right:6px;">(승)</span>';
@@ -1262,7 +1385,6 @@ function renderFeed() {
                 }
                 decisionType = `<small style="color:#888; font-weight:normal; margin-left:10px;">(공식 판정)</small>`;
             } 
-            // 🔥 [2순위] 커뮤니티 투표 판정 (실시간 진행 중이거나 마감 직후 데이터)
             else {
                 let communityResult = communityPosts.find(p => p.type === 'judge' && p.judgeData && p.judgeData.recordData.matchId == m.id);
                 if (communityResult && communityResult.judgeData.status === 'closed') {
@@ -1344,7 +1466,6 @@ function renderFeed() {
 
     container.innerHTML = html || '<div style="color:#888; text-align:center; padding: 20px;">표시할 활동이 없습니다.</div>';
 }
-
 
 function showFeedMatchDetail(matchId) {
     if(!matchId) return;
@@ -1581,7 +1702,7 @@ function renderCommunity() {
             <div class="post-item" onclick="openPostDetail(${post.id})">
                 <div class="post-title">
                     <span class="post-badge" style="margin-right:5px; padding:1px 4px; font-size:0.7rem;">${post.prefix}</span>
-                    <span style="color:#fff; font-weight:500;">${post.title}${attachIcon}</span>
+                    <span style="color:#fff; font-weight:500;">${colorizeTitle(post.title)}${attachIcon}</span>
                 </div>
                 <div class="post-info-row">
                     <div>
@@ -1679,7 +1800,7 @@ function openPostDetail(postId) {
             ${actionBtns}
             <div style="clear: both;"></div>
             <h3 style="margin-top:0; color:white; line-height: 1.4;">
-                <span style="color:var(--gold);">${post.prefix}</span> ${post.title}
+                <span style="color:var(--gold);">${post.prefix}</span> ${colorizeTitle(post.title)}
             </h3>
             <div style="font-size:0.8rem; color:#888; border-bottom:1px solid #444; padding-bottom:10px; margin-top:5px;">
                 작성자: <b style="color:white; cursor:pointer; text-decoration:underline;" onclick="openProfile(${post.authorId})">${post.authorName}</b> | ${dateStr}
@@ -1687,11 +1808,23 @@ function openPostDetail(postId) {
         </div>
     `;
 
-    // 유튜브 영상 영역
+    // 유튜브 영상 영역 (이후 코드는 동일)
     if(embedUrl) {
         html += `<div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:8px; margin-bottom:15px;">
                     <iframe style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;" src="${embedUrl}" allowfullscreen></iframe>
                  </div>`;
+        
+        // 🔥 [신규] 영상이 있는 [경기결과] 게시글에만 좋아요 버튼 추가
+        if (post.prefix === '[경기결과]') {
+            const likes = post.likes || [];
+            const isLiked = currentUser && likes.includes(currentUser.id);
+            html += `
+            <div class="like-btn-wrap">
+                <button class="like-btn ${isLiked ? 'active' : ''}" onclick="togglePostLike(${post.id})">
+                    ${isLiked ? '❤️' : '🤍'} 이 스파링 추천 (${likes.length})
+                </button>
+            </div>`;
+        }
     }
 
     // 본문 내용 영역
@@ -1844,7 +1977,7 @@ function renderComments() {
 }
 
 // --- 사용자(선수) 전적 및 매칭 로직 (업데이트) ---
-// 🔥 [기록 업로드] 이미지 압축, 인증 의무화 및 타임라인 연동 (커뮤니티 피로도 감소 버전)
+// 🔥 [기록 업로드] 이미지 압축, 인증 의무화 및 타임라인 연동 (게시글 추적 정보 보완)
 async function submitSparringRecord() {
     const matchId = document.getElementById('record-match-select').value;
     const videoUrl = document.getElementById('cert-video-url').value.trim();
@@ -1855,7 +1988,6 @@ async function submitSparringRecord() {
 
     if (!matchId) { alert('기록을 등록할 매칭 대상을 먼저 선택해주세요.'); return; }
     
-    // 🔥 [의무화] 사진 또는 영상 URL 중 하나는 반드시 있어야 함
     if (!videoUrl && !imageFile) {
         alert('기록 업로드를 위해 유튜브 영상 링크 또는 인증 사진이 반드시 필요합니다.');
         return;
@@ -1873,7 +2005,6 @@ async function submitSparringRecord() {
     let opponentId = demoPlayers.find(p => p.rawName === opponentRawName)?.id || 1;
     let mediaType = videoUrl ? 'video' : (imageFile ? 'photo' : 'none');
 
-    // 🔥 [서버 오류 방지] 사진 압축 로직 (최대 800px, 60% 화질)
     let imageBase64 = null;
     if (imageFile) {
         imageBase64 = await new Promise((resolve) => {
@@ -1910,10 +2041,11 @@ async function submitSparringRecord() {
 
     try {
         if (judgeMethod === 'community') {
-            // [1] 커뮤니티 판정 아레나는 실시간 투표를 위해 게시글 생성 유지
             const postRef = window.doc(window.collection(window.db, "community_posts"), recordId.toString());
             const post = {
-                id: recordId, prefix: '[판정요청]',
+                id: recordId, 
+                matchId: matchId, // 🔥 [추가] 삭제 시 추적용
+                prefix: '[판정요청]',
                 title: `[판정대기] ${currentUser.rawName} vs ${opponentRawName} (커뮤니티 판정)`,
                 content: `승자 판별이 어려워 커뮤니티 여러분의 공정한 투표를 부탁드립니다.\n(투표 결과에 따라 전적이 실시간 승인됩니다.)`,
                 authorId: currentUser.id, authorName: currentUser.rawName, time: Date.now(),
@@ -1926,42 +2058,37 @@ async function submitSparringRecord() {
             };
             await window.setDoc(postRef, post);
             await window.updateDoc(window.doc(window.db, "matches", matchId.toString()), { status: '판정 대기' });
-            alert('커뮤니티 판정 아레나에 등록되었습니다! 투표 완료 후 전적이 자동 반영됩니다.');
-
+            alert('커뮤니티 판정 아레나에 등록되었습니다!');
         } else {
-            // [2] 일반 기록 요청: 커뮤니티 게시글 생성을 중단하여 피로도 감소 (관장님 승인 시점에만 게시)
             let autoApprove = localStorage.getItem('sparring_auto_approve') === 'true';
             if (autoApprove) {
                 await applyRecordToStats(recordData);
                 alert('자동 승인 설정에 의해 즉시 전적이 반영되었습니다!');
             } else {
                 await window.setDoc(window.doc(window.db, "record_requests", recordId.toString()), recordData);
-                // 타임라인에 '판정 대기' 상태는 실시간으로 보여줌
                 await window.updateDoc(window.doc(window.db, "matches", matchId.toString()), { status: '판정 대기' });
-                alert('기록 요청이 완료되었습니다. 관장님 확인 후 승인되면 커뮤니티에 공식 결과가 게시됩니다.');
+                alert('기록 요청이 완료되었습니다.');
             }
         }
-        
         document.getElementById('cert-video-url').value = '';
         document.getElementById('cert-image-file').value = '';
         document.getElementById('record-match-select').value = '';
         showPage('dashboard');
-
     } catch (e) {
         console.error("Firebase 전송 실패:", e);
         alert("데이터 전송 중 오류가 발생했습니다.");
     }
 }
 
-// 🔥 [점수 및 커뮤니티 연동] 승인 시 전적 업데이트 및 커뮤니티 결과 게시글 전환
-// 🔥 [최종 결과 게시] 매칭 번호 자동 부여 및 승(🏆)/패 표기 방식 최적화
-// 🔥 [점수 및 커뮤니티 연동] 결과값 영구 보존 로직이 추가된 승인 함수
 async function applyRecordToStats(record) {
-    // 1. 매칭 번호(Sparring 00X) 계산
     let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-    allMatches.sort((a, b) => a.id - b.id);
-    let matchIdx = allMatches.findIndex(m => m.id == record.matchId);
-    let matchCode = generateMatchCode(matchIdx > -1 ? matchIdx + 1 : allMatches.length);
+    const mData = allMatches.find(m => m.id == record.matchId);
+    
+    if (!mData) throw new Error("매칭 데이터를 찾을 수 없습니다.");
+
+    // 1. 매칭 번호 가져오기
+    const isTest = mData.senderRawName.toLowerCase().includes('test') || mData.receiverRawName.toLowerCase().includes('test');
+    const matchCode = generateMatchCode(mData.matchSeq || 0, isTest);
 
     // 2. 전적 실시간 업데이트 (랭크전인 경우)
     if (record.matchType === 'rank') {
@@ -1988,23 +2115,25 @@ async function applyRecordToStats(record) {
         await window.updateDoc(p2Ref, p2Updates);
     }
 
-    // 3. 커뮤니티 최종 결과 자동 게시
+    // 3. 커뮤니티 최종 결과 자동 게시 (승/패 문구 추가)
     try {
         const postRef = window.doc(window.db, "community_posts", record.id.toString());
         let p1 = record.requester;
         let p2 = (record.opponentRawName || record.opponentName);
         let titleStr = "";
 
+        // 🔥 [수정] 색상 변환을 위해 (승), (패), (무) 문구를 명시적으로 추가
         if (record.resultValue === 'win') {
-            titleStr = `[${matchCode}] 🏆${p1} vs ${p2}(패)`;
+            titleStr = `[${matchCode}] (승) 🏆${p1} vs ${p2}(패)`;
         } else if (record.resultValue === 'loss') {
-            titleStr = `[${matchCode}] ${p1}(패) vs 🏆${p2}`;
+            titleStr = `[${matchCode}] (패) ${p1} vs 🏆${p2}(승)`;
         } else {
-            titleStr = `[${matchCode}] ${p1} vs ${p2} (무승부)`;
+            titleStr = `[${matchCode}] (무) ${p1} vs ${p2}(무)`;
         }
 
         await window.setDoc(postRef, {
             id: record.id,
+            matchId: record.matchId,
             prefix: '[경기결과]',
             title: titleStr,
             content: `<b>공식 결과가 발표되었습니다.</b><br>일시: ${record.time}<br>매치 타입: ${record.matchType === 'rank' ? '랭크 스파링' : '연습 게임'}<br>인증 수단: 영상 및 사진 확인 완료`,
@@ -2016,11 +2145,11 @@ async function applyRecordToStats(record) {
         });
     } catch(e) { console.error("커뮤니티 게시 실패:", e); }
 
-    // 4. 🔥 [핵심 수정] 매칭 상태 종료 처리 시 결과값(resultValue)을 함께 저장 (피드 노출용)
+    // 4. 매칭 상태 종료 처리
     await window.updateDoc(window.doc(window.db, "matches", record.matchId.toString()), { 
         status: '종료', 
         approvedAt: Date.now(),
-        resultValue: record.resultValue // <--- 매칭 데이터에 결과 영구 보존
+        resultValue: record.resultValue 
     });
 }
 
@@ -2077,35 +2206,118 @@ function savePlayersData() {
 }
 
 // --- 관리자 기능 ---
+// 기록 자동 승인 토글 (기록 승인 탭 전용)
 function toggleAutoApprove() {
     const isChecked = document.getElementById('admin-auto-approve-toggle').checked;
     localStorage.setItem('sparring_auto_approve', isChecked);
     alert(isChecked ? "기록이 자동으로 승인되도록 설정되었습니다." : "이제 관장님이 수동으로 승인해야 기록이 반영됩니다.");
 }
 
+// 가입 자동 승인 토글 (가입 관리 탭 전용)
+function toggleAutoJoinApprove() {
+    const isChecked = document.getElementById('admin-auto-join-toggle').checked;
+    localStorage.setItem('sparring_auto_join', isChecked);
+    alert(isChecked ? "신규 가입이 즉시 승인되도록 설정되었습니다." : "이제 가입 신청 시 관장님의 승인이 필요합니다.");
+}
+
+
 function switchAdminTab(tab) {
+    // 1. 상단 탭 버튼 활성화 스타일 제어
     document.getElementById('admin-tab-auth').classList.toggle('active', tab === 'auth');
     document.getElementById('admin-tab-record').classList.toggle('active', tab === 'record');
+    document.getElementById('admin-tab-match').classList.toggle('active', tab === 'match');
     document.getElementById('admin-tab-notice').classList.toggle('active', tab === 'notice');
     document.getElementById('admin-tab-ui').classList.toggle('active', tab === 'ui');
     
+    // 2. 각 탭에 해당하는 본문 섹션 표시/숨김
     document.getElementById('admin-auth-section').style.display = (tab === 'auth') ? 'block' : 'none';
     document.getElementById('admin-record-section').style.display = (tab === 'record') ? 'block' : 'none';
+    document.getElementById('admin-match-section').style.display = (tab === 'match') ? 'block' : 'none';
     document.getElementById('admin-notice-mgmt-section').style.display = (tab === 'notice') ? 'block' : 'none';
     document.getElementById('admin-ui-mgmt-section').style.display = (tab === 'ui') ? 'block' : 'none';
 
-    // [추가] 공지 관리 탭을 클릭했을 때 목록을 새로고침합니다.
+    // 3. 탭별 전용 자동 승인 스위치 표시 제어 (완전 교체 방식)
+    const joinToggle = document.getElementById('admin-join-toggle-wrap');
+    const recordToggle = document.getElementById('admin-record-toggle-wrap');
+
+    if (joinToggle && recordToggle) {
+        // '가입 관리' 탭일 때만 가입 자동 승인 스위치 노출
+        if (tab === 'auth') {
+            joinToggle.style.display = 'flex';
+            recordToggle.style.display = 'none';
+        } 
+        // '기록 승인' 탭일 때만 기록 자동 승인 스위치 노출
+        else if (tab === 'record') {
+            joinToggle.style.display = 'none';
+            recordToggle.style.display = 'flex';
+        } 
+        // 나머지 관리 탭에서는 모든 스위치 숨김
+        else {
+            joinToggle.style.display = 'none';
+            recordToggle.style.display = 'none';
+        }
+    }
+
+    // 4. 각 탭별 데이터 렌더링 호출
     if (tab === 'notice') {
         renderAdminNoticeList();
     }
+    if (tab === 'match') {
+        renderAdminMatchManagement();
+    }
+    if (tab === 'record' || tab === 'auth') {
+        renderAdmin(); 
+    }
+}
+
+// 관리자용 전체 매치 리스트 렌더링 (종료된 경기 포함 권한 강화 버전)
+function renderAdminMatchManagement() {
+    const container = document.getElementById('admin-all-match-list');
+    let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
+    
+    // 🔥 [수정] 필터링 없이 모든 매치를 보여주어 종료된 경기도 관리자가 삭제할 수 있도록 함
+    let displayMatches = [...allMatches];
+    
+    if(displayMatches.length === 0) {
+        container.innerHTML = '<div style="color:#666; text-align:center; padding:20px;">시스템에 등록된 매치 내역이 없습니다.</div>';
+        return;
+    }
+
+    let html = '';
+    // 최신순 정렬
+    displayMatches.sort((a,b) => b.id - a.id).forEach(m => {
+        const isTest = m.senderRawName.toLowerCase().includes('test') || m.receiverRawName.toLowerCase().includes('test');
+        // 저장된 고유 번호가 없으면(이전 데이터) 0으로 표시
+        const matchCode = generateMatchCode(m.matchSeq || 0, isTest);
+        const statusColor = m.status === '종료' ? '#555' : 'var(--gold)';
+
+        html += `
+        <div style="background:#222; padding:12px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid ${statusColor};">
+            <div>
+                <span style="color:var(--gold); font-family:monospace; font-size:0.75rem;">${matchCode}</span><br>
+                <b style="color:white;">${m.senderName} VS ${m.receiverName}</b>
+                <div style="font-size:0.75rem; color:#aaa; margin-top:4px;">상태: <span style="color:${statusColor}">${m.status}</span> | 일시: ${m.date}</div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:5px;">
+                <button onclick="cancelMatch('${m.id}')" style="background:#444; color:#ff7675; border:1px solid #555; padding:6px 10px; border-radius:4px; font-size:0.75rem; font-weight:bold; cursor:pointer;">
+                    ${m.status === '종료' ? '기록 영구삭제' : '강제 매칭취소'}
+                </button>
+            </div>
+        </div>`;
+    });
+    container.innerHTML = html;
 }
 
 function renderAdmin() {
     const reqList = document.getElementById('admin-req-list');
-    // 🔥 Firebase 실시간 엔진이 업데이트해주는 'sparring_pending_users'를 가져옵니다.
     let pendingUsers = JSON.parse(localStorage.getItem('sparring_pending_users')) || [];
     
     reqList.innerHTML = '';
+    
+    // 매치 관리 탭이 활성화되어 있다면 매치 리스트도 갱신
+    if(document.getElementById('admin-match-section').style.display === 'block') {
+        renderAdminMatchManagement();
+    }
     
     // 1. 가입 신청 대기 목록 렌더링
     if(pendingUsers.length === 0) {
@@ -2477,6 +2689,7 @@ function requestMatch(id) {
     openModal('matchReqModal');
 }
 
+// 🔥 [영구 번호 배정] 매칭 신청 시 삭제 데이터와 무관하게 카운터를 이어가는 버전
 async function sendMatchRequest() {
     const date = document.getElementById('match-date').value;
     const time = document.getElementById('match-time').value;
@@ -2485,29 +2698,58 @@ async function sendMatchRequest() {
 
     if(!date || !time) { alert('희망 날짜와 시간을 정확히 선택해주세요.'); return; }
 
-    const matchId = Date.now().toString(); // 고유 ID 생성
-
-    let newMatch = {
-        id: parseInt(matchId),
-        senderRawName: currentUser.rawName,
-        senderName: currentUser.name,
-        receiverRawName: targetMatchPlayer.rawName,
-        receiverName: targetMatchPlayer.name,
-        date: `${date} ${time}`,
-        negotiable: negotiable,
-        status: '대기중',
-        messages: msg ? [{ sender: currentUser.rawName, text: msg }] : []
-    };
-
     try {
-        // 🔥 Firebase 서버에 직접 저장
+        const isTestMatch = currentUser.rawName.toLowerCase().includes('test') || targetMatchPlayer.rawName.toLowerCase().includes('test');
+        const counterDocId = isTestMatch ? 'test' : 'sparring';
+        const counterRef = window.doc(window.db, "match_counters", counterDocId);
+        
+        // 1. 번호 카운터 가져오기 (getDoc을 사용하여 더 정확하게 조회)
+        let lastSeq = 0;
+        try {
+            const counterSnap = await window.getDoc(counterRef);
+            if (counterSnap.exists()) {
+                lastSeq = counterSnap.data().lastSeq || 0;
+            }
+        } catch (e) {
+            console.log("카운터 문서가 없어 0번부터 시작합니다.");
+        }
+
+        // 2. 이중 체크: 로컬 데이터와 비교하여 번호 꼬임 방지
+        let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
+        allMatches.forEach(m => {
+            const mIsTest = m.senderRawName.toLowerCase().includes('test') || m.receiverRawName.toLowerCase().includes('test');
+            if (mIsTest === isTestMatch && (m.matchSeq || 0) > lastSeq) {
+                lastSeq = m.matchSeq;
+            }
+        });
+
+        const nextSeq = lastSeq + 1;
+        const matchId = Date.now().toString();
+
+        // 3. 경기 정보 객체 생성
+        let newMatch = {
+            id: parseInt(matchId),
+            matchSeq: nextSeq,
+            senderRawName: currentUser.rawName,
+            senderName: currentUser.rawName, // 닉네임 대신 실명(ID) 사용
+            receiverRawName: targetMatchPlayer.rawName,
+            receiverName: targetMatchPlayer.rawName,
+            date: `${date} ${time}`,
+            negotiable: negotiable,
+            status: '대기중',
+            createdAt: Date.now(),
+            messages: msg ? [{ sender: currentUser.rawName, text: msg, time: Date.now() }] : []
+        };
+
+        // 4. Firestore 서버 전송 (경기데이터 + 카운터)
         await window.setDoc(window.doc(window.db, "matches", matchId), newMatch);
-        alert('매칭 신청이 클라우드 서버로 전송되었습니다!');
+        await window.setDoc(counterRef, { lastSeq: nextSeq });
+
+        alert(`매칭 신청 완료! (경기 번호: ${isTestMatch ? 'Test' : 'Sparring'} ${String(nextSeq).padStart(3, '0')})`);
         closeModal('matchReqModal');
-        // renderPlayers() 등은 onSnapshot(실시간 엔진)이 자동으로 감지하여 실행합니다.
     } catch (error) {
-        console.error("매칭 신청 실패:", error);
-        alert("서버 연결 오류로 신청에 실패했습니다.");
+        console.error("매칭 신청 서버 오류 상세:", error);
+        alert("서버 연결에 실패했습니다. Firebase 권한 또는 인터넷 상태를 확인해주세요.");
     }
 }
 
@@ -2645,15 +2887,50 @@ function openChat(matchId) {
     renderChatMessages();
 }
 
+// 🔥 [권한 강화] 매치 삭제 시 관련 커뮤니티 게시글까지 자동 연쇄 삭제
 async function cancelMatch(matchId) {
-    if(!confirm('정말로 이 매칭을 취소하시겠습니까?')) return;
+    const isAdmin = currentUser && currentUser.isAdmin;
+    
+    let confirmMsg = '정말로 이 매칭을 취소하시겠습니까?';
+    if (isAdmin) {
+        confirmMsg = '[관리자 전용] 경기 데이터 및 연관된 커뮤니티 인증글, 결과 공지 등이 서버에서 모두 영구 삭제됩니다. 계속하시겠습니까?';
+    }
+    
+    if(!confirm(confirmMsg)) return;
     
     try {
+        // 1. Firebase에서 해당 매치 문서 영구 삭제
         await window.deleteDoc(window.doc(window.db, "matches", matchId.toString()));
-        alert('매칭이 취소되었습니다.');
-        document.getElementById('chat-section').style.display = 'none';
+        
+        // 2. 관련된 기록 요청(record_requests) 자동 삭제
+        let recordReqs = JSON.parse(localStorage.getItem('sparring_record_requests')) || [];
+        let relatedReq = recordReqs.find(r => r.matchId == matchId);
+        if (relatedReq) {
+            await window.deleteDoc(window.doc(window.db, "record_requests", relatedReq.id.toString()));
+        }
+
+        // 3. 🔥 [추가] 관련된 커뮤니티 게시글(판정요청/경기결과 등) 모두 찾아 삭제
+        const postSnap = await window.getDocs(window.collection(window.db, "community_posts"));
+        postSnap.forEach(async (pDoc) => {
+            const pData = pDoc.data();
+            // matchId 필드가 직접 있거나, judgeData 내부에 숨겨진 경우 모두 검사
+            if (pData.matchId == matchId || (pData.judgeData && pData.judgeData.recordData && pData.judgeData.recordData.matchId == matchId)) {
+                await window.deleteDoc(window.doc(window.db, "community_posts", pDoc.id));
+            }
+        });
+
+        alert(isAdmin ? '매치와 연관된 모든 데이터(기록, 게시글)가 영구 삭제되었습니다.' : '매칭이 취소되었습니다.');
+        
+        // UI 갱신
+        const chatSection = document.getElementById('chat-section');
+        if(chatSection) chatSection.style.display = 'none';
+
+        if(isAdmin && document.getElementById('admin-dashboard').classList.contains('active')) {
+            renderAdminMatchManagement();
+        }
     } catch (error) {
-        alert("취소 처리 중 서버 오류가 발생했습니다.");
+        console.error("삭제 실패:", error);
+        alert("데이터 삭제 중 서버 오류가 발생했습니다.");
     }
 }
 
@@ -2879,7 +3156,7 @@ function checkDuplicateId() {
 }
 
 async function submitSignup() {
-    // 🔥 [필수] 중복조회 버튼 클릭 여부 확인
+    // 1. [필수] 중복조회 버튼 클릭 여부 확인
     if (!isDuplicateChecked) {
         alert('가입 신청 전에 반드시 [중복조회] 버튼을 먼저 눌러주세요.');
         return;
@@ -2898,7 +3175,10 @@ async function submitSignup() {
     const tier = document.getElementById('signup-tier').value;
     const region = document.getElementById('signup-region').value;
     
-    const newUser = { 
+    // 2. 가입 자동 승인 설정(localStorage) 확인
+    const isAutoJoin = localStorage.getItem('sparring_auto_join') === 'true';
+    
+    const userData = { 
         rawName: inputId, 
         name: inputId, 
         gym: gym, 
@@ -2907,24 +3187,45 @@ async function submitSignup() {
         region: region, 
         trustScore: 0,
         createdAt: Date.now(),
-        profilePic: pendingSignupPic 
+        profilePic: pendingSignupPic,
+        sW: 0, sD: 0, sL: 0, pt: 0, // 초기 전적 세팅
+        pending: 0, noReply: 0, acc: 0
     };
     
     try {
-        // Firebase 서버에 신청서 전송
-        await window.addDoc(window.collection(window.db, "pendingUsers"), newUser);
+        if (isAutoJoin) {
+            // [자동 승인] 'users' 컬렉션에 즉시 등록하여 로그인 가능하게 함
+            const newUserId = Date.now();
+            await window.setDoc(window.doc(window.db, "users", newUserId.toString()), {
+                ...userData,
+                id: newUserId
+            });
+            alert(`'${inputId}' 선수님, 가입이 자동 승인되어 즉시 활동 가능합니다! 🥊`);
+        } else {
+            // [수동 승인] 'pendingUsers' 대기열로 전송
+            await window.addDoc(window.collection(window.db, "pendingUsers"), userData);
+            alert('가입 신청이 완료되었습니다!\n관장님이 확인 후 승인하시면 로그인이 가능합니다.');
+        }
         
-        // 상태 초기화
+        // 3. 체육관 영구 등록 로직 (gyms_registry 업데이트)
+        const gymId = gym.replace(/\s+/g, '_'); 
+        const gymRef = window.doc(window.db, "gyms_registry", gymId);
+        await window.setDoc(gymRef, {
+            name: gym,
+            region: region,
+            registeredAt: Date.now()
+        }, { merge: true });
+
+        // 4. 입력 상태 초기화 및 모달 닫기
         pendingSignupPic = null;
-        isDuplicateChecked = false; // 다음 가입자를 위해 리셋
+        isDuplicateChecked = false; 
         document.getElementById('signup-pic-preview').style.display = 'none';
         document.getElementById('signup-pic-input').value = '';
-
-        alert('가입 신청이 클라우드 서버로 전송되었습니다!\n관장님이 확인 후 승인하시면 로그인이 가능합니다.');
         closeModal('loginModal');
+        
     } catch (e) {
-        console.error("서버 전송 에러: ", e);
-        alert("서버 전송 중 오류가 발생했습니다.");
+        console.error("Firebase 가입 신청 에러: ", e);
+        alert("서버 전송 중 오류가 발생했습니다. 네트워크 상태를 확인해주세요.");
     }
 }
 
@@ -3160,10 +3461,11 @@ function startNoticeSlider() {
 }
 
 
-// 매치 번호를 받아 "Sparring 001" 형식으로 변환
-function generateMatchCode(num) {
+// 매치 번호와 테스트 여부를 받아 코드 변환 (Test 001 또는 Sparring 001)
+function generateMatchCode(num, isTest = false) {
     const formattedNum = String(num).padStart(3, '0');
-    return `Sparring ${formattedNum}`;
+    const prefix = isTest ? 'Test' : 'Sparring';
+    return `${prefix} ${formattedNum}`;
 }
 
 function toggleTimeline(id) {
@@ -3299,6 +3601,106 @@ function applyBackground(url) {
 
 // --- [3] 페이지 로드 시 배경 불러오기 로직 (중요) ---
 // window.onload 함수 마지막 부분에 이 내용을 넣어주세요.
+function renderPopularSparring() {
+    const container = document.getElementById('popular-sparring-wrap');
+    const section = document.getElementById('popular-sparring-section');
+    if (!container || !section) return;
+
+    let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
+
+    // 1. 영상이 있고 [경기결과]인 게시물만 필터링
+    let videoMatches = posts.filter(p => p.prefix === '[경기결과]' && p.videoUrl && p.videoUrl.trim() !== "");
+
+    // 2. 좋아요 순으로 정렬 (좋아요가 없으면 0으로 처리)
+    videoMatches.sort((a, b) => {
+        const aLikes = (a.likes || []).length;
+        const bLikes = (b.likes || []).length;
+        return bLikes - aLikes;
+    });
+
+    // 3. 상위 5개 추출
+    let top5 = videoMatches.slice(0, 5);
+
+    if (top5.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = 'block';
+    let html = '';
+
+    top5.forEach((p, index) => {
+        const likeCount = (p.likes || []).length;
+        
+        // 유튜브 썸네일 추출 (mqdefault 사용)
+        const videoId = getYoutubeIdFromUrl(p.videoUrl);
+        const thumbUrl = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : '';
+
+        // 이름 추출 (타이틀에서 [코드] 이후의 내용)
+        // 타이틀 형식: [Sparring 001] 🏆A vs B(패)
+        let nameDisplay = p.title.split(']')[1] || p.title;
+        nameDisplay = nameDisplay.replace('🏆', '').trim();
+
+        // 스파링 코드 추출 (예: Sparring 001)
+        let codeDisplay = p.title.match(/\[(.*?)\]/);
+        codeDisplay = codeDisplay ? codeDisplay[1] : '스파링';
+
+        html += `
+        <div class="popular-card" onclick="openPostDetail(${p.id})">
+            <div class="popular-rank-badge">${index + 1}위</div>
+            <div class="popular-thumb" style="background-image: url('${thumbUrl}');"></div>
+            <div class="popular-info">
+                <span class="pop-title">${codeDisplay}</span>
+                <span class="pop-names">${nameDisplay}</span>
+                <span class="popular-like-count">❤️ ${likeCount}명의 추천</span>
+            </div>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+}
+
+// 유튜브 URL에서 ID만 추출하는 유틸
+function getYoutubeIdFromUrl(url) {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+}
+
+// 🔥 [신규] 좋아요 토글 함수
+async function togglePostLike(postId) {
+    if (!currentUser) {
+        alert('로그인이 필요한 기능입니다.');
+        openModal('loginModal');
+        return;
+    }
+
+    let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
+    let post = posts.find(p => p.id === postId);
+    if (!post) return;
+
+    let likes = post.likes || [];
+    const myIndex = likes.indexOf(currentUser.id);
+
+    if (myIndex > -1) {
+        // 이미 좋아요 한 상태면 취소
+        likes.splice(myIndex, 1);
+    } else {
+        // 좋아요 추가
+        likes.push(currentUser.id);
+    }
+
+    try {
+        await window.updateDoc(window.doc(window.db, "community_posts", postId.toString()), { likes: likes });
+        // 실시간 엔진이 감지하여 UI를 업데이트하겠지만, 상세페이지 내 버튼 즉시 반응을 위해 재랜더링 유도 가능
+    } catch (e) {
+        console.error("좋아요 업데이트 실패:", e);
+    }
+}
+
+// --- 초기 로드 시 배경 불러오기 로직 (중요) ---
+// window.onload 함수 마지막 부분에 이 내용을 넣어주세요.
 async function initBackground() {
     try {
         const db = await openDB();
@@ -3393,6 +3795,7 @@ function toggleViewMode() {
     }
 }
 
+// 🔥 [체육관 영구 보존 버전] 등록된 모든 체육관을 보여주되, 포인트는 현재 유저들만 합산
 function renderGyms(filterRegion = 'all') {
     const podiumContainer = document.getElementById('gym-top-podium');
     const listContainer = document.getElementById('gym-list-container');
@@ -3408,28 +3811,37 @@ function renderGyms(filterRegion = 'all') {
         }
     });
 
-    // 2. 데이터 집계
+    // 2. 🔥 [수정] 데이터 집계 로직 개편
+    // 2-1. 먼저 gyms_registry에서 영구 등록된 모든 체육관 목록을 가져옴
+    let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
     const gymStats = {};
+
+    // 2-2. 모든 등록된 체육관의 기본값을 0으로 세팅 (유저가 없어도 사라지지 않음)
+    registeredGyms.forEach(g => {
+        gymStats[g.name] = { name: g.name, region: g.region, totalPt: 0, members: 0 };
+    });
+
+    // 2-3. 현재 활성화된 유저(demoPlayers)들로부터 실시간 포인트 합산 (삭제된 유저는 여기서 제외됨)
     demoPlayers.forEach(p => {
-        if (!gymStats[p.gym]) gymStats[p.gym] = { name: p.gym, region: p.region, totalPt: 0, members: 0 };
+        if (!gymStats[p.gym]) {
+            // 혹시 레지스트리에 없는데 유저는 있는 경우 (예외 처리)
+            gymStats[p.gym] = { name: p.gym, region: p.region, totalPt: 0, members: 0 };
+        }
         gymStats[p.gym].totalPt += (p.pt || 0);
         gymStats[p.gym].members += 1;
     });
 
+    // 3. 랭킹 정렬
     const sortedGyms = Object.values(gymStats).sort((a, b) => b.totalPt - a.totalPt);
 
-    // 3. 포디움 렌더링 (순서: 2등 - 1등 - 3등)
+    // 4. 포디움 렌더링 (Top 3)
     let podiumHtml = '';
     const top3 = sortedGyms.slice(0, 3);
-    
-    // 메달 정보 정의
     const medalData = [
-        {c:'gold', i:'🥇', idx: 0},   // 1등
-        {c:'silver', i:'🥈', idx: 1}, // 2등
-        {c:'bronze', i:'🥉', idx: 2}  // 3등
+        {c:'gold', i:'🥇', idx: 0},
+        {c:'silver', i:'🥈', idx: 1},
+        {c:'bronze', i:'🥉', idx: 2}
     ];
-
-    // 시각적 배치 순서: [2등(좌), 1등(중), 3등(우)]
     const visualOrder = [1, 0, 2]; 
 
     visualOrder.forEach((pos) => {
@@ -3446,7 +3858,7 @@ function renderGyms(filterRegion = 'all') {
     });
     podiumContainer.innerHTML = podiumHtml;
 
-    // 4. 하단 리스트 렌더링
+    // 5. 하단 리스트 렌더링
     let filteredList = (filterRegion === 'all') ? sortedGyms.slice(0, 10) : sortedGyms.filter(g => g.region === filterRegion);
     let listHtml = '';
     filteredList.forEach(gym => {
@@ -3469,6 +3881,7 @@ function renderGyms(filterRegion = 'all') {
 
 // 초기 로드 시 실행 (이미 showPage에 등록되어 있다면 생략 가능)
 renderGyms();
+renderPopularSparring(); // 🔥 [추가] 대시보드 진입 시 인기 스파링 로드
 
 // 🔥 [신규/보완] 커뮤니티 상단 인증 사진 및 영상 슬라이더 (재생 아이콘 통합 버전)
 function updatePhotoSlider(posts) {
@@ -3540,6 +3953,14 @@ function updatePhotoSlider(posts) {
             }, 600);
         }
     }, 3000);
+}
+
+function colorizeTitle(title) {
+    if (!title) return "";
+    return title
+        .replace(/\(승\)/g, '<span class="win-label">(승)</span>')
+        .replace(/\(패\)/g, '<span class="loss-label">(패)</span>')
+        .replace(/\(무승부\)|\(무\)/g, '<span class="draw-label">(무)</span>');
 }
 
 </script>
