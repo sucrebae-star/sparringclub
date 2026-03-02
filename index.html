@@ -976,25 +976,31 @@ window.onload = function() {
     demoPlayers = demoPlayers.filter(p => !deletedUsers.includes(p.id));
     demoFeeds = demoFeeds.filter(f => !deletedUsers.includes(f.p1) && !deletedUsers.includes(f.p2));
 
-    // 2. 승인된 유저 데이터를 데모 목록에 동기화
-    let savedPlayers = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
-    savedPlayers.forEach(sp => {
-        let existing = demoPlayers.find(p => p.rawName === sp.rawName);
-        if(existing) {
-            existing.sW = sp.sW !== undefined ? sp.sW : existing.sW;
-            existing.sD = sp.sD !== undefined ? sp.sD : existing.sD;
-            existing.sL = sp.sL !== undefined ? sp.sL : existing.sL;
-            existing.pt = sp.pt !== undefined ? sp.pt : existing.pt;
-            existing.trustScore = sp.trustScore !== undefined ? sp.trustScore : (existing.trustScore || 0);
-            existing.region = sp.region || existing.region || '지역미상';
-            if (sp.profilePic) existing.profilePic = sp.profilePic;
-        } else {
-            demoPlayers.push({
-                ...sp, sW: sp.sW || 0, sD: sp.sD || 0, sL: sp.sL || 0, pt: sp.pt || 0, trustScore: sp.trustScore || 0, pending: 0, noReply: 0, acc: 0, region: sp.region || '지역미상'
-            });
-        }
+// [수정] 서버에서 승인된 모든 유저를 실시간으로 불러와서 명단에 채웁니다.
+    const usersQuery = window.query(window.collection(window.db, "users"));
+    window.onSnapshot(usersQuery, (snapshot) => {
+        // 기존 데모 데이터를 유지하면서 서버 데이터를 합칩니다.
+        let serverUsers = [];
+        snapshot.forEach((doc) => {
+            serverUsers.push(doc.data());
+        });
+
+        // demoPlayers를 서버 데이터로 최신화 (중복 제거 로직 포함)
+        serverUsers.forEach(su => {
+            let idx = demoPlayers.findIndex(p => p.rawName === su.rawName);
+            if (idx > -1) {
+                demoPlayers[idx] = su; // 기존 유저면 업데이트
+            } else {
+                demoPlayers.push(su); // 새 유저면 추가
+            }
+        });
+
+        renderPlayers(); // 선수 목록 갱신
+        renderGyms();    // 체육관 랭킹 갱신
+        renderNewMembers(); // 신규 가입 소식 갱신
     });
 
+    
     // 3. 로그인 세션 유지 및 UI 업데이트
     let savedSession = localStorage.getItem('sparring_session');
     if (savedSession) {
@@ -2051,10 +2057,11 @@ function updateLoginStateUI() {
 
 
 
-function processLogin() {
+async function processLogin() {
     const inputId = document.getElementById('login-id').value.trim();
     if(!inputId) { alert('아이디를 입력해주세요.'); return; }
     
+    // 관리자 접속 로직 유지
     if(inputId === 'admin' || inputId === '관리자') {
         alert('관리자 모드로 접속합니다.');
         currentUser = { isAdmin: true, rawName: '관리자' };
@@ -2064,18 +2071,34 @@ function processLogin() {
         return;
     }
 
-    let foundUser = demoPlayers.find(p => p.rawName === inputId);
-    if(!foundUser) {
-        alert('가입된 정보가 없거나, 아직 관장님 승인 대기중입니다.\n승인 후에 다시 로그인해주세요.');
-        return;
+    try {
+        const { getDocs, collection, query, where } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        
+        // 🔥 서버의 'users' 폴더에서 아이디(rawName)가 일치하는 사람을 찾습니다.
+        const q = query(collection(window.db, "users"), where("rawName", "==", inputId));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            alert('가입된 정보가 없거나, 아직 관장님 승인 대기중입니다.\n승인 후에 다시 로그인해주세요. 🥊');
+            return;
+        }
+
+        // 유저 정보 가져오기
+        let foundUser = null;
+        querySnapshot.forEach((doc) => { foundUser = doc.data(); });
+
+        currentUser = foundUser;
+        localStorage.setItem('sparring_session', JSON.stringify(foundUser));
+        alert(`${currentUser.rawName} 님, 환영합니다! 로그인이 완료되었습니다.`);
+        closeModal('loginModal');
+        updateLoginStateUI();
+
+    } catch (e) {
+        console.error("로그인 오류:", e);
+        alert("로그인 처리 중 서버 통신 에러가 발생했습니다.");
     }
-    
-    currentUser = foundUser;
-    localStorage.setItem('sparring_session', JSON.stringify(currentUser));
-    alert(`${currentUser.rawName} 님, 로그인 성공하였습니다.`);
-    closeModal('loginModal');
-    updateLoginStateUI();
 }
+
 
 function logout() {
     localStorage.removeItem('sparring_session');
@@ -3297,37 +3320,36 @@ renderGyms();
 // Firebase 승인 로직
 async function approveUser(docId) {
     if(!confirm('해당 회원의 가입을 승인하시겠습니까?')) return;
-    
     try {
-        const { getDoc, doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        const { getDoc, doc, deleteDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
         
-        // 1. 서버에서 해당 유저 데이터 가져오기
+        // 1. 서버의 'pendingUsers'(대기)에서 데이터 가져오기
         const userRef = doc(window.db, "pendingUsers", docId);
         const userSnap = await getDoc(userRef);
         
         if (userSnap.exists()) {
             const userData = userSnap.data();
             
-            // 2. 승인된 유저 목록(LocalStorage)에 추가 (로그인 가능하게 함)
-            let approved = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
-            const newUser = { ...userData, id: Date.now() }; // 고유 ID 부여
-            approved.push(newUser);
-            localStorage.setItem('sparring_approved_users', JSON.stringify(approved));
-            
-            // 실시간 목록(demoPlayers)에도 즉시 반영
-            demoPlayers.push(newUser);
+            // 2. 🔥 핵심: 서버의 'users'(승인완료) 폴더에 데이터 저장!
+            // docId를 그대로 사용하여 데이터의 일관성을 유지합니다.
+            await setDoc(doc(window.db, "users", docId), {
+                ...userData,
+                id: Date.now(), // 앱 내 식별용 숫자 ID 유지
+                isApproved: true
+            });
             
             // 3. 서버의 대기 목록에서 삭제
             await deleteDoc(userRef);
             
-            alert('승인이 완료되었습니다. 이제 해당 유저가 로그인할 수 있습니다!');
-            renderAdmin(); // 관리자 화면 갱신
+            alert('승인이 완료되어 서버에 저장되었습니다!\n이제 해당 유저가 전국 어디서든 로그인할 수 있습니다.');
+            renderAdmin(); 
         }
     } catch (e) {
         console.error("승인 오류:", e);
         alert("승인 처리 중 오류가 발생했습니다.");
     }
 }
+
 
 // Firebase 거절(삭제) 로직
 async function rejectUser(docId) {
