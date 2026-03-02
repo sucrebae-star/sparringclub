@@ -1857,132 +1857,136 @@ function switchAdminTab(tab) {
 }
 
 // 관리자 페이지 가입 대기 목록 실시간 렌더링
+// ==========================================
+// 여기서부터 복사하세요 (관리자 기능 마스터 블록)
+// ==========================================
+
+// 1. 관리자 페이지 실시간 렌더링 (가입대기, 기록대기, 회원목록 통합)
 function renderAdmin() {
+    // [A] 가입 대기 목록 (Firebase 연동)
     const reqList = document.getElementById('admin-req-list');
-    if (!reqList) return;
-
-    // 🔥 핵심: Firebase 서버의 'pendingUsers' 컬렉션을 실시간으로 감시합니다.
-    const q = window.query(window.collection(window.db, "pendingUsers"), window.orderBy("createdAt", "desc"));
-    
-    window.onSnapshot(q, (snapshot) => {
-        reqList.innerHTML = '';
-        
-        if (snapshot.empty) {
-            reqList.innerHTML = '<div style="color:#888; padding:15px; text-align:center; background:#222; border-radius:8px;">현재 가입 승인 대기자가 없습니다.</div>';
-            return;
-        }
-
-        snapshot.forEach((doc) => {
-            const req = doc.data();
-            const docId = doc.id; // Firebase 문서의 고유 ID
-
-            let picHtml = req.profilePic ? `<div class="avatar" style="background-image:url('${req.profilePic}'); width:50px; height:50px; display:inline-block; vertical-align:middle; margin-right:10px;"></div>` : '';
-            
-            reqList.innerHTML += `
-            <div style="background:#222; padding:15px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid var(--gold);">
-                <div>
-                    ${picHtml}
-                    <div style="display:inline-block; vertical-align:middle;">
-                        <b style="font-size:1.1rem;">${req.rawName}</b> 
-                        <span style="color:var(--gold); font-size:0.8rem; margin-left:5px;">[Tier ${req.tier} 신청]</span><br>
-                        <span style="color:#aaa; font-size:0.85rem; display:block; margin-top:5px;">소속: ${req.gym} | [${req.weight}, ${req.region}]</span>
-                    </div>
-                </div>
-                <div style="display:flex; gap:8px;">
-                    <button onclick="approveUser('${docId}')" style="background:var(--primary-red); color:white; border:none; padding:5px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">승인</button>
-                    <button onclick="rejectUser('${docId}')" style="background:#444; color:#ff7675; border:none; padding:5px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">X</button>
-                </div>
-            </div>`;
+    if (reqList) {
+        const q = window.query(window.collection(window.db, "pendingUsers"), window.orderBy("createdAt", "desc"));
+        window.onSnapshot(q, (snapshot) => {
+            reqList.innerHTML = '';
+            if (snapshot.empty) {
+                reqList.innerHTML = '<div style="color:#888; padding:15px; text-align:center; background:#222; border-radius:8px;">현재 가입 승인 대기자가 없습니다.</div>';
+            } else {
+                snapshot.forEach((doc) => {
+                    const req = doc.data();
+                    const docId = doc.id;
+                    let picHtml = req.profilePic ? `<div class="avatar" style="background-image:url('${req.profilePic}'); width:50px; height:50px; display:inline-block; vertical-align:middle; margin-right:10px;"></div>` : '';
+                    reqList.innerHTML += `
+                    <div style="background:#222; padding:15px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid var(--gold);">
+                        <div>
+                            ${picHtml}
+                            <div style="display:inline-block; vertical-align:middle;">
+                                <b style="font-size:1.1rem;">${req.rawName}</b> 
+                                <span style="color:var(--gold); font-size:0.8rem; margin-left:5px;">[Tier ${req.tier} 신청]</span><br>
+                                <span style="color:#aaa; font-size:0.85rem; display:block; margin-top:5px;">소속: ${req.gym} | [${req.weight}, ${req.region}]</span>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button onclick="approveUser('${docId}')" style="background:var(--primary-red); color:white; border:none; padding:5px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">승인</button>
+                            <button onclick="rejectUser('${docId}')" style="background:#444; color:#ff7675; border:none; padding:5px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">X</button>
+                        </div>
+                    </div>`;
+                });
+            }
         });
-    });
+    }
 
-    // 소속 회원 관리 부분은 일단 기존 로직 유지 (추후 회원 전체도 Firebase로 옮길 수 있습니다)
-    const memList = document.getElementById('admin-member-list');
-    document.getElementById('admin-total-users').innerText = demoPlayers.length;
-    memList.innerHTML = '';
-    demoPlayers.forEach(p => {
-        memList.innerHTML += `
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #444; padding:12px 0;">
-            <div>
-                <b class="clickable-name" onclick="openProfile(${p.id})">${formatName(p)}</b><br>
-                <small style="color:#aaa;">${p.gym} | Tier ${p.tier}</small>
-            </div>
-            <button style="background:var(--primary-red); color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;" onclick="adminDeleteMember(${p.id})">삭제</button>
-        </div>`;
-    });
-}
-
-
+    // [B] 경기 결과 검토 대기 목록 (이걸 다시 복구했습니다!)
     const recReqList = document.getElementById('admin-record-req-list');
-    let recordReqs = JSON.parse(localStorage.getItem('sparring_record_requests')) || [];
-    recReqList.innerHTML = '';
-    
-    let autoApprove = localStorage.getItem('sparring_auto_approve') === 'true';
-    if (autoApprove) {
-        recReqList.innerHTML = '<div style="color:var(--gold); padding:15px; text-align:center; background:#222; border-radius:8px;">자동 승인 모드가 켜져 있어 대기록이 없습니다.</div>';
-    } else if(recordReqs.length === 0) {
-        recReqList.innerHTML = '<div style="color:#888; padding:15px; text-align:center; background:#222; border-radius:8px;">대기 중인 기록이 없습니다.</div>';
-    } else {
-        recordReqs.forEach(req => {
-            recReqList.innerHTML += `
-            <div style="background:#222; padding:12px; border-radius:8px; margin-bottom:10px; border-left:4px solid var(--tier2);">
-                <div style="margin-bottom:8px;">
-                    <b style="color:var(--gold);">${req.matchInfo}</b><br>
-                    <small>요청자: ${req.requester} | 요청시간: ${req.time}</small><br>
-                    ${req.videoUrl ? `<a href="${req.videoUrl}" target="_blank" style="color:var(--tier2); font-size:0.8rem; display:inline-block; margin-top:5px;">[▶ 영상 확인하기]</a>` : '<small style="color:#888; display:inline-block; margin-top:5px;">[📷 사진 인증 처리됨]</small>'}
+    if (recReqList) {
+        let recordReqs = JSON.parse(localStorage.getItem('sparring_record_requests')) || [];
+        recReqList.innerHTML = '';
+        let autoApprove = localStorage.getItem('sparring_auto_approve') === 'true';
+        
+        if (autoApprove) {
+            recReqList.innerHTML = '<div style="color:var(--gold); padding:15px; text-align:center; background:#222; border-radius:8px;">자동 승인 모드가 켜져 있어 대기록이 없습니다.</div>';
+        } else if(recordReqs.length === 0) {
+            recReqList.innerHTML = '<div style="color:#888; padding:15px; text-align:center; background:#222; border-radius:8px;">대기 중인 기록이 없습니다.</div>';
+        } else {
+            recordReqs.forEach(req => {
+                recReqList.innerHTML += `
+                <div style="background:#222; padding:12px; border-radius:8px; margin-bottom:10px; border-left:4px solid var(--tier2);">
+                    <div style="margin-bottom:8px;">
+                        <b style="color:var(--gold);">${req.matchInfo}</b><br>
+                        <small>요청자: ${req.requester} | 요청시간: ${req.time}</small><br>
+                        ${req.videoUrl ? `<a href="${req.videoUrl}" target="_blank" style="color:var(--tier2); font-size:0.8rem; display:inline-block; margin-top:5px;">[▶ 영상 확인하기]</a>` : '<small style="color:#888; display:inline-block; margin-top:5px;">[📷 사진 인증 처리됨]</small>'}
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <button onclick="approveRecord(${req.id})" style="flex:1; background:var(--primary-red); color:white; border:none; padding:8px; border-radius:4px; font-weight:bold; cursor:pointer;">결과 승인</button>
+                        <button onclick="rejectRecord(${req.id})" style="background:#444; color:#eee; border:none; padding:8px 15px; border-radius:4px; font-weight:bold; cursor:pointer;">X</button>
+                    </div>
+                </div>`;
+            });
+        }
+    }
+
+    // [C] 소속 회원 관리 목록
+    const memList = document.getElementById('admin-member-list');
+    if (memList) {
+        document.getElementById('admin-total-users').innerText = demoPlayers.length;
+        memList.innerHTML = '';
+        demoPlayers.forEach(p => {
+            memList.innerHTML += `
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #444; padding:12px 0;">
+                <div>
+                    <b class="clickable-name" onclick="openProfile(${p.id})">${formatName(p)}</b><br>
+                    <small style="color:#aaa;">${p.gym} | Tier ${p.tier}</small>
                 </div>
-                <div style="display:flex; gap:5px;">
-                    <button onclick="approveRecord(${req.id})" style="flex:1; background:var(--primary-red); color:white; border:none; padding:8px; border-radius:4px; font-weight:bold; cursor:pointer;">결과 승인</button>
-                    <button onclick="rejectRecord(${req.id})" style="background:#444; color:#eee; border:none; padding:8px 15px; border-radius:4px; font-weight:bold; cursor:pointer;">X</button>
-                </div>
+                <button style="background:var(--primary-red); color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;" onclick="adminDeleteMember(${p.id})">삭제</button>
             </div>`;
         });
     }
-
-    const memList = document.getElementById('admin-member-list');
-    document.getElementById('admin-total-users').innerText = demoPlayers.length;
-    memList.innerHTML = '';
-    demoPlayers.forEach(p => {
-        memList.innerHTML += `
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #444; padding:12px 0;">
-            <div>
-                <b class="clickable-name" onclick="openProfile(${p.id})">${formatName(p)}</b><br>
-                <small style="color:#aaa;">${p.gym} | Tier ${p.tier}</small>
-            </div>
-            <button style="background:var(--primary-red); color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;" onclick="adminDeleteMember(${p.id})">삭제</button>
-        </div>`;
-    });
 }
 
-function approveUser(id) {
+// 2. Firebase 가입 승인 로직
+async function approveUser(docId) {
     if(!confirm('해당 회원의 가입을 승인하시겠습니까?')) return;
-    let pendingUsers = JSON.parse(localStorage.getItem('sparring_pending_users')) || [];
-    let user = pendingUsers.find(u => u.id === id);
-    if(user) {
-        let approved = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
-        approved.push(user);
-        localStorage.setItem('sparring_approved_users', JSON.stringify(approved));
+    try {
+        const { getDoc, doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        const userRef = doc(window.db, "pendingUsers", docId);
+        const userSnap = await getDoc(userRef);
         
-        demoPlayers.push({...user, sW:0, sD:0, sL:0, pt:0, trustScore:0, pending:0, noReply:0, acc:0});
-        
-        pendingUsers = pendingUsers.filter(u => u.id !== id);
-        localStorage.setItem('sparring_pending_users', JSON.stringify(pendingUsers));
-        
-        renderAdmin(); renderPlayers(); renderNewMembers(); 
-        alert('승인되었습니다.');
+        if (userSnap.exists()) {
+            const userData = userSnap.data();
+            let approved = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
+            const newUser = { ...userData, id: Date.now() }; 
+            approved.push(newUser);
+            localStorage.setItem('sparring_approved_users', JSON.stringify(approved));
+            
+            demoPlayers.push({...newUser, sW:0, sD:0, sL:0, pt:0, trustScore:0, pending:0, noReply:0, acc:0});
+            
+            await deleteDoc(userRef);
+            alert('승인이 완료되었습니다. 이제 해당 유저가 로그인할 수 있습니다!');
+            renderAdmin(); 
+            renderPlayers();
+        }
+    } catch (e) {
+        console.error("승인 오류:", e);
+        alert("승인 처리 중 오류가 발생했습니다.");
     }
 }
 
-function rejectUser(id) {
-    if(!confirm('가입을 거절하시겠습니까?')) return;
-    let pendingUsers = JSON.parse(localStorage.getItem('sparring_pending_users')) || [];
-    pendingUsers = pendingUsers.filter(u => u.id !== id);
-    localStorage.setItem('sparring_pending_users', JSON.stringify(pendingUsers));
-    renderAdmin();
+// 3. Firebase 가입 거절 로직
+async function rejectUser(docId) {
+    if(!confirm('가입 신청을 거절하고 삭제하시겠습니까?')) return;
+    try {
+        const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        await deleteDoc(doc(window.db, "pendingUsers", docId));
+        alert('신청이 거절되었습니다.');
+        renderAdmin();
+    } catch (e) {
+        alert("삭제 중 오류가 발생했습니다.");
+    }
 }
 
+// 4. 회원 영구 삭제 로직
 function adminDeleteMember(id) {
-    if(!confirm('이 회원을 영구 삭제하시겠습니까?\n모든 기록과 랭킹이 지워집니다.')) return;
+    if(!confirm('이 회원을 영구 삭제하시겠습니까?\\n모든 기록과 랭킹이 지워집니다.')) return;
     demoPlayers = demoPlayers.filter(p => p.id !== id);
     let approved = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
     approved = approved.filter(p => p.id !== id);
@@ -1994,7 +1998,9 @@ function adminDeleteMember(id) {
     
     renderAdmin(); renderPlayers(); renderFeed();
 }
-
+// ==========================================
+// 여기까지 복사하세요
+// ==========================================
 // --- 인증 및 프로필 등 유틸 ---
 function updateLoginStateUI() {
     if (!currentUser) return;
