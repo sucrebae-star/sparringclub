@@ -11,11 +11,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
 <script type="module">
-  // 1. 필요한 도구들을 더 많이 가져옵니다 (query, orderBy 추가)
+  // 1. 필요한 도구들을 추가로 가져옵니다 (where, doc, updateDoc, deleteDoc, arrayUnion 추가)
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, orderBy, where, doc, updateDoc, deleteDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // 2. 관장님의 메모장 정보를 바탕으로 완성된 설정값
   const firebaseConfig = {
     apiKey: "AIzaSyB_-4dxADvEU1__WrhSYjn0RQ096Hj1fX4",
     authDomain: "sparringclub-c3676.firebaseapp.com",
@@ -25,18 +24,23 @@
     appId: "1:81450971276:web:814b7de26564e28c3ccba9"
   };
 
-  // 3. 엔진 가동
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // 4. 중요: 하단의 다른 코드들이 이 도구들을 사용할 수 있게 '전역 변수'로 등록합니다.
+  // 전역 변수 등록 (다른 함수들이 사용할 도구들)
   window.db = db;
   window.collection = collection;
   window.addDoc = addDoc;
   window.onSnapshot = onSnapshot;
   window.query = query;
   window.orderBy = orderBy;
+  window.where = where;
+  window.doc = doc;
+  window.updateDoc = updateDoc;
+  window.deleteDoc = deleteDoc;
+  window.arrayUnion = arrayUnion;
 </script>
+
 
     <style>
         /* ... 기존 스타일들 ... */
@@ -1000,7 +1004,7 @@ window.onload = function() {
         renderNewMembers(); // 신규 가입 소식 갱신
     });
 
-    
+
     // 3. 로그인 세션 유지 및 UI 업데이트
     let savedSession = localStorage.getItem('sparring_session');
     if (savedSession) {
@@ -1030,8 +1034,7 @@ window.onload = function() {
     renderNewMembers();
     renderCommunity();
     startNoticeSlider(); // 공지 슬라이더 시작
-    setInterval(updateMatchBadge, 2000); // 매칭 배지 업데이트
-
+    startFeedListener();
     // 7. 🔥 대용량 배경화면(IndexedDB) 초기화 실행
     initBackground(); 
 };
@@ -1062,101 +1065,46 @@ function getYoutubeEmbedUrl(url) {
 }
 
 // --- 코어 렌더링 로직 ---
-function renderFeed() {
+
+// 2. 실시간 피드 감시 및 렌더링
+function startFeedListener() {
+    const q = window.query(window.collection(window.db, "matches"), window.orderBy("createdAt", "desc"));
+    window.onSnapshot(q, (snapshot) => {
+        renderFeed(snapshot);
+    });
+}
+
+function renderFeed(snapshot) {
     const container = document.getElementById('feed-container');
-    let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-    let recordReqs = JSON.parse(localStorage.getItem('sparring_record_requests')) || [];
-    let communityPosts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
-    
-    allMatches.sort((a, b) => b.id - a.id);
+    if (!container) return;
 
     let html = '';
-    const totalCount = allMatches.length;
+    let count = snapshot.size;
 
-    allMatches.forEach((m, index) => {
-        const currentMatchNum = totalCount - index; 
-        const matchCode = `Sparring ${String(currentMatchNum).padStart(3, '0')}`;
+    snapshot.forEach((doc) => {
+        const m = doc.data();
+        const matchId = doc.id;
+        const matchNum = count--;
+        const matchCode = `Sparring ${String(matchNum).padStart(3, '0')}`;
         
-        const p1 = demoPlayers.find(p => p.rawName === m.senderRawName);
-        const p2 = demoPlayers.find(p => p.rawName === m.receiverRawName);
-        if(!p1 || !p2) return;
-
-        // --- 결과 및 판정 추출 ---
-        let resultSummary = ''; 
-        let decisionType = '';  
-        let matchPostId = null; // 영상 게시글 ID 저장용
-
-        if (m.status === '종료') {
-            let communityResult = communityPosts.find(p => p.type === 'judge' && p.judgeData && p.judgeData.recordData.matchId == m.id);
-            if (communityResult && communityResult.judgeData.status === 'closed') {
-                const jd = communityResult.judgeData;
-                const winner = jd.votes.p1.length > jd.votes.p2.length ? jd.p1Name : (jd.votes.p2.length > jd.votes.p1.length ? jd.p2Name : "무승부");
-                resultSummary = `<span style="color:var(--gold); margin-left:10px; font-weight:bold;">🏆 ${winner} 승</span>`;
-                decisionType = `<small style="color:#888; font-weight:normal;"> (아레나 판정)</small>`;
-                matchPostId = communityResult.id; // 게시글 ID 확보
-            } else {
-                resultSummary = `<span style="color:var(--gold); margin-left:10px; font-weight:bold;">🏆 결과 확정</span>`;
-                decisionType = `<small style="color:#888; font-weight:normal;"> (공식 판정)</small>`;
-            }
-        }
-
         let statusText = m.status === '종료' ? "OFFICIAL" : m.status;
         let statusColor = m.status === '대기중' ? "var(--gold)" : (m.status === '매칭 성사' ? "var(--tier2)" : "#555");
 
-        // --- 타임라인 구성 ---
-        let timelineHtml = `<div class="timeline-item"><span style="color:var(--gold); font-weight:bold; margin-right:8px;">${formatTimelineDate(m.id)}</span> 🥊 매칭 신청 전송</div>`;
-        
-        if(m.status === '매칭 성사' || m.status === '종료') {
-            timelineHtml += `<div class="timeline-item"><span style="color:var(--tier2); font-weight:bold; margin-right:8px;">${formatTimelineDate(m.acceptedAt || m.id + 3600000)}</span> ✅ 매칭 확정 (경기 준비)</div>`;
-        }
-        
-        let hasRecord = recordReqs.find(r => r.matchId == m.id);
-        if(hasRecord) {
-            timelineHtml += `<div class="timeline-item"><span style="color:#aaa; font-weight:bold; margin-right:8px;">${formatTimelineDate(hasRecord.id)}</span> 📝 결과 등록 완료</div>`;
-        }
-
-        if(m.status === '종료') {
-            // [추가] 영상 게시글이 있다면 버튼 생성
-            let videoBtn = '';
-            if(matchPostId) {
-                // 앱 내 커뮤니티 게시글로 이동 (게시글 안에는 유튜브 플레이어가 있음)
-                videoBtn = `<button onclick="event.stopPropagation(); openPostDetail(${matchPostId})" 
-                            style="padding:4px 10px; background:var(--gold); color:#000; border:none; border-radius:4px; font-size:0.75rem; cursor:pointer; font-weight:bold;">▶ 경기 분석/판정 보기</button>`;
-            } else if(hasRecord && hasRecord.videoUrl) {
-                // 플레이어가 먹통일 경우를 대비해 아예 유튜브 앱/사이트로 바로 연결
-                videoBtn = `<a href="${hasRecord.videoUrl}" target="_blank" onclick="event.stopPropagation();" 
-                            style="padding:4px 10px; background:#f00; color:#fff; border:none; border-radius:4px; font-size:0.75rem; cursor:pointer; font-weight:bold; text-decoration:none; display:inline-block;">▶ 유튜브에서 보기</a>`;
-            }
-
-            timelineHtml += `
-            <div class="timeline-item" style="border-left-color: var(--primary-red); background: rgba(214, 48, 49, 0.05); display: flex; justify-content: space-between; align-items: center; padding-right: 10px;">
-                <div>
-                    <span style="color:var(--primary-red); font-weight:bold; margin-right:8px;">${formatTimelineDate(m.approvedAt || Date.now())}</span>
-                    🏆 최종 판정 승인 완료
+        html += `
+        <div class="timeline-folder" style="border: 1px solid ${m.status === '종료' ? '#444' : 'var(--primary-red)'};">
+            <div class="timeline-header" onclick="toggleTimeline('${matchId}')">
+                <div style="display:flex; align-items:center;">
+                    <span class="match-code">${matchCode}</span>
+                    <b style="font-size:1rem;">${m.senderName} <span style="color:#666;">VS</span> ${m.receiverName}</b>
                 </div>
-                ${videoBtn}
-            </div>`;
-        }
-
-        // --- 피드 헤더 이름 클릭 가능하게 수정 ---
-            html += `
-            <div class="timeline-folder" style="border: 1px solid ${m.status === '종료' ? '#444' : 'var(--primary-red)'};">
-                <div class="timeline-header" onclick="toggleTimeline(${m.id})" style="background: ${m.status === '종료' ? '#252525' : '#2d2d2d'};">
-                    <div style="display:flex; align-items:center; flex-wrap:wrap;">
-                        <span class="match-code" style="color:var(--gold); font-family:monospace; margin-right:12px;">${matchCode}</span>
-                        <b style="font-size:1rem;">
-                            <span class="clickable-name" onclick="event.stopPropagation(); openProfile(${p1.id})">${p1.rawName}</span> 
-                            <span style="color:#666; margin: 0 5px; font-weight:normal;">VS</span> 
-                            <span class="clickable-name" onclick="event.stopPropagation(); openProfile(${p2.id})">${p2.rawName}</span>
-                        </b>
-                        ${resultSummary}${decisionType}
-                    </div>
-                    <span class="status-badge" style="background:${statusColor}; color:#000; padding:2px 8px; border-radius:4px; font-weight:bold; font-size:0.7rem;">${statusText}</span>
-                </div>
-                <div id="timeline-content-${m.id}" class="timeline-content" style="display:none; padding-bottom: 15px;">
-                    ${timelineHtml}
-                </div>
-            </div>`;
+                <span class="status-badge" style="background:${statusColor}; color:#000;">${statusText}</span>
+            </div>
+            <div id="timeline-content-${matchId}" class="timeline-content">
+                <div class="timeline-item"><span style="color:var(--gold);">${new Date(m.createdAt).toLocaleString()}</span> 🥊 매칭 신청 완료</div>
+                ${m.acceptedAt ? `<div class="timeline-item"><span style="color:var(--tier2);">${new Date(m.acceptedAt).toLocaleString()}</span> ✅ 매칭 성사 (경기 준비)</div>` : ''}
+                ${m.status === '종료' ? `<div class="timeline-item" style="color:var(--primary-red);">🏆 경기 종료 및 판정 완료</div>` : ''}
+            </div>
+        </div>`;
     });
 
     container.innerHTML = html || '<div style="color:#888; text-align:center; padding: 20px;">표시할 활동이 없습니다.</div>';
@@ -1343,43 +1291,59 @@ function insertEditorVideo() {
     }
 }
 
-// --- 커뮤니티(판정 아레나) 핵심 로직 ---
-function renderCommunity() {
-    let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
+// [신규] 커뮤니티 게시판 실시간 감시 엔진
+function startCommunityListener() {
+    const q = window.query(window.collection(window.db, "posts"), window.orderBy("time", "desc"));
+    window.onSnapshot(q, (snapshot) => {
+        renderCommunity(snapshot);
+    });
+}
+
+let currentCommunityPosts = []; // [신규] 서버 게시글을 보관할 전역 바구니
+
+function renderCommunity(snapshot) {
     const listContainer = document.getElementById('community-list');
-    
-    // 1. 공지사항(type: 'notice')과 일반 게시글 분리
-    let notices = posts.filter(p => p.type === 'notice').slice(0, 3);
-    let normalPosts = posts.filter(p => p.type !== 'notice');
+    if (!listContainer) return;
+
+    // 1. 서버에서 새 데이터를 받았을 때만 전역 바구니(currentCommunityPosts)를 갱신합니다.
+    if (snapshot && typeof snapshot.forEach === 'function') {
+        let posts = [];
+        snapshot.forEach((doc) => {
+            posts.push({ id: doc.id, ...doc.data() });
+        });
+        currentCommunityPosts = posts;
+    }
+
+    // 2. 공지사항과 일반 게시글을 분리합니다.
+    let notices = currentCommunityPosts.filter(p => p.type === 'notice').slice(0, 3);
+    let normalPosts = currentCommunityPosts.filter(p => p.type !== 'notice');
 
     let html = '';
 
-    // 2. 상단 공지 영역 (노란색 굵은 강조 디자인)
+    // 3. 커뮤니티 페이지 상단의 공지 영역을 렌더링합니다.
     if (notices.length > 0) {
         html += `<div id="community-notice-area" style="margin-bottom: 20px;">`;
         notices.forEach(n => {
             html += `
-            <div style="background: rgba(253, 203, 110, 0.05); border: 1px solid rgba(253, 203, 110, 0.3); border-left: 4px solid var(--gold); padding: 10px 15px; margin-bottom: 8px; cursor: pointer; border-radius: 6px; display: flex; align-items: center; gap: 10px;" onclick="openPostDetail(${n.id})">
+            <div style="background: rgba(253, 203, 110, 0.05); border: 1px solid rgba(253, 203, 110, 0.3); border-left: 4px solid var(--gold); padding: 10px 15px; margin-bottom: 8px; cursor: pointer; border-radius: 6px; display: flex; align-items: center; gap: 10px;" onclick="openPostDetail('${n.id}')">
                 <span style="font-size: 1rem;">📢</span>
-                <span style="font-size: 0.9rem; color: var(--gold); font-weight: 800; letter-spacing: -0.5px;">${n.title}</span>
+                <span style="font-size: 0.9rem; color: var(--gold); font-weight: 800;">${n.title}</span>
             </div>`;
         });
         html += `</div>`;
     }
 
-    // 3. 일반 회원 게시글 영역 (복구 완료)
+    // 4. 일반 게시글 목록을 렌더링합니다.
     if (normalPosts.length === 0) {
         html += '<div style="color:#888; text-align:center; padding:20px;">등록된 게시글이 없습니다.</div>';
     } else {
         normalPosts.forEach(post => {
-            let dateStr = new Date(post.time).toLocaleDateString().slice(2); // '26.03.01' 형식
-            let attachIcon = post.imageUrl ? ' 📷' : (post.videoUrl ? ' ▶' : '');
-            
+            let dateStr = new Date(post.time).toLocaleDateString().slice(2);
             html += `
-            <div class="post-item" onclick="openPostDetail(${post.id})">
+            <div class="post-item" onclick="openPostDetail('${post.id}')">
                 <div class="post-title">
-                    <span class="post-badge" style="margin-right:5px; padding:1px 4px; font-size:0.7rem;">${post.prefix}</span>
-                    <span style="color:#fff; font-weight:500;">${post.title}${attachIcon}</span>
+                    <span class="post-badge">${post.prefix}</span>
+                    <span style="color:#fff; font-weight:500;">${post.title}</span>
                 </div>
                 <div class="post-info-row">
                     <div>
@@ -1387,81 +1351,73 @@ function renderCommunity() {
                         <span style="margin: 0 5px; opacity: 0.3;">|</span>
                         <span>${dateStr}</span>
                     </div>
-                    <span style="color:var(--gold); font-weight:bold;">💬 ${post.comments.length}</span>
+                    <span style="color:var(--gold); font-weight:bold;">💬 ${post.comments ? post.comments.length : 0}</span>
                 </div>
             </div>`;
         });
     }
     
+    // 5. 화면에 목록을 출력합니다.
     listContainer.innerHTML = html;
+
+    // 🔥 [핵심 추가] 메인 화면의 공지사항 슬라이더 엔진을 시동합니다.
+    // 서버에 공지가 있으면 빨간 박스를 보여주고, 없으면 자동으로 숨깁니다.
+    startNoticeSlider();
 }
 
-function addCommunityPost() {
-    if(!currentUser) { 
-        alert('로그인이 필요합니다.'); 
-        openModal('loginModal'); 
-        return; 
-    }
+
+
+// 1. 게시글 서버 등록
+async function addCommunityPost() {
+    if(!currentUser) { alert('로그인이 필요합니다.'); openModal('loginModal'); return; }
     
-    // [수정] ID값을 'cb-content-editor'로 변경하고 .innerHTML로 내용을 가져옵니다.
     const prefix = document.getElementById('cb-prefix').value;
     const title = document.getElementById('cb-title').value.trim();
-    const editor = document.getElementById('cb-content-editor');
-    const content = editor.innerHTML.trim();
+    const content = document.getElementById('cb-content-editor').innerHTML.trim();
 
-    // 내용이 비어있는지 확인 (에디터 특성상 <br>만 있는 경우도 체크)
     if (!title || content === "" || content === "<br>") { 
-        alert("제목과 내용을 모두 입력해주세요."); 
-        return; 
+        alert("제목과 내용을 모두 입력해주세요."); return; 
     }
 
-    let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
+    const postData = {
+        prefix, title, content,
+        authorId: currentUser.id,
+        authorName: currentUser.rawName,
+        time: Date.now(),
+        comments: [],
+        type: 'normal'
+    };
 
-    // [수정] 수정 모드(editingPostId)일 때와 신규 등록일 때를 구분합니다.
-    if (editingPostId) {
-        const idx = posts.findIndex(p => p.id === editingPostId);
-        if (idx > -1) {
-            posts[idx].prefix = prefix;
-            posts[idx].title = title;
-            posts[idx].content = content;
+    try {
+        if (editingPostId) {
+            // 수정 모드일 때
+            await window.updateDoc(window.doc(window.db, "posts", editingPostId), postData);
             alert("게시글이 수정되었습니다.");
+        } else {
+            // 신규 등록일 때
+            await window.addDoc(window.collection(window.db, "posts"), postData);
+            alert("게시글이 등록되었습니다.");
         }
-        editingPostId = null;
-    } else {
-        posts.unshift({
-            id: Date.now(),
-            prefix: prefix,
-            title: title,
-            content: content,
-            authorId: currentUser.id,
-            authorName: currentUser.rawName,
-            time: Date.now(),
-            comments: [],
-            type: 'normal'
-        });
-        alert("게시글이 등록되었습니다.");
+        toggleWriteMode(false);
+    } catch (e) {
+        alert("게시글 저장 실패: " + e.message);
     }
-
-    localStorage.setItem('sparring_community_posts', JSON.stringify(posts));
-    
-    // [수정] 작성 모드 종료 함수 호출 (입력창 초기화 및 버튼 복구 포함)
-    toggleWriteMode(false);
-    renderCommunity();
 }
 
 
+
+// 2. 상세보기 서버 연동
 function openPostDetail(postId) {
     currentPostId = postId;
-    let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
-    let post = posts.find(p => p.id === postId);
+    // 🔥 로컬스토리지가 아닌 서버 전역 바구니에서 글을 찾습니다.
+    let post = currentCommunityPosts.find(p => p.id === postId);
     if(!post) return;
 
-    // 투표 마감 시간 체크 (자동 마감 처리)
+    // 투표 자동 마감 체크
     if(post.type === 'judge' && post.judgeData && post.judgeData.status === 'voting') {
         if(Date.now() >= post.judgeData.endTime) {
             closeVoting(post.id, false);
-            // 마감 후 최신 데이터 다시 불러오기
-            post = JSON.parse(localStorage.getItem('sparring_community_posts')).find(p => p.id === postId);
+            post = currentCommunityPosts.find(p => p.id === postId);
         }
     }
 
@@ -1469,17 +1425,15 @@ function openPostDetail(postId) {
     let dateStr = new Date(post.time).toLocaleString();
     let embedUrl = getYoutubeEmbedUrl(post.videoUrl);
     
-    // 1. [권한 체크] 작성자 본인 또는 관리자용 수정/삭제 버튼 생성
     let actionBtns = '';
     if (currentUser && (currentUser.id === post.authorId || currentUser.isAdmin)) {
         actionBtns = `
             <div style="float: right; display: flex; gap: 8px; margin-bottom: 10px;">
-                <button onclick="toggleWriteMode(true, ${post.id})" style="background: #444; color: var(--gold); border: 1px solid #555; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; font-weight: bold;">수정</button>
-                <button onclick="deletePost(${post.id})" style="background: #444; color: #ff7675; border: 1px solid #555; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; font-weight: bold;">삭제</button>
+                <button onclick="toggleWriteMode(true, '${post.id}')" style="background: #444; color: var(--gold); border: 1px solid #555; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; font-weight: bold;">수정</button>
+                <button onclick="deletePost('${post.id}')" style="background: #444; color: #ff7675; border: 1px solid #555; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; font-weight: bold;">삭제</button>
             </div>`;
     }
 
-    // 상단 헤더 영역 (버튼 포함)
     let html = `
         <div style="margin-bottom: 15px;">
             ${actionBtns}
@@ -1488,169 +1442,144 @@ function openPostDetail(postId) {
                 <span style="color:var(--gold);">${post.prefix}</span> ${post.title}
             </h3>
             <div style="font-size:0.8rem; color:#888; border-bottom:1px solid #444; padding-bottom:10px; margin-top:5px;">
-                작성자: <b style="color:white; cursor:pointer; text-decoration:underline;" onclick="openProfile(${post.authorId})">${post.authorName}</b> | ${dateStr}
+                작성자: <b style="color:white; cursor:pointer; text-decoration:underline;" onclick="openProfile('${post.authorId}')">${post.authorName}</b> | ${dateStr}
             </div>
         </div>
     `;
 
-    // 유튜브 영상 영역
     if(embedUrl) {
         html += `<div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:8px; margin-bottom:15px;">
                     <iframe style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;" src="${embedUrl}" allowfullscreen></iframe>
                  </div>`;
     }
 
-    // 본문 내용 영역
     html += `<div class="post-content-view" style="font-size:0.95rem; line-height:1.6; color:#ccc; margin-bottom:30px; word-break: break-all;">${post.content}</div>`;
 
-    // 판정 투표 UI 로직 (기존 코드 유지)
-    if(post.type === 'judge' && post.judgeData) {
-        let jd = post.judgeData;
-        let v1 = jd.votes.p1.length;
-        let vDraw = jd.votes.draw.length;
-        let v2 = jd.votes.p2.length;
-        let total = v1 + vDraw + v2;
-        
-        if (jd.status === 'voting') {
-            let myVote = '';
-            if(currentUser) {
-                if(jd.votes.p1.includes(currentUser.id)) myVote = 'p1';
-                else if(jd.votes.draw.includes(currentUser.id)) myVote = 'draw';
-                else if(jd.votes.p2.includes(currentUser.id)) myVote = 'p2';
-            }
-            let btn1Style = myVote === 'p1' ? 'background:var(--primary-red); color:white;' : 'background:#333; color:#ccc; border:1px solid #555;';
-            let btnDrawStyle = myVote === 'draw' ? 'background:#0984e3; color:white;' : 'background:#333; color:#ccc; border:1px solid #555;';
-            let btn2Style = myVote === 'p2' ? 'background:var(--primary-red); color:white;' : 'background:#333; color:#ccc; border:1px solid #555;';
-            
-            html += `
-            <div style="background:#111; padding:15px; border-radius:8px; border:1px solid var(--primary-red); margin-bottom:20px;">
-                <h4 style="text-align:center; margin-top:0; color:var(--primary-red);">📊 승자 예측 투표 진행중!</h4>
-                <div style="display:flex; gap:10px;">
-                    <button class="vote-btn" style="${btn1Style} flex:1; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="submitVote(${post.id}, 'p1')">${jd.p1Name} 승</button>
-                    <button class="vote-btn" style="${btnDrawStyle} flex:1; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="submitVote(${post.id}, 'draw')">무승부</button>
-                    <button class="vote-btn" style="${btn2Style} flex:1; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="submitVote(${post.id}, 'p2')">${jd.p2Name} 승</button>
-                </div>
-                <div style="text-align:center; font-size:0.75rem; color:#888; margin-top:10px;">현재 ${total}명 참여완료</div>
-            </div>`;
-        } else {
-            html += `<div style="background:#111; padding:15px; border-radius:8px; border:1px solid #444; margin-bottom:20px;">
-                <h4 style="text-align:center; margin-top:0; color:var(--gold);">🏁 투표 종료 / 최종 결과</h4>
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.85rem;">
-                    <span>${jd.p1Name} 승리: <b style="color:var(--primary-red);">${v1}표</b></span>
-                    <span>무승부: <b style="color:#0984e3;">${vDraw}표</b></span>
-                    <span>${jd.p2Name} 승리: <b style="color:var(--primary-red);">${v2}표</b></span>
-                </div>
-            </div>`;
-        }
-    }
-
     container.innerHTML = html;
-    
-    // 댓글 렌더링 함수 실행
     if(typeof renderComments === 'function') renderComments();
     
-    // 페이지 전환 및 스크롤 상단 이동
     showPage('post-detail');
     window.scrollTo(0, 0);
 }
 
 
-function submitVote(postId, choice) {
+async function submitVote(postId, choice) {
     if(!currentUser) { alert('로그인이 필요합니다.'); openModal('loginModal'); return; }
     
-    let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
-    let pIdx = posts.findIndex(p => p.id === postId);
-    if(pIdx === -1) return;
+    let post = currentCommunityPosts.find(p => p.id === postId);
+    if(!post || !post.judgeData) return;
     
-    let jd = posts[pIdx].judgeData;
+    let jd = post.judgeData;
+    let p1Votes = jd.votes.p1.filter(id => id !== currentUser.id);
+    let drawVotes = jd.votes.draw.filter(id => id !== currentUser.id);
+    let p2Votes = jd.votes.p2.filter(id => id !== currentUser.id);
     
-    // 기존 투표 제거
-    jd.votes.p1 = jd.votes.p1.filter(id => id !== currentUser.id);
-    jd.votes.draw = jd.votes.draw.filter(id => id !== currentUser.id);
-    jd.votes.p2 = jd.votes.p2.filter(id => id !== currentUser.id);
-    
-    // 새 투표 추가
-    jd.votes[choice].push(currentUser.id);
-    
-    localStorage.setItem('sparring_community_posts', JSON.stringify(posts));
-    openPostDetail(postId); // 뷰 새로고침
+    if(choice === 'p1') p1Votes.push(currentUser.id);
+    if(choice === 'draw') drawVotes.push(currentUser.id);
+    if(choice === 'p2') p2Votes.push(currentUser.id);
+
+    try {
+        await window.updateDoc(window.doc(window.db, "posts", postId), {
+            "judgeData.votes.p1": p1Votes,
+            "judgeData.votes.draw": drawVotes,
+            "judgeData.votes.p2": p2Votes
+        });
+        // 투표 후 화면 갱신
+        setTimeout(() => openPostDetail(postId), 300);
+    } catch(e) { alert("투표 에러: " + e.message); }
 }
 
-function closeVoting(postId, isManual = false) {
-    let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
-    let pIdx = posts.findIndex(p => p.id === postId);
-    if(pIdx === -1) return;
+// [업데이트] 투표 마감, 전적 반영, 신뢰도 지급 통합 서버 연동 버전
+async function closeVoting(postId, isManual = false) {
+    // 1. 서버 전역 바구니에서 해당 글 찾기
+    let post = currentCommunityPosts.find(p => p.id === postId);
+    if(!post || !post.judgeData) return;
     
-    let post = posts[pIdx];
     let jd = post.judgeData;
-    
     let v1 = jd.votes.p1.length;
     let vDraw = jd.votes.draw.length;
     let v2 = jd.votes.p2.length;
     
-    let winnerId = null;
+    // 2. 승자 및 보상 대상자 계산
     let resultValue = 'draw';
     let winnerName = '무승부';
     let winningVoters = jd.votes.draw;
 
-    if(v1 > v2 && v1 > vDraw) { winnerId = jd.p1Id; resultValue = 'win'; winnerName = jd.p1Name; winningVoters = jd.votes.p1; }
-    else if(v2 > v1 && v2 > vDraw) { winnerId = jd.p2Id; resultValue = 'loss'; winnerName = jd.p2Name; winningVoters = jd.votes.p2; }
-
-    jd.status = 'closed';
-    post.title = `[판정결과: ${winnerName} 승리] ${jd.p1Name} vs ${jd.p2Name}`;
-
-    localStorage.setItem('sparring_community_posts', JSON.stringify(posts));
-
-    // 판정을 맞춘 유저들의 신뢰도 점수 올려주기 (+10점)
-    let approved = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
-    winningVoters.forEach(voterId => {
-        let appUser = approved.find(u => u.id === voterId);
-        if(appUser) appUser.trustScore = (appUser.trustScore || 0) + 10;
-        let dpUser = demoPlayers.find(u => u.id === voterId);
-        if(dpUser) dpUser.trustScore = (dpUser.trustScore || 0) + 10;
-    });
-    localStorage.setItem('sparring_approved_users', JSON.stringify(approved));
-    if(currentUser && winningVoters.includes(currentUser.id)) { currentUser.trustScore = (currentUser.trustScore || 0) + 10; localStorage.setItem('sparring_session', JSON.stringify(currentUser)); }
-
-    // 실제 스파링 전적에 반영
-    if (jd.recordData) {
-        // 결과값을 다수결로 덮어씌움 (p1 기준)
-        jd.recordData.resultValue = resultValue;
-        applyRecordToStats(jd.recordData);
+    if(v1 > v2 && v1 > vDraw) { 
+        resultValue = 'win'; 
+        winnerName = jd.p1Name; 
+        winningVoters = jd.votes.p1; 
+    }
+    else if(v2 > v1 && v2 > vDraw) { 
+        resultValue = 'loss'; 
+        winnerName = jd.p2Name; 
+        winningVoters = jd.votes.p2; 
     }
 
-    if(isManual) { alert('테스트 모드: 투표가 즉시 마감되고 전적과 신뢰도 스탯이 분배되었습니다!'); openPostDetail(postId); }
+    try {
+        // 3. 🔥 서버(Firebase) 게시글 상태 업데이트
+        await window.updateDoc(window.doc(window.db, "posts", postId), {
+            "judgeData.status": 'closed',
+            "title": `[판정결과: ${winnerName} 승리] ${jd.p1Name} vs ${jd.p2Name}`
+        });
+
+        // 4. 전적 데이터 실시간 반영 (기존 기능 유지)
+        if (jd.recordData) {
+            jd.recordData.resultValue = resultValue;
+            // 이 함수는 내부에서 서버 점수를 올리도록 설계되어야 합니다.
+            applyRecordToStats(jd.recordData); 
+        }
+
+        // 5. 판정을 맞춘 유저들에게 신뢰도 점수 지급 (+10점)
+        // 현재는 로컬 데이터를 수정하지만, 나중에는 이 부분도 서버의 'users' 폴더를 수정하게 됩니다.
+        let approved = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
+        winningVoters.forEach(voterId => {
+            let appUser = approved.find(u => u.id === voterId);
+            if(appUser) appUser.trustScore = (appUser.trustScore || 0) + 10;
+            let dpUser = demoPlayers.find(u => u.id === voterId);
+            if(dpUser) dpUser.trustScore = (dpUser.trustScore || 0) + 10;
+        });
+        localStorage.setItem('sparring_approved_users', JSON.stringify(approved));
+
+        if(isManual) { 
+            alert('투표가 마감되었습니다! 판정을 맞춘 분들께 신뢰도 10P가 지급되었으며 전적이 반영되었습니다. 🥇'); 
+            setTimeout(() => openPostDetail(postId), 300);
+        }
+    } catch(e) { 
+        console.error("마감 처리 중 오류:", e); 
+    }
 }
 
-function addComment() {
+async function addComment() {
     if(!currentUser) { alert('로그인이 필요합니다.'); return; }
     const input = document.getElementById('pd-comment-input');
     const text = input.value.trim();
-    if(!text) return;
+    if(!text || !currentPostId) return;
 
-    let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
-    let pIdx = posts.findIndex(p => p.id === currentPostId);
-    if(pIdx > -1) {
-        posts[pIdx].comments.push({
-            authorId: currentUser.id,
-            authorName: currentUser.rawName,
-            text: text,
-            time: Date.now()
+    try {
+        const postRef = window.doc(window.db, "posts", currentPostId);
+        await window.updateDoc(postRef, {
+            comments: window.arrayUnion({
+                authorId: currentUser.id,
+                authorName: currentUser.rawName,
+                text: text,
+                time: Date.now()
+            })
         });
-        localStorage.setItem('sparring_community_posts', JSON.stringify(posts));
         input.value = '';
-        renderComments();
-        renderCommunity(); // 리스트의 댓글수 업데이트
+    } catch (e) {
+        alert("댓글 등록 실패: " + e.message);
     }
 }
 
+
+// [업데이트] 서버 데이터에서 댓글을 불러오도록 수정
 function renderComments() {
-    let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
-    let post = posts.find(p => p.id === currentPostId);
+    let post = currentCommunityPosts.find(p => p.id === currentPostId);
     if(!post) return;
 
     const box = document.getElementById('pd-comments');
-    if(post.comments.length === 0) {
+    if(!post.comments || post.comments.length === 0) {
         box.innerHTML = '<div style="color:#666; font-size:0.85rem;">등록된 댓글이 없습니다.</div>';
         return;
     }
@@ -1672,7 +1601,8 @@ function renderComments() {
 }
 
 // --- 사용자(선수) 전적 및 매칭 로직 (업데이트) ---
-function submitSparringRecord() {
+// 1. 경기 결과 기록 서버 업로드
+async function submitSparringRecord() {
     const matchId = document.getElementById('record-match-select').value;
     const videoUrl = document.getElementById('cert-video-url').value.trim();
     const imageFile = document.getElementById('cert-image-file').files[0];
@@ -1680,84 +1610,37 @@ function submitSparringRecord() {
     const judgeMethod = document.getElementById('judge-select').value;
     const resultValue = document.getElementById('record-result').value;
 
-    if (!matchId) { alert('기록을 등록할 매칭 대상을 먼저 선택해주세요.'); return; }
+    if (!matchId) { alert('매칭 대상을 먼저 선택해주세요.'); return; }
     
-    if (judgeMethod === 'community' && !videoUrl) {
-        alert('커뮤니티 영상 판정을 받으려면 반드시 유튜브 영상 링크를 첨부해야 합니다.'); return;
-    } else if (judgeMethod !== 'community' && !videoUrl && !imageFile) { 
-        alert('기록 업로드를 위해 유튜브 영상 링크 또는 인증 사진 중 하나는 첨부해야 합니다.'); return; 
-    }
+    // [보안] 매칭 데이터 가져오기 (문서 ID 기반)
+    try {
+        const { getDoc, doc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        const matchSnap = await getDoc(doc(window.db, "matches", matchId));
+        if (!matchSnap.exists()) return;
+        const matchData = matchSnap.data();
 
-    let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-    let matchData = allMatches.find(m => m.id == matchId);
-    if(!matchData) return;
-
-    let opponentRawName = (matchData.senderRawName === currentUser.rawName) ? matchData.receiverRawName : matchData.senderRawName;
-    let opponentId = demoPlayers.find(p => p.rawName === opponentRawName)?.id || 1;
-    let mediaType = videoUrl ? 'video' : (imageFile ? 'photo' : 'none');
-
-    let recordData = {
-        id: Date.now(), matchId: matchId, matchType: matchType, resultValue: resultValue,
-        matchInfo: document.getElementById('record-match-select').options[document.getElementById('record-match-select').selectedIndex].text,
-        videoUrl: videoUrl, mediaType: mediaType, requester: currentUser.rawName,
-        opponentRawName: opponentRawName, opponentId: opponentId, time: new Date().toLocaleString()
-    };
-
-    // 커뮤니티 판정인 경우
-    if (judgeMethod === 'community') {
-        let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
-        const post = {
-            id: Date.now(),
-            prefix: '[판정요청]',
-            title: `[${currentUser.rawName} vs ${opponentRawName}] 판정 요청 드립니다.`,
-            content: `승자 판별이 어려워 커뮤니티 여러분의 공정한 투표를 부탁드립니다.\n(투표는 48시간 후 종료되며, 결과에 따라 전적이 승인됩니다.)`,
-            authorId: currentUser.id,
-            authorName: currentUser.rawName,
-            time: Date.now(),
-            comments: [],
+        const recordData = {
+            matchId: matchId,
+            matchType: matchType,
+            resultValue: resultValue, // p1(신청자) 기준 결과
+            matchInfo: `${matchData.senderName} VS ${matchData.receiverName}`,
             videoUrl: videoUrl,
-            type: 'judge',
-            judgeData: {
-                p1Id: currentUser.id, p1Name: currentUser.rawName,
-                p2Id: opponentId, p2Name: opponentRawName,
-                recordData: recordData, 
-                endTime: Date.now() + (48 * 60 * 60 * 1000), 
-                status: 'voting', 
-                votes: { p1: [], draw: [], p2: [] }
-            }
+            requesterRawName: currentUser.rawName,
+            senderRawName: matchData.senderRawName,
+            receiverRawName: matchData.receiverRawName,
+            status: '대기중', // 관장님 승인 대기
+            time: Date.now()
         };
-        posts.unshift(post);
-        localStorage.setItem('sparring_community_posts', JSON.stringify(posts));
-        alert('커뮤니티 판정 게시판에 등록되었습니다!\n48시간 후 다수결 투표 결과에 따라 자동으로 전적이 반영됩니다.');
-        
-        // 매칭 상태를 임시로 '종료(판정대기)' 등으로 바꾸기
-        let mIdx = allMatches.findIndex(m => m.id == matchId);
-        if (mIdx > -1) {
-            allMatches[mIdx].status = '종료';
-            localStorage.setItem('sparring_matches', JSON.stringify(allMatches));
-        }
-        
-    } else {
-        // 기존 자동/수동 승인 흐름
-        let autoApprove = localStorage.getItem('sparring_auto_approve') === 'true';
-        if (autoApprove) {
-            applyRecordToStats(recordData);
-            alert('자동 승인 설정에 의해 경기 기록이 즉시 전적과 피드에 반영되었습니다!');
-        } else {
-            let recordReqs = JSON.parse(localStorage.getItem('sparring_record_requests')) || [];
-            recordReqs.push(recordData);
-            localStorage.setItem('sparring_record_requests', JSON.stringify(recordReqs));
-            alert('기록 업로드 요청이 완료되었습니다!\n관장님이 확인 후 승인하면 전적에 반영됩니다.');
-        }
+
+        // 서버의 'records' 폴더에 저장
+        await window.addDoc(window.collection(window.db, "records"), recordData);
+        alert('기록 요청이 완료되었습니다!\n관장님이 승인하면 전적과 피드에 즉시 반영됩니다.');
+        showPage('dashboard');
+    } catch (e) {
+        alert("기록 업로드 실패: " + e.message);
     }
-    
-    document.getElementById('cert-video-url').value = '';
-    document.getElementById('cert-image-file').value = '';
-    document.getElementById('record-match-select').value = '';
-    
-    if(currentUser) renderMatchList();
-    renderCommunity();
 }
+
 
 function applyRecordToStats(record) {
     if (record.matchType === 'rank') {
@@ -1800,26 +1683,73 @@ function applyRecordToStats(record) {
     renderFeed();
 }
 
-function approveRecord(id) {
-    if(!confirm('이 기록을 승인하고 전적 및 피드에 반영하시겠습니까?')) return;
-    let reqs = JSON.parse(localStorage.getItem('sparring_record_requests')) || [];
-    let record = reqs.find(r => r.id === id);
+// [업데이트] 경기 결과 최종 승인 및 서버 포인트 지급 로직
+async function approveRecord(recordDocId) {
+    if(!confirm('이 기록을 승인하고 전적과 포인트에 반영하시겠습니까?')) return;
     
-    if(record) {
-        applyRecordToStats(record); 
-        reqs = reqs.filter(r => r.id !== id);
-        localStorage.setItem('sparring_record_requests', JSON.stringify(reqs));
-        alert('기록이 성공적으로 승인되었습니다!');
-        renderAdmin();
+    try {
+        const { getDoc, doc, updateDoc, query, collection, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        
+        // 1. 서버의 'records' 폴더에서 해당 기록 데이터 가져오기
+        const recRef = doc(window.db, "records", recordDocId);
+        const recSnap = await getDoc(recRef);
+        if (!recSnap.exists()) {
+            alert("해당 기록 데이터를 찾을 수 없습니다.");
+            return;
+        }
+        const rec = recSnap.data();
+
+        // 2. 양측 선수 데이터를 서버에서 조회
+        const findUser = async (rawName) => {
+            const q = query(collection(window.db, "users"), where("rawName", "==", rawName));
+            const snap = await getDocs(q);
+            return snap.empty ? null : { id: snap.docs[0].id, data: snap.docs[0].data() };
+        };
+
+        const p1 = await findUser(rec.senderRawName);
+        const p2 = await findUser(rec.receiverRawName);
+
+        // 3. 승무패 결과에 따른 서버 포인트 계산 및 업데이트
+        if (p1 && p2 && rec.matchType === 'rank') {
+            let p1Update = {}, p2Update = {};
+            if (rec.resultValue === 'win') {
+                p1Update = { sW: (p1.data.sW || 0) + 1, pt: (p1.data.pt || 0) + 50 };
+                p2Update = { sL: (p2.data.sL || 0) + 1, pt: (p2.data.pt || 0) + 10 };
+            } else if (rec.resultValue === 'loss') {
+                p1Update = { sL: (p1.data.sL || 0) + 1, pt: (p1.data.pt || 0) + 10 };
+                p2Update = { sW: (p2.data.sW || 0) + 1, pt: (p2.data.pt || 0) + 50 };
+            } else {
+                p1Update = { sD: (p1.data.sD || 0) + 1, pt: (p1.data.pt || 0) + 30 };
+                p2Update = { sD: (p2.data.sD || 0) + 1, pt: (p2.data.pt || 0) + 30 };
+            }
+
+            // 서버의 'users' 폴더 내 각 선수 데이터 갱신
+            await updateDoc(doc(window.db, "users", p1.id), p1Update);
+            await updateDoc(doc(window.db, "users", p2.id), p2Update);
+        }
+
+        // 4. 매칭 상태를 '종료'로 바꾸고 기록 승인 완료 처리
+        await updateDoc(doc(window.db, "matches", rec.matchId), { status: '종료' });
+        await updateDoc(recRef, { status: '승인됨' });
+
+        alert('경기 결과가 승인되었으며, 양측 선수의 포인트가 서버에 반영되었습니다! 🥇');
+        if(typeof renderAdmin === 'function') renderAdmin(); 
+    } catch (e) {
+        console.error("승인 오류:", e);
+        alert("승인 처리 중 서버 에러가 발생했습니다.");
     }
 }
 
-function rejectRecord(id) {
+
+// [업데이트] 경기 결과 기록 거절 (서버에서 삭제)
+async function rejectRecord(recordDocId) {
     if(!confirm('이 기록 요청을 거절하시겠습니까?')) return;
-    let reqs = JSON.parse(localStorage.getItem('sparring_record_requests')) || [];
-    reqs = reqs.filter(r => r.id !== id);
-    localStorage.setItem('sparring_record_requests', JSON.stringify(reqs));
-    renderAdmin();
+    try {
+        await window.deleteDoc(window.doc(window.db, "records", recordDocId));
+        alert('기록 요청이 거절(삭제)되었습니다.');
+    } catch (e) {
+        alert("거절 처리 중 오류가 발생했습니다.");
+    }
 }
 
 function savePlayersData() {
@@ -1902,35 +1832,36 @@ function renderAdmin() {
         });
     }
 
-    // [B] 경기 결과 검토 대기 목록 (이걸 다시 복구했습니다!)
+// [B] 경기 결과 검토 대기 목록 (Firebase 연동)
     const recReqList = document.getElementById('admin-record-req-list');
     if (recReqList) {
-        let recordReqs = JSON.parse(localStorage.getItem('sparring_record_requests')) || [];
-        recReqList.innerHTML = '';
-        let autoApprove = localStorage.getItem('sparring_auto_approve') === 'true';
-        
-        if (autoApprove) {
-            recReqList.innerHTML = '<div style="color:var(--gold); padding:15px; text-align:center; background:#222; border-radius:8px;">자동 승인 모드가 켜져 있어 대기록이 없습니다.</div>';
-        } else if(recordReqs.length === 0) {
-            recReqList.innerHTML = '<div style="color:#888; padding:15px; text-align:center; background:#222; border-radius:8px;">대기 중인 기록이 없습니다.</div>';
-        } else {
-            recordReqs.forEach(req => {
-                recReqList.innerHTML += `
-                <div style="background:#222; padding:12px; border-radius:8px; margin-bottom:10px; border-left:4px solid var(--tier2);">
-                    <div style="margin-bottom:8px;">
-                        <b style="color:var(--gold);">${req.matchInfo}</b><br>
-                        <small>요청자: ${req.requester} | 요청시간: ${req.time}</small><br>
-                        ${req.videoUrl ? `<a href="${req.videoUrl}" target="_blank" style="color:var(--tier2); font-size:0.8rem; display:inline-block; margin-top:5px;">[▶ 영상 확인하기]</a>` : '<small style="color:#888; display:inline-block; margin-top:5px;">[📷 사진 인증 처리됨]</small>'}
-                    </div>
-                    <div style="display:flex; gap:5px;">
-                        <button onclick="approveRecord(${req.id})" style="flex:1; background:var(--primary-red); color:white; border:none; padding:8px; border-radius:4px; font-weight:bold; cursor:pointer;">결과 승인</button>
-                        <button onclick="rejectRecord(${req.id})" style="background:#444; color:#eee; border:none; padding:8px 15px; border-radius:4px; font-weight:bold; cursor:pointer;">X</button>
-                    </div>
-                </div>`;
-            });
-        }
+        const q = window.query(window.collection(window.db, "records"), window.where("status", "==", "대기중"));
+        window.onSnapshot(q, (snapshot) => {
+            recReqList.innerHTML = '';
+            if (snapshot.empty) {
+                recReqList.innerHTML = '<div style="color:#888; padding:15px; text-align:center; background:#222; border-radius:8px;">대기 중인 기록이 없습니다.</div>';
+            } else {
+                snapshot.forEach((doc) => {
+                    const req = doc.data();
+                    const docId = doc.id;
+                    recReqList.innerHTML += `
+                    <div style="background:#222; padding:12px; border-radius:8px; margin-bottom:10px; border-left:4px solid var(--gold);">
+                        <div style="margin-bottom:8px;">
+                            <b style="color:var(--gold);">${req.matchInfo}</b><br>
+                            <small>요청자: ${req.requesterRawName}</small><br>
+                            ${req.videoUrl ? `<a href="${req.videoUrl}" target="_blank" style="color:var(--tier2); font-size:0.8rem;">[▶ 영상 확인]</a>` : '<small style="color:#888;">[📷 사진 인증]</small>'}
+                        </div>
+                        <div style="display:flex; gap:5px;">
+                            <button onclick="approveRecord('${docId}')" style="flex:1; background:var(--primary-red); color:white; border:none; padding:8px; border-radius:4px; font-weight:bold; cursor:pointer;">결과 승인</button>
+                            <button onclick="rejectRecord('${docId}')" style="background:#444; color:#eee; border:none; padding:8px 15px; border-radius:4px; font-weight:bold; cursor:pointer;">X</button>
+                        </div>
+                    </div>`;
+                });
+            }
+        });
     }
 
+// (주의: 이 부분은 [C] 소속 회원 관리 목록 위쪽에 위치해야 합니다.)
     // [C] 소속 회원 관리 목록
     const memList = document.getElementById('admin-member-list');
     if (memList) {
@@ -2051,7 +1982,7 @@ function updateLoginStateUI() {
                 <button class="icon-btn" onclick="logout()" title="로그아웃">🚪</button>
             </div>
         `;
-        updateMatchBadge();
+       
     }
 }
 
@@ -2250,7 +2181,7 @@ function requestMatch(id) {
     openModal('matchReqModal');
 }
 
-function sendMatchRequest() {
+async function sendMatchRequest() {
     const date = document.getElementById('match-date').value;
     const time = document.getElementById('match-time').value;
     const negotiable = document.getElementById('match-negotiable').checked;
@@ -2258,19 +2189,26 @@ function sendMatchRequest() {
 
     if(!date || !time) { alert('희망 날짜와 시간을 정확히 선택해주세요.'); return; }
 
-    let matches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-    let newMatch = {
-        id: Date.now(), senderRawName: currentUser.rawName, senderName: currentUser.name,
-        receiverRawName: targetMatchPlayer.rawName, receiverName: targetMatchPlayer.name,
-        date: `${date} ${time}`, negotiable: negotiable, status: '대기중',
-        messages: msg ? [{ sender: currentUser.rawName, text: msg }] : []
+    // 서버 전용 데이터 구조
+    const newMatch = {
+        senderRawName: currentUser.rawName,
+        senderName: currentUser.name,
+        receiverRawName: targetMatchPlayer.rawName,
+        receiverName: targetMatchPlayer.name,
+        date: `${date} ${time}`,
+        negotiable: negotiable,
+        status: '대기중',
+        messages: msg ? [{ sender: currentUser.rawName, text: msg, time: Date.now() }] : [],
+        createdAt: Date.now()
     };
-    matches.push(newMatch);
-    localStorage.setItem('sparring_matches', JSON.stringify(matches));
 
-    alert('매칭 신청이 성공적으로 전송되었습니다!');
-    closeModal('matchReqModal');
-    renderPlayers(); 
+    try {
+        await window.addDoc(window.collection(window.db, "matches"), newMatch);
+        alert('상대방에게 매칭 신청이 실시간으로 전송되었습니다!');
+        closeModal('matchReqModal');
+    } catch (e) {
+        alert('매칭 신청 전송 실패: ' + e.message);
+    }
 }
 
 function openMatchStatus() {
@@ -2279,234 +2217,257 @@ function openMatchStatus() {
     openModal('matchStatusModal');
 }
 
-function renderMatchList() {
-    const listContainer = document.getElementById('match-list');
-    let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-    let myMatches = allMatches.filter(m => (m.senderRawName === currentUser.rawName || m.receiverRawName === currentUser.rawName) && m.status !== '종료');
+// 실시간 매칭/알림 감시 시작
+function startMatchListener() {
+    if (!currentUser || currentUser.isAdmin) return;
 
-    if(myMatches.length === 0) {
-        listContainer.innerHTML = '<div style="color: #888; text-align: center; padding: 20px;">진행중이거나 들어온 매칭이 없습니다.</div>'; return;
-    }
+    // Firebase 서버의 'matches' 폴더를 실시간으로 지켜봅니다.
+    const q = window.query(window.collection(window.db, "matches"));
+    
+    window.onSnapshot(q, (snapshot) => {
+        let pendingCount = 0;
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.receiverRawName === currentUser.rawName && data.status === '대기중') {
+                pendingCount++;
+            }
+        });
+        
+        const badge = document.getElementById('match-badge');
+        if (badge) {
+            badge.innerText = pendingCount;
+            badge.style.display = pendingCount > 0 ? 'block' : 'none';
+        }
+        renderMatchList(snapshot);
+    });
+}
+
+// [업데이트] 서버 데이터를 실시간으로 받아 목록을 그리는 함수
+function renderMatchList(snapshot) {
+    const listContainer = document.getElementById('match-list');
+    if (!listContainer) return;
 
     let html = '';
-    myMatches.sort((a,b) => b.id - a.id).forEach(m => {
-        let opponent = (m.senderRawName === currentUser.rawName) ? m.receiverName : m.senderName;
-        let isConfirmed = (m.status === '매칭 성사');
-        
-        let isPast = false;
-        let finalDateStr = m.modifiedDate || m.date;
-        if (finalDateStr) {
-            let targetDate = new Date(finalDateStr.replace(' ', 'T'));
-            if (targetDate < new Date()) {
-                isPast = true;
+    let hasMyMatch = false;
+
+    // Firebase 서버에서 가져온 매칭 데이터들을 하나씩 확인합니다.
+    snapshot.forEach((doc) => {
+        const m = doc.data();
+        const docId = doc.id; // Firebase 문서의 고유 ID
+
+        // 1. 내가 보냈거나 받은 매칭만 필터링합니다.
+        if (m.senderRawName === currentUser.rawName || m.receiverRawName === currentUser.rawName) {
+            if (m.status === '종료') return; // 이미 끝난 경기는 목록에서 제외
+            
+            hasMyMatch = true;
+            let opponent = (m.senderRawName === currentUser.rawName) ? m.receiverName : m.senderName;
+            let isConfirmed = (m.status === '매칭 성사');
+            
+            // 2. 경기 날짜 및 D-Day 계산 로직 유지
+            let isPast = false;
+            let finalDateStr = m.modifiedDate || m.date;
+            if (finalDateStr) {
+                let targetDate = new Date(finalDateStr.replace(' ', 'T'));
+                if (targetDate < new Date()) isPast = true;
             }
-        }
 
-        let displayStatus = '';
-        let badgeBg = '#111';
-        let badgeColor = 'var(--gold)';
+            // 3. 상태에 따른 배지 설정
+            let displayStatus = '';
+            let badgeBg = '#111';
+            let badgeColor = 'var(--gold)';
 
-        if (isConfirmed) {
-            if (isPast) {
-                displayStatus = '📝 결과 등록 필요';
-                badgeBg = '#0984e3'; 
-                badgeColor = '#fff';
+            if (isConfirmed) {
+                if (isPast) {
+                    displayStatus = '📝 결과 등록 필요';
+                    badgeBg = '#0984e3'; 
+                    badgeColor = '#fff';
+                } else {
+                    displayStatus = '🥊 매칭 성사';
+                    badgeBg = '#ff4757';
+                    badgeColor = '#fff';
+                }
             } else {
-                displayStatus = '🥊 매칭 성사';
-                badgeBg = '#ff4757';
-                badgeColor = '#fff';
+                displayStatus = (m.senderRawName === currentUser.rawName) ? '신청 완료 (대기중)' : '요청 받음 (응답대기)';
             }
-        } else {
-            displayStatus = (m.senderRawName === currentUser.rawName) ? '신청 완료 (대기중)' : '요청 받음 (응답대기)';
+
+            let dDayText = getDday(m.date); 
+            let modifiedDateHtml = m.modifiedDate ? `<div style="color: var(--gold); margin-top: 4px; font-weight: bold;">↳ 변경된 희망일시: ${m.modifiedDate} (${getDday(m.modifiedDate)})</div>` : '';
+            let originalDateStyle = m.modifiedDate ? 'text-decoration: line-through; color: #666;' : '';
+
+            // 4. HTML 생성 (클릭 시 docId를 전달하도록 수정)
+            html += `
+            <div style="background: #222; padding: 12px; border-radius: 8px; border-left: 4px solid ${isConfirmed ? (isPast ? '#0984e3' : '#ff4757') : 'var(--gold)'}; margin-bottom: 10px; cursor: pointer;" onclick="openChat('${docId}')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <b style="font-size: 1.05rem;">VS ${opponent}</b>
+                    <span style="font-size: 0.75rem; color: ${badgeColor}; background: ${badgeBg}; padding: 3px 8px; border-radius: 12px; border: 1px solid #444;">${displayStatus}</span>
+                </div>
+                <div style="font-size: 0.8rem; color: #aaa; margin-top: 6px;">
+                    희망 일시: <span style="${originalDateStyle}">${m.date} <b style="color:var(--tier2);">(${dDayText})</b></span> ${m.negotiable ? '<b style="color:#74b9ff;">[조율가능]</b>' : ''}
+                    ${modifiedDateHtml}
+                </div>
+            </div>`;
         }
-
-        let negotiableHtml = m.negotiable ? `<b style="color:#74b9ff;">[조율가능]</b>` : '';
-        let dDayText = getDday(m.date); 
-        
-        let modifiedDateHtml = m.modifiedDate ? `<div style="color: var(--gold); margin-top: 4px; font-weight: bold;">↳ 변경된 희망일시: ${m.modifiedDate} (${getDday(m.modifiedDate)})</div>` : '';
-        let originalDateStyle = m.modifiedDate ? 'text-decoration: line-through; color: #666;' : '';
-
-        html += `
-        <div style="background: #222; padding: 12px; border-radius: 8px; border-left: 4px solid ${isConfirmed ? (isPast ? '#0984e3' : '#ff4757') : 'var(--primary-red)'}; margin-bottom: 10px; cursor: pointer;" onclick="openChat(${m.id})">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <b style="font-size: 1.05rem;">VS ${opponent}</b>
-                <span style="font-size: 0.75rem; color: ${badgeColor}; background: ${badgeBg}; padding: 3px 8px; border-radius: 12px;">${displayStatus}</span>
-            </div>
-            <div style="font-size: 0.8rem; color: #aaa; margin-top: 6px;">
-                희망 일시: <span style="${originalDateStyle}">${m.date} <b style="color:var(--tier2);">(${dDayText})</b></span> ${negotiableHtml}
-                ${modifiedDateHtml}
-            </div>
-        </div>`;
     });
+
+    if(!hasMyMatch) {
+        html = '<div style="color: #888; text-align: center; padding: 20px;">진행 중이거나 들어온 매칭이 없습니다.</div>';
+    }
     listContainer.innerHTML = html;
 }
 
-function updateMatchBadge() {
-    if(!currentUser || currentUser.isAdmin) return;
-    let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-    let pendingCount = allMatches.filter(m => m.receiverRawName === currentUser.rawName && m.status === '대기중').length;
-    
-    const badge = document.getElementById('match-badge');
-    if(badge) {
-        if(pendingCount > 0) {
-            badge.innerText = pendingCount;
-            badge.style.display = 'block';
-        } else {
-            badge.style.display = 'none';
-        }
-    }
-}
 
-function openChat(matchId) {
-    currentChatMatchId = matchId;
-    let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-    const m = allMatches.find(x => x.id === matchId);
-    if(!m) return;
-    
-    let opponentName = (m.senderRawName === currentUser.rawName) ? m.receiverName : m.senderName;
-    let opponentRawName = (m.senderRawName === currentUser.rawName) ? m.receiverRawName : m.senderRawName;
-    
-    let oppPlayer = demoPlayers.find(p => p.rawName === opponentRawName);
-    if(oppPlayer) document.getElementById('chat-title').innerHTML = `💬 VS <span style="cursor:pointer; text-decoration:underline;" onclick="openProfile(${oppPlayer.id})">${opponentName}</span>`;
-    else document.getElementById('chat-title').innerText = `💬 VS ${opponentName}`;
+let chatListener = null; // [신규] 실시간 감시를 위한 변수
 
-    document.getElementById('cancel-match-btn').onclick = function() { cancelMatch(matchId); };
-    
+// 채팅창 하단 버튼(수락/기록 등) 실시간 업데이트 함수
+function updateChatActions(docId, m) {
+    const actionArea = document.getElementById('chat-action-area');
+    if (!actionArea) return;
+
     let isSender = (m.senderRawName === currentUser.rawName);
-    let actionHtml = '';
+    let html = '';
 
-    if (m.status !== '매칭 성사' && m.status !== '종료') {
-        if (isSender) {
-            let dParts = m.date.split(' ');
-            let dVal = dParts[0] || '';
-            let tVal = dParts[1] || '';
-            actionHtml = `
-                <div style="background:#222; padding:10px; border-radius:8px;">
-                    <label style="font-size:0.8rem; color:var(--gold); margin-top:0;">조율된 일정으로 변경 (신청자 전용)</label>
-                    <div style="display:flex; gap:5px; margin-top:5px;">
-                        <input type="date" id="modify-date" value="${dVal}" style="flex:2; padding:8px; font-size:0.85rem; margin:0;">
-                        <input type="time" id="modify-time" value="${tVal}" style="flex:1; padding:8px; font-size:0.85rem; margin:0;" step="900" list="interval-15min">
-                        <button onclick="modifyMatchDate(${m.id})" style="background:var(--gold); color:#000; font-weight:bold; border:none; border-radius:4px; padding:0 15px; cursor:pointer;">확정</button>
-                    </div>
-                </div>`;
+    if (m.status === '대기중') {
+        if (!isSender) {
+            html = `<button onclick="acceptMatch('${docId}')" style="width:100%; background:var(--primary-red); color:white; border:none; padding:15px; border-radius:8px; font-weight:bold; cursor:pointer;">🥊 매칭 수락하기</button>`;
         } else {
-            actionHtml = `<button onclick="acceptMatch(${m.id})" style="width:100%; background:var(--primary-red); color:white; border:none; padding:15px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">🥊 매칭 수락하기</button>`;
+            html = `<div style="text-align:center; color:#888; font-size:0.85rem;">상대방의 수락을 기다리는 중입니다...</div>`;
         }
     } else if (m.status === '매칭 성사') {
-        actionHtml = `
-            <div style="display:flex; flex-direction:column; gap:10px;">
-                <div style="text-align:center; padding:12px; background:#111; color:var(--gold); font-weight:bold; border-radius:8px; border:1px solid var(--gold);">🥊 매칭이 성사되었습니다! 🥊</div>
-                <button onclick="goToRecordPage(${m.id})" style="width:100%; background:var(--tier2); color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;">📝 경기 결과 기록하기</button>
-            </div>`;
+        html = `<button onclick="goToRecordPage('${docId}')" style="width:100%; background:var(--tier2); color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;">📝 경기 결과 기록하기</button>`;
     }
+
+    actionArea.innerHTML = html;
+}
+
+// 1. 채팅창 열기 (Firebase 실시간 리스너 연결)
+function openChat(matchDocId) {
+    currentChatMatchId = matchDocId;
+    if (chatListener) chatListener(); // 기존에 열려있던 감시 종료
+
+    // 서버에서 해당 매칭 문서를 찾아 실시간으로 지켜봅니다.
+    const matchRef = window.doc(window.db, "matches", matchDocId);
     
-    const actionArea = document.getElementById('chat-action-area');
-    if(actionArea) actionArea.innerHTML = actionHtml;
+    chatListener = window.onSnapshot(matchRef, (docSnap) => {
+        if (!docSnap.exists()) return;
+        const m = docSnap.data();
+        
+        let opponentName = (m.senderRawName === currentUser.rawName) ? m.receiverName : m.senderName;
+        document.getElementById('chat-title').innerText = `💬 VS ${opponentName}`;
+        
+        // 🔥 중요: 서버에서 받은 메시지 목록을 화면에 그립니다.
+        renderChatMessages(m.messages);
+        
+        // 하단 액션 버튼 (수락/기록 등) 실시간 업데이트
+        if (typeof updateChatActions === 'function') {
+            updateChatActions(matchDocId, m);
+        }
+    });
 
     document.getElementById('chat-section').style.display = 'block';
-    renderChatMessages();
 }
 
-function cancelMatch(matchId) {
+
+async function cancelMatch(matchId) {
     if(!confirm('정말로 이 매칭을 취소하시겠습니까?\n모든 대화 내용과 매칭 기록이 삭제됩니다.')) return;
-    let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-    allMatches = allMatches.filter(m => m.id !== matchId);
-    localStorage.setItem('sparring_matches', JSON.stringify(allMatches));
-    alert('매칭이 취소되었습니다.');
-    document.getElementById('chat-section').style.display = 'none';
-    renderMatchList();
+    try {
+        await window.deleteDoc(window.doc(window.db, "matches", matchId));
+        alert('매칭이 취소되었습니다.');
+        document.getElementById('chat-section').style.display = 'none';
+    } catch (e) { alert("취소 실패: " + e.message); }
 }
 
-function acceptMatch(matchId) {
+// 2. 매칭 수락
+async function acceptMatch(matchId) {
     if(!confirm('정말로 매칭을 수락하시겠습니까?')) return;
-    let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-    let mIndex = allMatches.findIndex(x => x.id === matchId);
-    if(mIndex > -1) {
-        allMatches[mIndex].status = '매칭 성사';
-        allMatches[mIndex].messages.push({ sender: '시스템알림', text: '✅ 상대방이 매칭을 수락하여 매칭이 성사되었습니다!' });
-        localStorage.setItem('sparring_matches', JSON.stringify(allMatches));
-        
-        let customFeeds = JSON.parse(localStorage.getItem('sparring_feeds')) || [];
-        let p1Id = demoPlayers.find(p => p.rawName === allMatches[mIndex].senderRawName)?.id;
-        let p2Id = demoPlayers.find(p => p.rawName === allMatches[mIndex].receiverRawName)?.id;
-        
-        if(p1Id && p2Id) {
-            customFeeds.unshift({ 
-                type: 'practice', p1: p1Id, p2: p2Id, time: '방금 전', 
-                text: '새로운 스파링 매칭이 성사되었습니다! 🥊', media: 'none', matchId: matchId 
-            });
-            localStorage.setItem('sparring_feeds', JSON.stringify(customFeeds));
-        }
-
+    try {
+        const matchRef = window.doc(window.db, "matches", matchId);
+        await window.updateDoc(matchRef, {
+            status: '매칭 성사',
+            acceptedAt: Date.now(),
+            messages: window.arrayUnion({ 
+                sender: '시스템알림', 
+                text: '✅ 상대방이 매칭을 수락하여 매칭이 성사되었습니다!', 
+                time: Date.now() 
+            })
+        });
         alert('매칭이 성사되었습니다!');
-        openChat(matchId); 
-        renderMatchList(); 
-        renderFeed(); 
-    }
+    } catch (e) { alert("수락 실패: " + e.message); }
 }
 
-function modifyMatchDate(matchId) {
+
+// 3. 채팅 조율 후 일정 확정 (신청자 전용)
+async function modifyMatchDate(matchId) {
     const newDate = document.getElementById('modify-date').value;
     const newTime = document.getElementById('modify-time').value;
     if(!newDate || !newTime) { alert('날짜와 시간을 정확히 입력해주세요.'); return; }
     if(!confirm('채팅으로 조율된 일정으로 확정 및 변경하시겠습니까?')) return;
     
-    let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-    let mIndex = allMatches.findIndex(x => x.id === matchId);
-    if(mIndex > -1) {
-        allMatches[mIndex].date = `${newDate} ${newTime}`;
-        allMatches[mIndex].messages.push({ sender: '시스템알림', text: `🔄 일정이 [${newDate} ${newTime}](으)로 변경되었습니다.` });
-        localStorage.setItem('sparring_matches', JSON.stringify(allMatches));
+    try {
+        const matchRef = window.doc(window.db, "matches", matchId);
+        await window.updateDoc(matchRef, {
+            date: `${newDate} ${newTime}`,
+            messages: window.arrayUnion({ 
+                sender: '시스템알림', 
+                text: `🔄 일정이 [${newDate} ${newTime}](으)로 변경되었습니다.`, 
+                time: Date.now() 
+            })
+        });
         alert('일정이 성공적으로 변경되었습니다.');
-        openChat(matchId);
-        renderMatchList();
-    }
+    } catch (e) { alert("변경 실패: " + e.message); }
 }
 
-function submitModifyDate() {
+
+async function submitModifyDate() {
     const d = document.getElementById('modify-date-input').value;
     const t = document.getElementById('modify-time-input').value;
     if(!d || !t) { alert('날짜와 시간을 모두 선택해주세요.'); return; }
 
-    let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-    let mIndex = allMatches.findIndex(x => x.id === modifyingMatchId);
-    if(mIndex > -1) {
-        allMatches[mIndex].modifiedDate = `${d} ${t}`;
-        allMatches[mIndex].messages.push({ sender: '시스템알림', text: `🔄 신청자가 희망 일시를 [${d} ${t}](으)로 변경 제안했습니다.` });
-        localStorage.setItem('sparring_matches', JSON.stringify(allMatches));
-        alert('일정이 성공적으로 변경되었습니다.');
+    try {
+        const matchRef = window.doc(window.db, "matches", modifyingMatchId);
+        await window.updateDoc(matchRef, {
+            modifiedDate: `${d} ${t}`,
+            messages: window.arrayUnion({ 
+                sender: '시스템알림', 
+                text: `🔄 신청자가 희망 일시를 [${d} ${t}](으)로 변경 제안했습니다.`, 
+                time: Date.now() 
+            })
+        });
+        alert('일정 변경 제안이 전송되었습니다.');
         closeModal('modifyDateModal');
-        renderMatchList();
-    }
+    } catch (e) { alert("제안 실패: " + e.message); }
 }
 
-function sendChatMessage() {
+async function sendChatMessage() {
     const input = document.getElementById('chat-input');
     const text = input.value.trim();
-    if(!text) return;
+    if(!text || !currentChatMatchId) return;
     
-    let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-    const mIndex = allMatches.findIndex(x => x.id === currentChatMatchId);
-    if(mIndex > -1) {
-        allMatches[mIndex].messages.push({ sender: currentUser.rawName, text: text });
-        localStorage.setItem('sparring_matches', JSON.stringify(allMatches));
-        input.value = '';
-        renderChatMessages();
+    const matchRef = window.doc(window.db, "matches", currentChatMatchId);
+    try {
+        // 서버의 메시지 배열(messages)에 새로운 대화를 한 줄 추가합니다.
+        await window.updateDoc(matchRef, {
+            messages: window.arrayUnion({
+                sender: currentUser.rawName,
+                text: text,
+                time: Date.now()
+            })
+        });
+        input.value = ''; // 입력창 초기화
+    } catch (e) {
+        console.error("메시지 전송 실패:", e);
+        alert("메시지 전송에 실패했습니다.");
     }
 }
 
-function renderChatMessages() {
-    let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-    const m = allMatches.find(x => x.id === currentChatMatchId);
-    if(!m) return;
 
+function renderChatMessages(messages) {
     const box = document.getElementById('chat-box');
     let html = '';
     
-    if (m.messages.length === 0) {
+    if (!messages || messages.length === 0) {
         html = '<div style="color:#666; text-align:center; margin-top: 20px;">메시지가 없습니다. 인사를 건네보세요!</div>';
     } else {
-        m.messages.forEach(msg => {
+        messages.forEach(msg => {
             if (msg.sender === '시스템알림') {
                 html += `<div style="text-align:center; margin: 10px 0;"><span style="background:#333; color:var(--gold); font-size:0.75rem; padding:4px 10px; border-radius:12px; border:1px solid #555;">${msg.text}</span></div>`;
             } else {
@@ -2523,6 +2484,7 @@ function renderChatMessages() {
     box.scrollTop = box.scrollHeight; 
 }
 
+
 function goToRecordPage(matchId) {
     closeModal('matchStatusModal'); 
     showPage('record'); 
@@ -2532,29 +2494,39 @@ function goToRecordPage(matchId) {
     }, 100);
 }
 
-function renderRecordMatchSelect() {
+async function renderRecordMatchSelect() {
     const select = document.getElementById('record-match-select');
     const noMatchMsg = document.getElementById('no-match-msg');
     if(!currentUser) {
         select.innerHTML = '<option value="">로그인이 필요합니다.</option>'; return;
     }
 
-    let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-    let confirmedMatches = allMatches.filter(m => 
-        m.status === '매칭 성사' && (m.senderRawName === currentUser.rawName || m.receiverRawName === currentUser.rawName)
-    );
+    try {
+        const { query, collection, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        
+        // 내가 보냈거나 받은 매칭 중 '매칭 성사'인 것만 서버에서 검색
+        const q1 = query(collection(window.db, "matches"), where("senderRawName", "==", currentUser.rawName), where("status", "==", "매칭 성사"));
+        const q2 = query(collection(window.db, "matches"), where("receiverRawName", "==", currentUser.rawName), where("status", "==", "매칭 성사"));
+        
+        const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+        let confirmedMatches = [];
+        snap1.forEach(doc => confirmedMatches.push({id: doc.id, ...doc.data()}));
+        snap2.forEach(doc => confirmedMatches.push({id: doc.id, ...doc.data()}));
 
-    if(confirmedMatches.length === 0) {
-        select.innerHTML = '<option value="">성사된 매칭 없음</option>';
-        noMatchMsg.style.display = 'block';
-    } else {
-        noMatchMsg.style.display = 'none';
-        let html = '<option value="">-- 기록할 매치를 선택하세요 --</option>';
-        confirmedMatches.forEach(m => {
-            let opponent = (m.senderRawName === currentUser.rawName) ? m.receiverName : m.senderName;
-            html += `<option value="${m.id}">VS ${opponent} (${m.date})</option>`;
-        });
-        select.innerHTML = html;
+        if(confirmedMatches.length === 0) {
+            select.innerHTML = '<option value="">성사된 매칭 없음</option>';
+            noMatchMsg.style.display = 'block';
+        } else {
+            noMatchMsg.style.display = 'none';
+            let html = '<option value="">-- 기록할 매치를 선택하세요 --</option>';
+            confirmedMatches.forEach(m => {
+                let opponent = (m.senderRawName === currentUser.rawName) ? m.receiverName : m.senderName;
+                html += `<option value="${m.id}">VS ${opponent} (${m.date})</option>`;
+            });
+            select.innerHTML = html;
+        }
+    } catch (e) {
+        console.error("매칭 목록 불러오기 실패:", e);
     }
 }
 
@@ -2745,17 +2717,15 @@ function searchCommunity() {
     renderCommunity();
 }
 // 1. 공지사항 데이터 등록
-function submitAdminNotice() {
+async function submitAdminNotice() {
     const title = document.getElementById('admin-notice-title').value.trim();
     const editor = document.getElementById('admin-notice-editor');
     const content = editor.innerHTML;
 
     if (!title || content === "" || content === "<br>") { alert("공지 제목과 내용을 입력하세요."); return; }
 
-    let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
-    posts.unshift({
-        id: Date.now(),
-        prefix: '[공지]',
+    const postData = {
+        prefix: '[공지사항]',
         title: title,
         content: content,
         authorId: 0,
@@ -2763,23 +2733,33 @@ function submitAdminNotice() {
         time: Date.now(),
         comments: [], 
         type: 'notice',
-        isPinned: false // 초기값: 고정 안됨
-    });
+        isPinned: false
+    };
 
-    localStorage.setItem('sparring_community_posts', JSON.stringify(posts));
-    alert("새 공지사항이 등록되었습니다.");
-    
-    // 입력창 초기화 및 목록 갱신
-    document.getElementById('admin-notice-title').value = '';
-    editor.innerHTML = '';
-    renderAdminNoticeList();
-    renderCommunity();
+    try {
+        if (editingNoticeId) {
+            await window.updateDoc(window.doc(window.db, "posts", editingNoticeId), { title: title, content: content });
+            alert("공지사항이 수정되었습니다.");
+            editingNoticeId = null;
+        } else {
+            // 🔥 서버의 posts 폴더에 공지사항 업로드
+            await window.addDoc(window.collection(window.db, "posts"), postData);
+            alert("새 공지사항이 등록되었습니다.");
+        }
+        
+        document.getElementById('admin-notice-title').value = '';
+        editor.innerHTML = '';
+        const submitBtn = document.querySelector('#admin-notice-mgmt-section .btn-submit');
+        if(submitBtn) submitBtn.innerText = "공지사항 등록하기";
+    } catch (e) {
+        alert("공지 등록 오류: " + e.message);
+    }
 }
 
-// 2. 관리자 페이지 내 공지 목록 렌더링
+
+// [관리자 공지사항 서버 연동 마스터 블록]
 function renderAdminNoticeList() {
-    let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
-    let notices = posts.filter(p => p.type === 'notice');
+    let notices = currentCommunityPosts.filter(p => p.type === 'notice');
     const container = document.getElementById('admin-notice-list');
     
     let html = '';
@@ -2789,15 +2769,15 @@ function renderAdminNoticeList() {
         
         html += `
         <div style="background:#222; padding:12px; border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-            <div onclick="loadNoticeToEditor(${n.id})" style="flex:1; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:10px;">
+            <div onclick="loadNoticeToEditor('${n.id}')" style="flex:1; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:10px;">
                 <b style="${n.isPinned ? 'color:var(--gold);' : 'color:#fff;'} text-decoration:underline;">
                     ${n.isPinned ? '[고정됨] ' : ''}${n.title}
                 </b>
-                <span style="font-size:0.7rem; color:#666; display:block; margin-top:2px;">(클릭하여 수정하기)</span>
+                <span style="font-size:0.7rem; color:#666; display:block; margin-top:2px;">(클릭하여 수정)</span>
             </div>
             <div style="display:flex; gap:5px;">
-                <button onclick="togglePinNotice(${n.id})" style="background:${pinBtnColor}; color:#000; border:none; padding:5px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold; cursor:pointer;">${pinBtnText}</button>
-                <button onclick="deletePost(${n.id}); renderAdminNoticeList();" style="background:#444; color:#ff7675; border:none; padding:5px 8px; border-radius:4px; font-size:0.75rem; cursor:pointer;">삭제</button>
+                <button onclick="togglePinNotice('${n.id}', ${n.isPinned})" style="background:${pinBtnColor}; color:#000; border:none; padding:5px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold; cursor:pointer;">${pinBtnText}</button>
+                <button onclick="deletePost('${n.id}')" style="background:#444; color:#ff7675; border:none; padding:5px 8px; border-radius:4px; font-size:0.75rem; cursor:pointer;">삭제</button>
             </div>
         </div>`;
     });
@@ -2805,132 +2785,68 @@ function renderAdminNoticeList() {
 }
 
 // 3. 상단 고정 토글 (최대 3개 제한)
-function togglePinNotice(id) {
-    let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
-    let post = posts.find(p => p.id === id);
-    if (!post) return;
-
-    if (!post.isPinned) {
-        let pinnedCount = posts.filter(p => p.isPinned).length;
-        if (pinnedCount >= 3) {
-            alert("상단 고정은 최대 3개까지만 가능합니다.");
-            return;
-        }
-        post.isPinned = true;
-    } else {
-        post.isPinned = false;
+async function togglePinNotice(id, currentPinStatus) {
+    let pinnedCount = currentCommunityPosts.filter(p => p.type === 'notice' && p.isPinned).length;
+    if (!currentPinStatus && pinnedCount >= 3) {
+        alert("상단 고정은 최대 3개까지만 가능합니다."); return;
     }
-
-    localStorage.setItem('sparring_community_posts', JSON.stringify(posts));
-    renderAdminNoticeList();
-    renderCommunity();
+    try {
+        await window.updateDoc(window.doc(window.db, "posts", id), { isPinned: !currentPinStatus });
+    } catch (e) { alert("고정 변경 실패"); }
 }
 
-function loadNoticeToEditor(id) {
-    let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
-    let post = posts.find(p => p.id === id);
-    if (!post) return;
 
-    // 에디터 필드에 값 채우기
+function loadNoticeToEditor(id) {
+    let post = currentCommunityPosts.find(p => p.id === id);
+    if (!post) return;
     editingNoticeId = id;
     document.getElementById('admin-notice-title').value = post.title;
     document.getElementById('admin-notice-editor').innerHTML = post.content;
-
-    // 화면을 상단 작성 폼으로 부드럽게 이동
     document.getElementById('admin-notice-mgmt-section').scrollIntoView({ behavior: 'smooth' });
-    
-    // 버튼 텍스트를 "공지사항 수정하기"로 임시 변경 (선택 사항)
     const submitBtn = document.querySelector('#admin-notice-mgmt-section .btn-submit');
     if(submitBtn) submitBtn.innerText = "공지사항 수정 완료";
 }
 
-function submitAdminNotice() {
-    const title = document.getElementById('admin-notice-title').value.trim();
-    const editor = document.getElementById('admin-notice-editor');
-    const content = editor.innerHTML;
 
-    if (!title || content === "" || content === "<br>") { alert("공지 제목과 내용을 입력하세요."); return; }
-
-    let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
-
-    if (editingNoticeId) {
-        // [수정 모드] 기존 게시글 찾아 업데이트
-        const idx = posts.findIndex(p => p.id === editingNoticeId);
-        if (idx > -1) {
-            posts[idx].title = title;
-            posts[idx].content = content;
-            posts[idx].time = Date.now(); // 수정 시 시간 업데이트 (선택 사항)
-            alert("공지사항이 수정되었습니다.");
-        }
-        editingNoticeId = null; // 수정 완료 후 초기화
-    } else {
-        // [신규 등록 모드]
-        posts.unshift({
-            id: Date.now(),
-            prefix: '[공지사항]',
-            title: title,
-            content: content,
-            authorId: 0,
-            authorName: '관리자',
-            time: Date.now(),
-            comments: [], 
-            type: 'notice',
-            isPinned: false
-        });
-        alert("새 공지사항이 등록되었습니다.");
-    }
-
-    localStorage.setItem('sparring_community_posts', JSON.stringify(posts));
-    
-    // UI 초기화
-    document.getElementById('admin-notice-title').value = '';
-    editor.innerHTML = '';
-    const submitBtn = document.querySelector('#admin-notice-mgmt-section .btn-submit');
-    if(submitBtn) submitBtn.innerText = "공지사항 등록하기";
-
-    renderAdminNoticeList();
-    renderCommunity();
-}
-
+// [업데이트] 서버 데이터와 연동되는 공지 슬라이더 엔진
+// [업데이트] 서버 데이터와 연동되는 공지 슬라이더 엔진
 function startNoticeSlider() {
     // 기존 타이머가 있다면 초기화
     if(noticeSlideTimer) clearInterval(noticeSlideTimer);
     
-    let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
+    // 🔥 중요: localStorage가 아닌 서버 바구니(currentCommunityPosts)를 사용합니다.
+    let posts = currentCommunityPosts || []; 
+    
     // 상단 고정(isPinned: true)된 공지사항만 최대 3개 추출
     let pinnedNotices = posts.filter(p => p.type === 'notice' && p.isPinned).slice(0, 3);
     
     const track = document.getElementById('main-notice-track');
     if(!track) return;
 
-    // 슬라이더 전체를 감싸는 부모 요소를 찾습니다.
     const sliderWrap = track.closest('.slider-wrap');
 
-    // [수정] 고정 공지사항이 없으면 'hidden' 클래스를 추가하여 박스를 숨깁니다.
+    // 공지가 아예 없으면 hidden 클래스를 추가해서 박스를 완전히 숨깁니다.
     if(pinnedNotices.length === 0) {
         if(sliderWrap) sliderWrap.classList.add('hidden');
         return;
     } else {
-        // 공지가 있다면 'hidden' 클래스를 제거하여 박스를 노출합니다.
+        // 공지가 하나라도 있으면 박스를 보여줍니다.
         if(sliderWrap) sliderWrap.classList.remove('hidden');
     }
 
-    // 슬라이더 HTML 생성 (제목만 노출)
     let html = '';
     pinnedNotices.forEach(n => {
         html += `
-        <div class="slider-item" onclick="openPostDetail(${n.id})" style="cursor:pointer; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 20px;">
+        <div class="slider-item" onclick="openPostDetail('${n.id}')" style="cursor:pointer; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 20px;">
             📢 ${n.title}
         </div>`;
     });
     
-    // 무한 루프 효과를 위해 첫 번째 아이템 복제본 추가
-    track.innerHTML = html + (pinnedNotices.length > 1 ? html[0] : '');
+    track.innerHTML = html + (pinnedNotices.length > 1 ? html : '');
 
     let idx = 0;
     const total = pinnedNotices.length;
 
-    // 3초마다 슬라이드 전환
     if (total > 1) {
         noticeSlideTimer = setInterval(() => {
             idx++;
@@ -3149,30 +3065,31 @@ async function initBackground() {
 const originalOnload = window.onload;
 window.onload = function() {
     if (originalOnload) originalOnload();
-    initBackground(); // 배경 초기화 실행
+    
+    startMatchListener();     // 매칭 실시간 알림 엔진
+    startCommunityListener(); // 게시판 실시간 엔진
+    startFeedListener();      // 👉 피드 실시간 엔진 (추가됨!)
 };
 
-function deletePost(postId) {
+async function deletePost(postId) {
     if (!confirm('정말로 이 게시글을 삭제하시겠습니까?\n삭제된 글은 복구할 수 없습니다.')) return;
 
-    let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
-    const postToDelete = posts.find(p => p.id === postId);
+    let postToDelete = currentCommunityPosts.find(p => p.id === postId);
+    if(!postToDelete) return;
 
-    // 권한 확인 (보안 강화)
     if (!currentUser || (postToDelete.authorId !== currentUser.id && !currentUser.isAdmin)) {
         alert('삭제 권한이 없습니다.');
         return;
     }
 
-    // 데이터 제외 처리
-    posts = posts.filter(p => p.id !== postId);
-    localStorage.setItem('sparring_community_posts', JSON.stringify(posts));
-
-    alert('게시글이 성공적으로 삭제되었습니다.');
-    
-    // 삭제 후 목록 페이지로 이동 및 갱신
-    showPage('board');
-    renderCommunity();
+    try {
+        // 🔥 서버에서 진짜로 문서 삭제
+        await window.deleteDoc(window.doc(window.db, "posts", postId));
+        alert('게시글이 성공적으로 삭제되었습니다.');
+        showPage('board');
+    } catch (e) {
+        alert('게시글 삭제 실패: ' + e.message);
+    }
 }
 
 
@@ -3317,53 +3234,6 @@ function renderGyms(filterRegion = 'all') {
 // 초기 로드 시 실행 (이미 showPage에 등록되어 있다면 생략 가능)
 renderGyms();
 
-// Firebase 승인 로직
-async function approveUser(docId) {
-    if(!confirm('해당 회원의 가입을 승인하시겠습니까?')) return;
-    try {
-        const { getDoc, doc, deleteDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-        
-        // 1. 서버의 'pendingUsers'(대기)에서 데이터 가져오기
-        const userRef = doc(window.db, "pendingUsers", docId);
-        const userSnap = await getDoc(userRef);
-        
-        if (userSnap.exists()) {
-            const userData = userSnap.data();
-            
-            // 2. 🔥 핵심: 서버의 'users'(승인완료) 폴더에 데이터 저장!
-            // docId를 그대로 사용하여 데이터의 일관성을 유지합니다.
-            await setDoc(doc(window.db, "users", docId), {
-                ...userData,
-                id: Date.now(), // 앱 내 식별용 숫자 ID 유지
-                isApproved: true
-            });
-            
-            // 3. 서버의 대기 목록에서 삭제
-            await deleteDoc(userRef);
-            
-            alert('승인이 완료되어 서버에 저장되었습니다!\n이제 해당 유저가 전국 어디서든 로그인할 수 있습니다.');
-            renderAdmin(); 
-        }
-    } catch (e) {
-        console.error("승인 오류:", e);
-        alert("승인 처리 중 오류가 발생했습니다.");
-    }
-}
-
-
-// Firebase 거절(삭제) 로직
-async function rejectUser(docId) {
-    if(!confirm('가입 신청을 거절하고 삭제하시겠습니까?')) return;
-    
-    try {
-        const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-        await deleteDoc(doc(window.db, "pendingUsers", docId));
-        alert('신청이 거절되었습니다.');
-        renderAdmin();
-    } catch (e) {
-        alert("삭제 중 오류가 발생했습니다.");
-    }
-}
 
 </script>
 </body>
