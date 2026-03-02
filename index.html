@@ -1856,33 +1856,62 @@ function switchAdminTab(tab) {
     }
 }
 
+// 관리자 페이지 가입 대기 목록 실시간 렌더링
 function renderAdmin() {
     const reqList = document.getElementById('admin-req-list');
-    let pendingUsers = JSON.parse(localStorage.getItem('sparring_pending_users')) || [];
-    let displayUsers = pendingUsers.slice(0, 2);
+    if (!reqList) return;
+
+    // 🔥 핵심: Firebase 서버의 'pendingUsers' 컬렉션을 실시간으로 감시합니다.
+    const q = window.query(window.collection(window.db, "pendingUsers"), window.orderBy("createdAt", "desc"));
     
-    reqList.innerHTML = '';
-    if(displayUsers.length === 0) {
-        reqList.innerHTML = '<div style="color:#888; padding:15px; text-align:center; background:#222; border-radius:8px;">현재 가입 승인 대기자가 없습니다.</div>';
-    } else {
-        displayUsers.forEach(req => {
+    window.onSnapshot(q, (snapshot) => {
+        reqList.innerHTML = '';
+        
+        if (snapshot.empty) {
+            reqList.innerHTML = '<div style="color:#888; padding:15px; text-align:center; background:#222; border-radius:8px;">현재 가입 승인 대기자가 없습니다.</div>';
+            return;
+        }
+
+        snapshot.forEach((doc) => {
+            const req = doc.data();
+            const docId = doc.id; // Firebase 문서의 고유 ID
+
             let picHtml = req.profilePic ? `<div class="avatar" style="background-image:url('${req.profilePic}'); width:50px; height:50px; display:inline-block; vertical-align:middle; margin-right:10px;"></div>` : '';
+            
             reqList.innerHTML += `
             <div style="background:#222; padding:15px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid var(--gold);">
                 <div>
                     ${picHtml}
                     <div style="display:inline-block; vertical-align:middle;">
-                        <b style="font-size:1.1rem;">${req.name}</b> <span style="color:var(--gold); font-size:0.8rem; margin-left:5px;">[Tier ${req.tier} 신청]</span><br>
+                        <b style="font-size:1.1rem;">${req.rawName}</b> 
+                        <span style="color:var(--gold); font-size:0.8rem; margin-left:5px;">[Tier ${req.tier} 신청]</span><br>
                         <span style="color:#aaa; font-size:0.85rem; display:block; margin-top:5px;">소속: ${req.gym} | [${req.weight}, ${req.region}]</span>
                     </div>
                 </div>
                 <div style="display:flex; gap:8px;">
-                    <button onclick="approveUser(${req.id})" style="background:var(--primary-red); color:white; border:none; padding:5px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">승인</button>
-                    <button onclick="rejectUser(${req.id})" style="background:#444; color:#ff7675; border:none; padding:5px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">X</button>
+                    <button onclick="approveUser('${docId}')" style="background:var(--primary-red); color:white; border:none; padding:5px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">승인</button>
+                    <button onclick="rejectUser('${docId}')" style="background:#444; color:#ff7675; border:none; padding:5px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">X</button>
                 </div>
             </div>`;
         });
-    }
+    });
+
+    // 소속 회원 관리 부분은 일단 기존 로직 유지 (추후 회원 전체도 Firebase로 옮길 수 있습니다)
+    const memList = document.getElementById('admin-member-list');
+    document.getElementById('admin-total-users').innerText = demoPlayers.length;
+    memList.innerHTML = '';
+    demoPlayers.forEach(p => {
+        memList.innerHTML += `
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #444; padding:12px 0;">
+            <div>
+                <b class="clickable-name" onclick="openProfile(${p.id})">${formatName(p)}</b><br>
+                <small style="color:#aaa;">${p.gym} | Tier ${p.tier}</small>
+            </div>
+            <button style="background:var(--primary-red); color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;" onclick="adminDeleteMember(${p.id})">삭제</button>
+        </div>`;
+    });
+}
+
 
     const recReqList = document.getElementById('admin-record-req-list');
     let recordReqs = JSON.parse(localStorage.getItem('sparring_record_requests')) || [];
@@ -3258,6 +3287,55 @@ function renderGyms(filterRegion = 'all') {
 
 // 초기 로드 시 실행 (이미 showPage에 등록되어 있다면 생략 가능)
 renderGyms();
+
+// Firebase 승인 로직
+async function approveUser(docId) {
+    if(!confirm('해당 회원의 가입을 승인하시겠습니까?')) return;
+    
+    try {
+        const { getDoc, doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        
+        // 1. 서버에서 해당 유저 데이터 가져오기
+        const userRef = doc(window.db, "pendingUsers", docId);
+        const userSnap = await getDoc(userRef);
+        
+        if (userSnap.exists()) {
+            const userData = userSnap.data();
+            
+            // 2. 승인된 유저 목록(LocalStorage)에 추가 (로그인 가능하게 함)
+            let approved = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
+            const newUser = { ...userData, id: Date.now() }; // 고유 ID 부여
+            approved.push(newUser);
+            localStorage.setItem('sparring_approved_users', JSON.stringify(approved));
+            
+            // 실시간 목록(demoPlayers)에도 즉시 반영
+            demoPlayers.push(newUser);
+            
+            // 3. 서버의 대기 목록에서 삭제
+            await deleteDoc(userRef);
+            
+            alert('승인이 완료되었습니다. 이제 해당 유저가 로그인할 수 있습니다!');
+            renderAdmin(); // 관리자 화면 갱신
+        }
+    } catch (e) {
+        console.error("승인 오류:", e);
+        alert("승인 처리 중 오류가 발생했습니다.");
+    }
+}
+
+// Firebase 거절(삭제) 로직
+async function rejectUser(docId) {
+    if(!confirm('가입 신청을 거절하고 삭제하시겠습니까?')) return;
+    
+    try {
+        const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        await deleteDoc(doc(window.db, "pendingUsers", docId));
+        alert('신청이 거절되었습니다.');
+        renderAdmin();
+    } catch (e) {
+        alert("삭제 중 오류가 발생했습니다.");
+    }
+}
 
 </script>
 </body>
