@@ -203,7 +203,13 @@
         .d-day-badge { float: right; color: var(--gold); font-weight: bold; font-size: 0.8rem; background: rgba(214, 48, 49, 0.1); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(253, 203, 110, 0.3); }
         .match-badge { position: absolute; top: -5px; right: -5px; background: var(--primary-red); color: white; font-size: 0.65rem; padding: 2px 5px; border-radius: 10px; font-weight: bold; display: none; }
         
-        .clickable-name { font-weight: bold; color: white; cursor: pointer; text-decoration: underline; text-decoration-color: #555; }
+        /* CSS 영역에서 이 부분을 찾아 수정하세요 */
+        .clickable-name { 
+            font-weight: bold; 
+            color: white; 
+            cursor: pointer; 
+            text-decoration: none; /* underline 을 none 으로 변경 */
+        }        
         .clickable-name:hover { color: var(--primary-red); }
         
         .tier-info-box { background: #222; border: 1px solid #444; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 0.85rem; line-height: 1.6; color: #bbb; }
@@ -877,10 +883,11 @@
 <script>
 // --- 전역 데이터 및 상태 ---
 // 신규 데이터 필드 추가 (region, trustScore)
+// 이제 rawName과 name이 완전히 똑같아져서, (test)까지 다 쳐야 로그인이 됩니다.
 let demoPlayers = [
-    { id: 1, name: '배현태(test)', rawName: '배현태', tier: 5, gym: '복싱아카데미', weight: '-75kg', region: '전북', sW: 3, sD: 0, sL: 0, pt: 150, trustScore: 50, pending: 2, noReply: 0, acc: 95 },
-    { id: 2, name: '김도전자(test)', rawName: '김도전자', tier: 5, gym: '서울팀파이터', weight: '-65kg', region: '서울', sW: 2, sD: 1, sL: 1, pt: 140, trustScore: 20, pending: 5, noReply: 1, acc: 80 },
-    { id: 3, name: '박루키(test)', rawName: '박루키', tier: 1, gym: '부산히트짐', weight: '-60kg', region: '부산', sW: 0, sD: 0, sL: 0, pt: 0, trustScore: 0, pending: 0, noReply: 0, acc: 0 }
+    { id: 1, name: '배현태(test)', rawName: '배현태(test)', tier: 5, gym: '복싱아카데미', weight: '-75kg', region: '전북', sW: 3, sD: 0, sL: 0, pt: 150, trustScore: 50, pending: 2, noReply: 0, acc: 95 },
+    { id: 2, name: '김도전자(test)', rawName: '김도전자(test)', tier: 5, gym: '서울팀파이터', weight: '-65kg', region: '서울', sW: 2, sD: 1, sL: 1, pt: 140, trustScore: 20, pending: 5, noReply: 1, acc: 80 },
+    { id: 3, name: '박루키(test)', rawName: '박루키(test)', tier: 1, gym: '부산히트짐', weight: '-60kg', region: '부산', sW: 0, sD: 0, sL: 0, pt: 0, trustScore: 0, pending: 0, noReply: 0, acc: 0 }
 ];
 
 let demoFeeds = [
@@ -922,12 +929,12 @@ function copyDiscountCode(code) {
     });
 }
 
-// --- 이름 렌더링 포맷 통합 유틸리티 ---
+// index.html 내 formatName 함수 수정
 function formatName(p) {
     let region = p.region || '지역미상';
-    // weight 데이터에 '급'이 포함되어 있다면 제거하고 출력
     let weight = (p.weight || '').replace(' 급', '').replace('급', ''); 
-    return `${p.name} <small style="color:var(--gold); font-size:0.8rem; margin-left:3px; text-decoration:none; display:inline-block;">[${weight}, ${region}]</small>`;
+    // text-decoration: underline 을 삭제했습니다.
+    return `${p.name} <small style="color:var(--gold); font-size:0.8rem; margin-left:3px;">[${weight}, <span onclick="event.stopPropagation(); openGymProfile('${p.gym}')" style="cursor:pointer;">${p.gym}</span>]</small>`;
 }
 
 // --- 초기화 ---
@@ -1173,7 +1180,9 @@ function renderPlayers() {
                                     🥇 1위 <span class="clickable-name" onclick="openProfile(${p.id})">${formatName(p)}</span>
                                 </b><br>
                                 <small style="color:#ccc;">${p.pt} P | 시즌 ${p.sW}승 ${p.sD}무 ${p.sL}패</small><br>
-                                <small style="color:#888;">${p.gym} 소속</small>
+                                <small style="color:#888; cursor:pointer;" onclick="event.stopPropagation(); openGymProfile('${p.gym}')">
+                                    ${p.gym} 소속
+                                </small>
                             </div>
                         </div>
                         ${btnHtml}
@@ -1187,7 +1196,9 @@ function renderPlayers() {
                             <div>
                                 <span class="clickable-name" onclick="openProfile(${p.id})">${formatName(p)}</span><br>
                                 <small style="color:#ccc;">${p.pt} P | 시즌 ${p.sW}승 ${p.sD}무 ${p.sL}패</small><br>
-                                <small style="color:#888;">${p.gym} 소속</small>
+                                <small style="color:#888; cursor:pointer; text-decoration:underline;" onclick="event.stopPropagation(); openGymProfile('${p.gym}')">
+                                    ${p.gym} 소속
+                                </small>
                             </div>
                         </div>
                         ${btnHtml}
@@ -1930,20 +1941,26 @@ function updateLoginStateUI() {
     const header = document.querySelector('header');
     if (!header) return;
 
+    // --- 관리자(Admin) 로그인 상태일 때 ---
     if (currentUser.isAdmin) {
         header.innerHTML = `
             <div class="header-left">
                 <h1 onclick="showPage('dashboard')" style="cursor:pointer;">스파링클럽</h1>
             </div>
             <div class="header-right" id="header-auth">
-                <span style="color:var(--gold); font-weight:bold; font-size:0.8rem;">ADMIN</span>
-                <button onclick="logout()" class="icon-btn">🚪</button>
+                <span style="color:var(--gold); font-weight:bold; font-size:0.75rem; margin-right:5px;">ADMIN</span>
+                <button class="icon-btn" onclick="showPage('admin-dashboard')" title="관리자 페이지">🛠️</button>
+                <button class="icon-btn" onclick="logout()" title="로그아웃">🚪</button>
             </div>
         `;
-        showPage('admin-dashboard');
-        document.getElementById('main-nav').style.display = 'none'; 
+        // 관리자도 기본적으로 대시보드(메인)가 보이도록 설정
+        showPage('dashboard');
+        // 하단 네비게이션 바도 보이게 유지 (관리자가 대시보드/랭킹을 돌아다닐 수 있게 함)
+        document.getElementById('main-nav').style.display = 'flex'; 
         renderAdmin(); 
-    } else {
+    } 
+    // --- 일반 회원 로그인 상태일 때 ---
+    else {
         let avatarImg = currentUser.profilePic ? `url('${currentUser.profilePic}')` : '';
         
         header.innerHTML = `
@@ -1964,6 +1981,7 @@ function updateLoginStateUI() {
         updateMatchBadge();
     }
 }
+
 
 
 function processLogin() {
@@ -2001,14 +2019,24 @@ function logout() {
 function openProfile(id) {
     const p = demoPlayers.find(x => x.id === id);
     if(!p) return;
+
+    // 1. 이름 및 기본 정보 세팅
     document.getElementById('pm-name').innerHTML = formatName(p);
-    document.getElementById('pm-info').innerText = `${p.gym}`;
+
+    // [수정 포인트] 체육관 명을 클릭 가능하게 span 태그와 스타일 추가
+    document.getElementById('pm-info').innerHTML = `
+        <span onclick="openGymProfile('${p.gym}')" style="cursor:pointer; text-decoration:underline; color:var(--gold);">
+            ${p.region || '지역미상'} | ${p.gym}
+        </span>`;
+
+    // 2. 티어 및 전적 정보 세팅
     document.getElementById('pm-tier').innerText = `Tier ${p.tier}`;
     document.getElementById('pm-tier').style.background = `var(--tier${p.tier})`;
     document.getElementById('pm-season-rec').innerText = `${p.sW}승 ${p.sD}무 ${p.sL}패`;
     document.getElementById('pm-season-pt').innerText = `${p.pt} P`;
     document.getElementById('pm-trust').innerText = `${p.trustScore || 0} P`;
     
+    // 3. 사진 및 버튼 권한 설정
     const withdrawBtn = document.getElementById('withdraw-btn');
     const editSection = document.getElementById('profile-edit-section');
     const avatarEl = document.getElementById('pm-avatar');
@@ -2023,8 +2051,10 @@ function openProfile(id) {
         editSection.style.display = 'none';
     }
 
+    // 4. 모달 열기
     openModal('profileModal');
 }
+
 
 function updateRegion() {
     const newReg = document.getElementById('edit-region-select').value;
@@ -2057,11 +2087,12 @@ function renderNewMembers() {
     let approved = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
     let recent = approved.slice(-3).reverse(); 
     if (recent.length === 0) { container.innerHTML = "<div style='text-align:center; color:#666; padding: 10px 0;'>최근 가입한 회원이 없습니다.</div>"; return; }
+    
     let html = '';
     recent.forEach(u => {
+        // formatName(u)가 이미 체육관을 포함하므로 뒤의 중복 문구를 삭제했습니다.
         html += `<div style="padding: 8px 0; border-bottom: 1px dashed #444;">
-            <b style="color:white; cursor:pointer; text-decoration:underline;" onclick="openProfile(${u.id})">${formatName(u)}</b> 님이 가입하셨습니다! 
-            <span style="color:var(--gold); font-size:0.75rem; margin-left: 5px;">[${u.gym}]</span>
+            <b style="color:white; cursor:pointer;" onclick="openProfile(${u.id})">${formatName(u)}</b> 님이 가입하셨습니다! 
         </div>`;
     });
     container.innerHTML = html;
@@ -3126,19 +3157,17 @@ function renderGyms(filterRegion = 'all') {
     const listContainer = document.getElementById('gym-list-container');
     if(!podiumContainer || !listContainer) return;
     
-    // 1. [추가] 스위치 버튼 활성화 상태 업데이트
+    // 1. 지역 필터 버튼 활성화 로직
     const allBtns = document.querySelectorAll('.region-btn');
     allBtns.forEach(btn => {
-        const btnText = btn.innerText;
-        // '전체' 버튼이거나 텍스트가 지역명과 일치할 때 active 클래스 부여
-        if ((filterRegion === 'all' && btnText === '전체') || (btnText === filterRegion)) {
+        if ((filterRegion === 'all' && btn.innerText === '전체') || (btn.innerText === filterRegion)) {
             btn.classList.add('active');
         } else {
             btn.classList.remove('active');
         }
     });
 
-    // 2. 데이터 집계 로직 (기존 유지)
+    // 2. 데이터 집계
     const gymStats = {};
     demoPlayers.forEach(p => {
         if (!gymStats[p.gym]) gymStats[p.gym] = { name: p.gym, region: p.region, totalPt: 0, members: 0 };
@@ -3148,28 +3177,36 @@ function renderGyms(filterRegion = 'all') {
 
     const sortedGyms = Object.values(gymStats).sort((a, b) => b.totalPt - a.totalPt);
 
-    // 3. 포디움 렌더링 (전국 Top 3 고정 노출)
+    // 3. 포디움 렌더링 (순서: 2등 - 1등 - 3등)
     let podiumHtml = '';
     const top3 = sortedGyms.slice(0, 3);
-    const displayOrder = [1, 0, 2]; 
-    const medals = [{c:'silver', i:'🥈'}, {c:'gold', i:'🥇'}, {c:'bronze', i:'🥉'}];
+    
+    // 메달 정보 정의
+    const medalData = [
+        {c:'gold', i:'🥇', idx: 0},   // 1등
+        {c:'silver', i:'🥈', idx: 1}, // 2등
+        {c:'bronze', i:'🥉', idx: 2}  // 3등
+    ];
 
-    displayOrder.forEach((orderIdx, i) => {
-        const gym = top3[orderIdx];
+    // 시각적 배치 순서: [2등(좌), 1등(중), 3등(우)]
+    const visualOrder = [1, 0, 2]; 
+
+    visualOrder.forEach((pos) => {
+        const gym = top3[pos];
         if (gym) {
+            const m = medalData[pos];
             podiumHtml += `
-            <div class="rank-item ${medals[orderIdx].c}" onclick="openGymProfile('${gym.name}')" style="cursor:pointer;">
-                <span style="font-size:1.5rem; display:block;">${medals[orderIdx].i}</span>
-                <b style="font-size:0.85rem; color:white; display:block; white-space:nowrap; overflow:hidden;">${gym.name}</b>
-                <span style="color:var(--gold); font-weight:bold; font-size:0.8rem;">${gym.totalPt.toLocaleString()} P</span>
+            <div class="rank-item ${m.c}" onclick="openGymProfile('${gym.name}')" style="cursor:pointer;">
+                <span class="rank-medal">${m.i}</span>
+                <b class="rank-gym-name">${gym.name}</b>
+                <span class="rank-gym-pt">${gym.totalPt.toLocaleString()} P</span>
             </div>`;
         }
     });
     podiumContainer.innerHTML = podiumHtml;
 
-    // 4. 리스트 필터링 및 렌더링 (지역 선택 전 전국 Top 10, 지역 선택 시 해당 지역 전체)
+    // 4. 하단 리스트 렌더링
     let filteredList = (filterRegion === 'all') ? sortedGyms.slice(0, 10) : sortedGyms.filter(g => g.region === filterRegion);
-    
     let listHtml = '';
     filteredList.forEach(gym => {
         listHtml += `
@@ -3184,9 +3221,9 @@ function renderGyms(filterRegion = 'all') {
             </div>
         </div>`;
     });
-
-    listContainer.innerHTML = listHtml || `<div style="text-align:center; padding:40px; color:#666; font-size:0.9rem;">아직 '${filterRegion}' 지역에 등록된 체육관 활동이 없습니다.</div>`;
+    listContainer.innerHTML = listHtml || `<div style="text-align:center; padding:40px; color:#666;">데이터가 없습니다.</div>`;
 }
+
 
 
 // 초기 로드 시 실행 (이미 showPage에 등록되어 있다면 생략 가능)
