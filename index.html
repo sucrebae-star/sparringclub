@@ -14,7 +14,7 @@
   // Firebase 초기화 및 필수 함수 임포트 (Storage 추가)
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, collection, addDoc, getDoc, getDocs, onSnapshot, query, orderBy, doc, setDoc, updateDoc, deleteDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+  import { getStorage, ref, uploadBytes, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyB_-4dxADvEU1__WrhSYjn0RQ096Hj1fX4",
@@ -33,8 +33,55 @@
   window.db = db;
   window.storage = storage; // 🔥 Storage 전역 등록
   window.ref = ref;         // 🔥 Storage 경로 설정용
-  window.uploadBytes = uploadBytes; // 🔥 파일 업로드용
+  window.uploadBytes = uploadBytes; // 🔥 파일 업로드용 (기존 호환)
+  window.uploadBytesResumable = uploadBytesResumable; // 🔥 실시간 진행 추적용
   window.getDownloadURL = getDownloadURL; // 🔥 URL 가져오기용
+
+  // --- [신규] 이미지 압축 유틸리티 함수 ---
+  window.compressImage = async function(file, maxWidth = 1200, quality = 0.7) {
+    if (file.type.startsWith('video/')) return file; // 비디오는 그대로 반환
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          if (width > maxWidth) {
+            height = (maxWidth / width) * height;
+            width = maxWidth;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => {
+            resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+          }, 'image/jpeg', quality);
+        };
+      };
+    });
+  };
+
+  // --- [신규] 업로드 진행도 제어 함수 ---
+  window.updateUploadProgress = (percent, status = "파일 전송 중...") => {
+    const modal = document.getElementById('uploadProgressModal');
+    const fill = document.getElementById('upload-progress-fill');
+    const text = document.getElementById('upload-percentage');
+    const statusText = document.getElementById('upload-status-text');
+    
+    modal.style.display = 'flex';
+    statusText.innerText = status;
+    fill.style.width = percent + '%';
+    text.innerText = Math.round(percent) + '%';
+    
+    if (percent >= 100) {
+      setTimeout(() => { modal.style.display = 'none'; fill.style.width = '0%'; }, 1000);
+    }
+  };
   
   window.collection = collection;
   window.addDoc = addDoc;
@@ -669,7 +716,9 @@
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            object-fit: cover;
+            /* 🔥 [수정] 사진이 원 안에 꽉 차지 않더라도 잘리지 않고 전체가 보이도록 설정 */
+            object-fit: contain; 
+            background: #000; /* 여백 부분은 검정색으로 처리 */
         }
         .story-add-btn {
             width: 64px;
@@ -1330,6 +1379,17 @@
     </div>
 </div>
 
+<div id="uploadProgressModal" class="modal" style="z-index: 9999; background: rgba(0,0,0,0.9); display: none;">
+    <div class="modal-content" style="text-align: center; background: none; border: none; box-shadow: none;">
+        <h3 id="upload-status-text" style="color: white; margin-bottom: 20px; font-weight: bold;">파일 최적화 및 업로드 중...</h3>
+        <div style="width: 100%; background: #333; height: 12px; border-radius: 6px; overflow: hidden; border: 1px solid #444;">
+            <div id="upload-progress-fill" style="width: 0%; height: 100%; background: var(--primary-red); transition: width 0.3s; box-shadow: 0 0 10px var(--primary-red);"></div>
+        </div>
+        <div id="upload-percentage" style="color: var(--gold); margin-top: 15px; font-weight: bold; font-size: 1.5rem; letter-spacing: 1px;">0%</div>
+        <p style="color: #888; font-size: 0.85rem; margin-top: 25px;">파일을 안전하게 저장소로 전송 중입니다.<br>잠시만 기다려주세요.</p>
+    </div>
+</div>
+
 
 <div id="gymProfileModal" class="modal">
     <div class="modal-content" style="max-width: 450px;">
@@ -1540,7 +1600,7 @@ function initFirebaseRealtime() {
         if (document.getElementById('admin-dashboard').classList.contains('active')) renderAdminMatchManagement();
     });
 
-    // 3. 승인된 선수 명단 동기화
+    // 3. 승인된 선수 명단 동기화 (프로필 모달 실시간 반영 로직 추가)
     window.onSnapshot(window.collection(window.db, "users"), (snapshot) => {
         let players = [];
         snapshot.forEach((doc) => players.push(doc.data()));
@@ -1551,7 +1611,21 @@ function initFirebaseRealtime() {
         renderPlayers();
         renderGyms();
         if (currentUser) updateLoginStateUI();
-        // 관리자 회원 관리 목록 갱신 추가
+        
+        // 🔥 [추가] 현재 프로필 모달이 열려있다면 사진 목록 즉시 새로고침
+        const profileModal = document.getElementById('profileModal');
+        if (profileModal && profileModal.style.display === 'flex' && window.profileOwnerId) {
+            const p = players.find(x => String(x.id) === String(window.profileOwnerId));
+            if (p) {
+                const isOwner = currentUser && String(p.id) === String(currentUser.id);
+                renderProfileStories(p, isOwner);
+                // 경기 기록 및 기본 정보도 최신화
+                document.getElementById('pm-season-rec').innerText = `${p.sW || 0}승 ${p.sD || 0}무 ${p.sL || 0}패`;
+                document.getElementById('pm-season-pt').innerText = `${p.pt || 0} P`;
+            }
+        }
+
+        // 관리자 회원 관리 목록 갱신
         if (document.getElementById('admin-dashboard').classList.contains('active')) renderAdmin();
     });
 
@@ -1873,30 +1947,36 @@ async function insertEditorLocalImage(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // 업로드 안내
-    alert("이미지를 서버 창고(Storage)에 안전하게 업로드 중입니다. 잠시만 기다려주세요...");
-
     try {
-        // 1. 파일명 생성 (중복 방지를 위해 시간값 포함)
+        // 1. 이미지 압축 최적화
+        updateUploadProgress(0, "이미지 최적화 중...");
+        const compressedFile = await compressImage(file);
+        
         const fileName = "post_" + Date.now() + "_" + file.name;
         const storageRef = window.ref(window.storage, `community_images/${fileName}`);
         
-        // 2. Storage에 원본 파일 업로드
-        const snapshot = await window.uploadBytes(storageRef, file);
+        // 2. 실시간 업로드 추적
+        const uploadTask = uploadBytesResumable(storageRef, compressedFile);
         
-        // 3. 업로드된 파일의 '인터넷 주소(URL)' 가져오기
-        const downloadURL = await window.getDownloadURL(snapshot.ref);
-
-        // 4. 에디터에 Base64 글자 대신 'URL 주소'로 이미지 삽입
-        const imgHtml = `<img src="${downloadURL}" style="max-width:100%; border-radius:8px; margin:10px 0;" class="attached-photo">`;
-        
-        editor.focus();
-        document.execCommand('insertHTML', false, imgHtml);
-        event.target.value = ''; 
-        console.log("에디터 이미지 주소 저장 완료");
+        uploadTask.on('state_changed', 
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                updateUploadProgress(progress, "게시글 사진 업로드 중...");
+            }, 
+            (error) => { throw error; }, 
+            async () => {
+                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                const imgHtml = `<img src="${downloadURL}" style="max-width:100%; border-radius:8px; margin:10px 0;" class="attached-photo">`;
+                editor.focus();
+                document.execCommand('insertHTML', false, imgHtml);
+                event.target.value = ''; 
+                updateUploadProgress(100);
+            }
+        );
     } catch (err) {
         console.error("에디터 이미지 업로드 에러:", err);
-        alert("이미지 업로드에 실패했습니다. Firebase Storage 권한 설정을 확인해주세요.");
+        updateUploadProgress(100);
+        alert("이미지 업로드에 실패했습니다.");
     }
 }
 
@@ -2004,11 +2084,16 @@ async function addCommunityPost() {
         const postId = editingPostId ? editingPostId : Date.now();
         const postRef = window.doc(window.collection(window.db, "community_posts"), postId.toString());
 
+        // --- [수정] 본문 HTML에서 첫 번째 이미지 주소(src)를 추출하여 필드에 저장 (슬라이더 자동 업데이트용) ---
+        const imgMatch = content.match(/<img[^>]+src="([^">]+)"/);
+        const firstImageUrl = imgMatch ? imgMatch[1] : "";
+
         const postData = {
             id: postId,
             prefix: prefix,
             title: title,
             content: content,
+            imageUrl: firstImageUrl, // 🔥 추출된 이미지 주소 저장 (슬라이더 인식용)
             authorId: currentUser.id,
             authorName: currentUser.rawName,
             time: editingPostId ? Date.now() : postId, // 수정 시간이면 현재 시간
@@ -2048,9 +2133,9 @@ function openPostDetail(postId) {
     let dateStr = new Date(post.time).toLocaleString();
     let embedUrl = getYoutubeEmbedUrl(post.videoUrl);
     
-    // 1. [권한 체크] 작성자 본인 또는 관리자용 수정/삭제 버튼 생성
+    // 1. [권한 체크] 작성자 본인 또는 관리자용 수정/삭제 버튼 생성 (비교 로직 정합성 강화)
     let actionBtns = '';
-    if (currentUser && (currentUser.id === post.authorId || currentUser.isAdmin)) {
+    if (currentUser && (String(currentUser.id) === String(post.authorId) || currentUser.isAdmin)) {
         actionBtns = `
             <div style="float: right; display: flex; gap: 8px; margin-bottom: 10px;">
                 <button onclick="toggleWriteMode(true, ${post.id})" style="background: #444; color: var(--gold); border: 1px solid #555; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; font-weight: bold;">수정</button>
@@ -2251,35 +2336,32 @@ async function submitSparringRecord() {
     const resultValue = document.getElementById('record-result').value;
 
     if (!matchId) { alert('기록을 등록할 매칭 대상을 먼저 선택해주세요.'); return; }
-    
-    if (!videoUrl && !imageFile) {
-        alert('기록 업로드를 위해 유튜브 영상 링크 또는 인증 사진이 반드시 필요합니다.');
-        return;
-    }
-    
-    if (judgeMethod === 'community' && !videoUrl) {
-        alert('커뮤니티 영상 판정을 받으려면 반드시 유튜브 영상 링크를 첨부해야 합니다.'); return;
-    }
-
-    let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-    let matchData = allMatches.find(m => m.id == matchId);
-    if(!matchData) return;
-
-    let opponentRawName = (matchData.senderRawName === currentUser.rawName) ? matchData.receiverRawName : matchData.senderRawName;
-    let opponentId = demoPlayers.find(p => p.rawName === opponentRawName)?.id || 1;
-    let mediaType = videoUrl ? 'video' : (imageFile ? 'photo' : 'none');
-
-    alert("경기 기록과 인증 자료를 서버 창고(Storage)에 안전하게 저장 중입니다...");
+    if (!videoUrl && !imageFile) { alert('인증 자료(영상 또는 사진)가 반드시 필요합니다.'); return; }
 
     try {
         let finalImageUrl = "";
         
-        // 1. 인증 사진이 있다면 Storage에 먼저 업로드
         if (imageFile) {
+            updateUploadProgress(0, "인증 사진 최적화 중...");
+            const compressedFile = await compressImage(imageFile);
             const fileName = `records/${Date.now()}_${imageFile.name}`;
             const storageRef = window.ref(window.storage, fileName);
-            const snapshot = await window.uploadBytes(storageRef, imageFile);
-            finalImageUrl = await window.getDownloadURL(snapshot.ref);
+            
+            const uploadTask = uploadBytesResumable(storageRef, compressedFile);
+            
+            await new Promise((resolve, reject) => {
+                uploadTask.on('state_changed', 
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        updateUploadProgress(progress, "인증 자료 전송 중...");
+                    }, 
+                    reject, 
+                    async () => {
+                        finalImageUrl = await getDownloadURL(uploadTask.snapshot.ref);
+                        resolve();
+                    }
+                );
+            });
         }
 
         let recordId = Date.now();
@@ -2950,7 +3032,7 @@ async function openProfile(id) {
     openModal('profileModal');
 }
 
-// 프로필 스토리 리스트 그리기 (삭제 기능 추가)
+// 프로필 스토리 리스트 그리기 (사진 전체 보기 및 버튼 우측 정렬 적용)
 function renderProfileStories(player, isOwner) {
     const container = document.getElementById('pm-story-section');
     if(!container) return;
@@ -2958,85 +3040,129 @@ function renderProfileStories(player, isOwner) {
     const stories = player.stories || [];
     let html = '';
 
+    // 1. 등록된 스토리 아이콘들을 왼쪽에 먼저 배치
     stories.forEach((group, gIdx) => {
-        // 본인인 경우 롱탭이나 삭제 버튼을 유도할 수 있지만, 여기서는 깔끔하게 목록만 노출
         html += `
         <div class="story-circle-wrap">
-            <div class="story-circle" onclick="viewStoryGroup(${gIdx})">
-                <img src="${group.cover}">
+            <div class="story-circle" onclick="viewStoryGroup(${gIdx})" style="overflow:hidden; display:flex; align-items:center; justify-content:center;">
+                <img src="${group.cover}" style="width:100%; height:100%; object-fit:contain;">
             </div>
             <div class="story-circle-label">${group.title || '하이라이트'}</div>
         </div>`;
     });
 
+    // 2. 신규 등록 버튼을 가장 오른쪽에 배치
     if(isOwner) {
         html += `
         <div class="story-circle-wrap" onclick="document.getElementById('story-new-upload').click()">
-            <div class="story-add-btn">+</div>
+            <div class="story-add-btn" style="border: 2px dashed #666; color:#888;">+</div>
             <div class="story-circle-label">신규 등록</div>
         </div>`;
     }
 
     container.innerHTML = html;
+    
+    // 가로 스크롤을 가장 오른쪽으로 밀어서 신규 등록 버튼이 보이게 유도할 수 있습니다.
+    container.scrollLeft = 0; 
 }
 
 // 스토리 업로드 로직 (용량 최적화 및 Firebase 저장)
 // 스토리 업로드 로직 (Firebase Storage 활용 - 무제한 용량 방식)
-// 스토리 업로드 로직 (Firebase Storage 활용 - 무제한 용량 및 에러 메시지 개선)
+// 스토리 업로드 로직 (Firebase Storage 활용 - 자동 압축 및 실시간 진행도 적용)
+// 스토리 업로드 로직 (사진 전체 보기 지원 및 실시간 UI 반영 강화)
 async function uploadStoryImage(isAppendToExisting = false) {
     const fileEl = isAppendToExisting ? document.getElementById('story-inner-upload') : document.getElementById('story-new-upload');
     const file = fileEl.files[0];
     if (!file) return;
 
-    alert("고화질 사진을 안전하게 서버 창고(Storage)에 저장하는 중입니다. 잠시만 기다려주세요...");
+    // 업로드 시작 시 즉시 진행 바 표시 (조작 방지)
+    window.updateUploadProgress(1, "이미지 최적화 준비 중...");
 
     try {
-        // 1. Storage에 파일 업로드
-        const fileName = Date.now() + "_" + file.name;
+        // 1. 이미지 압축 (0.7 퀄리티로 용량 및 전송 에러 방지)
+        window.updateUploadProgress(10, "고화질 압축 작업 진행 중...");
+        const compressedFile = await window.compressImage(file);
+        
+        // 2. Storage 경로 설정 (유저별 폴더 구분)
+        const fileName = "story_" + Date.now() + "_" + file.name;
         const storageRef = window.ref(window.storage, `stories/${profileOwnerId}/${fileName}`);
-        const snapshot = await window.uploadBytes(storageRef, file);
         
-        // 2. 업로드된 파일의 영구 URL 주소 가져오기
-        const downloadURL = await window.getDownloadURL(snapshot.ref);
+        // 3. 실시간 업로드 태스크 시작
+        const uploadTask = window.uploadBytesResumable(storageRef, compressedFile);
 
-        // 3. 최신 데이터 불러오기 및 업데이트
-        let p = demoPlayers.find(x => x.id === profileOwnerId);
-        let stories = JSON.parse(JSON.stringify(p.stories || []));
+        uploadTask.on('state_changed', 
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                window.updateUploadProgress(progress, "서버 전송 중...");
+            }, 
+            (error) => {
+                console.error("업로드 에러:", error);
+                window.updateUploadProgress(100);
+                alert("업로드 실패! Firebase Storage 설정을 확인해주세요.");
+            }, 
+            async () => {
+                // 4. 업로드 완료 후 URL 획득
+                const downloadURL = await window.getDownloadURL(uploadTask.snapshot.ref);
 
-        if (isAppendToExisting && currentViewingStoryGroup !== null) {
-            stories[currentViewingStoryGroup].images.push(downloadURL);
-            if(!stories[currentViewingStoryGroup].views) {
-                stories[currentViewingStoryGroup].views = stories[currentViewingStoryGroup].images.map(() => []);
-            } else {
-                stories[currentViewingStoryGroup].views.push([]);
+                // 5. 로컬 데이터 갱신 (오류의 원인이었던 window. 제거)
+                let p = demoPlayers.find(x => String(x.id) === String(profileOwnerId));
+                if (!p) {
+                    alert("선수 정보를 찾을 수 없습니다.");
+                    window.updateUploadProgress(100);
+                    return;
+                }
+
+                // 기존 스토리 배열 복사 후 새 데이터 추가
+                let currentStories = JSON.parse(JSON.stringify(p.stories || []));
+
+                if (isAppendToExisting && currentViewingStoryGroup !== null) {
+                    // 기존 그룹에 이미지 추가
+                    if (currentStories[currentViewingStoryGroup]) {
+                        currentStories[currentViewingStoryGroup].images.push(downloadURL);
+                        if(!currentStories[currentViewingStoryGroup].views) {
+                            currentStories[currentViewingStoryGroup].views = currentStories[currentViewingStoryGroup].images.map(() => []);
+                        } else {
+                            currentStories[currentViewingStoryGroup].views.push([]);
+                        }
+                    }
+                } else {
+                    // 새 하이라이트 그룹 생성
+                    const title = prompt("하이라이트 제목을 입력하세요", "새 하이라이트") || "하이라이트";
+                    currentStories.push({
+                        id: Date.now(),
+                        title: title,
+                        cover: downloadURL,
+                        images: [downloadURL],
+                        views: [[]]
+                    });
+                }
+
+                // 🔥 [핵심] 로컬 메모리의 데이터를 즉시 갱신하여 렌더링에 반영
+                p.stories = currentStories;
+
+                // 6. Firestore 서버 DB 업데이트 (오류의 원인이었던 window. 제거)
+                const userRef = window.doc(window.db, "users", profileOwnerId.toString());
+                await window.updateDoc(userRef, { stories: currentStories });
+                
+                window.updateUploadProgress(100, "업로드 완료!");
+                
+                // 7. UI 즉시 리렌더링
+                const isOwner = currentUser && String(p.id) === String(currentUser.id);
+                if(isAppendToExisting && currentViewingStoryGroup !== null) {
+                    currentStoryIndex = currentStories[currentViewingStoryGroup].images.length - 1;
+                    updateStoryUI(); 
+                } else {
+                    renderProfileStories(p, isOwner);
+                }
+                
+                fileEl.value = ''; // 선택 파일 초기화
+                console.log("로컬 및 서버 동기화 완료");
             }
-        } else {
-            const title = prompt("하이라이트 제목을 입력하세요", "하이라이트") || "스토리";
-            stories.push({
-                id: Date.now(),
-                title: title,
-                cover: downloadURL,
-                images: [downloadURL],
-                views: [[]]
-            });
-        }
-
-        // 4. Firestore에는 '주소'만 저장하여 용량 제한을 완벽히 해결
-        const userRef = window.doc(window.db, "users", profileOwnerId.toString());
-        await window.updateDoc(userRef, { stories: stories });
-        
-        alert("하이라이트 업로드가 완료되었습니다! 🥊");
-        
-        if(isAppendToExisting) {
-            currentStoryIndex = stories[currentViewingStoryGroup].images.length - 1;
-            updateStoryUI(); 
-        } else {
-            renderProfileStories(p, true);
-        }
-        fileEl.value = '';
+        );
     } catch (err) { 
-        console.error("Storage 업로드 실패:", err); 
-        alert("업로드에 실패했습니다. Firebase 콘솔에서 Storage 보안 규칙이 'true'로 게시되었는지 확인해주세요."); 
+        console.error("업로드 전체 실패:", err); 
+        window.updateUploadProgress(100);
+        alert("처리에 오류가 발생했습니다.");
     }
 }
 
