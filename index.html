@@ -1761,14 +1761,14 @@ function renderFeed() {
         let hasRecord = recordReqs.find(r => r.matchId == m.id);
         if(hasRecord || m.status === '판정 대기') {
             let certPost = communityPosts.find(p => (p.type === 'record_cert' || p.type === 'judge') && (p.id == (hasRecord?.id || 0) || (p.judgeData && p.judgeData.recordData.matchId == m.id)));
-            let btnHtml = certPost ? `<button onclick="event.stopPropagation(); openPostDetail(${certPost.id})" style="padding:2px 6px; background:#444; color:var(--gold); border:1px solid #555; border-radius:4px; font-size:0.65rem; cursor:pointer; margin-left:8px;">인증글 보기</button>` : '';
+            let btnHtml = certPost ? `<button onclick="event.stopPropagation(); openPostDetail('${certPost.id}')" style="padding:2px 6px; background:#444; color:var(--gold); border:1px solid #555; border-radius:4px; font-size:0.65rem; cursor:pointer; margin-left:8px;">인증글 보기</button>` : '';
             timelineHtml += `<div class="timeline-item"><span style="color:#aaa; font-weight:bold; margin-right:8px;">${formatTimelineDate(hasRecord?.id || Date.now())}</span> 📝 결과 등록 및 인증 완료 (판정 대기 중)${btnHtml}</div>`;
         }
 
         if(m.status === '종료') {
             let videoBtn = '';
             if(matchPostId) {
-                videoBtn = `<button onclick="event.stopPropagation(); openPostDetail(${matchPostId})" style="padding:4px 10px; background:var(--gold); color:#000; border:none; border-radius:4px; font-size:0.75rem; cursor:pointer; font-weight:bold;">▶ 분석/판정 보기</button>`;
+                videoBtn = `<button onclick="event.stopPropagation(); openPostDetail('${matchPostId}')" style="padding:4px 10px; background:var(--gold); color:#000; border:none; border-radius:4px; font-size:0.75rem; cursor:pointer; font-weight:bold;">▶ 분석/판정 보기</button>`;
             } else if(hasRecord && hasRecord.videoUrl) {
                 videoBtn = `<a href="${hasRecord.videoUrl}" target="_blank" onclick="event.stopPropagation();" style="padding:4px 10px; background:#f00; color:#fff; border:none; border-radius:4px; font-size:0.75rem; cursor:pointer; font-weight:bold; text-decoration:none; display:inline-block;">▶ 영상 보기</a>`;
             }
@@ -1789,9 +1789,9 @@ function renderFeed() {
                     <span class="match-code" style="color:var(--gold); font-family:monospace; margin-right:12px;">${matchCode}</span>
                     <b style="font-size:1rem; display:flex; align-items:center;">
                         ${p1Label}
-                        <span class="clickable-name" onclick="event.stopPropagation(); openProfile(${p1.id})">${p1.rawName}</span>
+                        <span class="clickable-name" onclick="event.stopPropagation(); openProfile('${p1.id}')">${p1.rawName}</span>
                         <span style="color:#666; margin: 0 8px; font-weight:normal;">VS</span> 
-                        <span class="clickable-name" onclick="event.stopPropagation(); openProfile(${p2.id})">${p2.rawName}</span>
+                        <span class="clickable-name" onclick="event.stopPropagation(); openProfile('${p2.id}')">${p2.rawName}</span>
                         ${p2Label}
                     </b>
                     ${decisionType}
@@ -2431,7 +2431,7 @@ async function applyRecordToStats(record) {
     const isTest = mData.senderRawName.toLowerCase().includes('test') || mData.receiverRawName.toLowerCase().includes('test');
     const matchCode = generateMatchCode(mData.matchSeq || 0, isTest);
 
-    // 2. 전적 실시간 업데이트 (랭크전인 경우)
+    // 2. 전적 및 체육관 활동 점수 실시간 업데이트 (랭크전인 경우)
     if (record.matchType === 'rank') {
         let reqId = record.requesterId || demoPlayers.find(p => p.rawName === record.requester)?.id;
         let oppId = record.opponentId || demoPlayers.find(p => p.rawName === (record.opponentRawName || record.opponentName))?.id;
@@ -2441,19 +2441,41 @@ async function applyRecordToStats(record) {
         const p1Ref = window.doc(window.db, "users", reqId.toString());
         const p2Ref = window.doc(window.db, "users", oppId.toString());
         
+        // 각 선수의 현재 소속 체육관 ID 파악 (로컬 demoPlayers 기준)
+        const p1Data = demoPlayers.find(p => String(p.id) === String(reqId));
+        const p2Data = demoPlayers.find(p => String(p.id) === String(oppId));
+
+        let p1PtGain = 0;
+        let p2PtGain = 0;
         let p1Updates = {}, p2Updates = {};
+
         if (record.resultValue === 'win') {
+            p1PtGain = 50; p2PtGain = 10;
             p1Updates = { sW: window.increment(1), pt: window.increment(50) };
             p2Updates = { sL: window.increment(1), pt: window.increment(10) };
         } else if (record.resultValue === 'loss') {
+            p1PtGain = 10; p2PtGain = 50;
             p1Updates = { sL: window.increment(1), pt: window.increment(10) };
             p2Updates = { sW: window.increment(1), pt: window.increment(50) };
         } else if (record.resultValue === 'draw') {
+            p1PtGain = 30; p2PtGain = 30;
             p1Updates = { sD: window.increment(1), pt: window.increment(30) };
             p2Updates = { sD: window.increment(1), pt: window.increment(30) };
         }
+
+        // 선수 개인 점수 업데이트
         await window.updateDoc(p1Ref, p1Updates);
         await window.updateDoc(p2Ref, p2Updates);
+
+        // 체육관 활동 점수 업데이트 (해당 체육관 소속일 때 얻은 점수만 누적)
+        if (p1Data && p1Data.gymId && p1Data.gymId !== "") {
+            const g1Ref = window.doc(window.db, "gyms_registry", p1Data.gymId);
+            await window.updateDoc(g1Ref, { totalPt: window.increment(p1PtGain) });
+        }
+        if (p2Data && p2Data.gymId && p2Data.gymId !== "") {
+            const g2Ref = window.doc(window.db, "gyms_registry", p2Data.gymId);
+            await window.updateDoc(g2Ref, { totalPt: window.increment(p2PtGain) });
+        }
     }
 
     // 3. 커뮤니티 최종 결과 자동 게시 (승/패 문구 추가)
@@ -2463,7 +2485,6 @@ async function applyRecordToStats(record) {
         let p2 = (record.opponentRawName || record.opponentName);
         let titleStr = "";
 
-        // 🔥 [수정] 색상 변환을 위해 (승), (패), (무) 문구를 명시적으로 추가
         if (record.resultValue === 'win') {
             titleStr = `[${matchCode}] (승) 🏆${p1} vs ${p2}(패)`;
         } else if (record.resultValue === 'loss') {
@@ -2473,24 +2494,16 @@ async function applyRecordToStats(record) {
         }
 
         await window.setDoc(postRef, {
-            id: record.id,
-            matchId: record.matchId,
-            prefix: '[경기결과]',
-            title: titleStr,
+            id: record.id, matchId: record.matchId, prefix: '[경기결과]', title: titleStr,
             content: `<b>공식 결과가 발표되었습니다.</b><br>일시: ${record.time}<br>매치 타입: ${record.matchType === 'rank' ? '랭크 스파링' : '연습 게임'}<br>인증 수단: 영상 및 사진 확인 완료`,
-            authorId: 0, authorName: '관리자',
-            time: Date.now(), comments: [], 
-            videoUrl: record.videoUrl || "", 
-            imageUrl: record.imageUrl || "",
-            type: 'normal'
+            authorId: 0, authorName: '관리자', time: Date.now(), comments: [], 
+            videoUrl: record.videoUrl || "", imageUrl: record.imageUrl || "", type: 'normal'
         });
     } catch(e) { console.error("커뮤니티 게시 실패:", e); }
 
     // 4. 매칭 상태 종료 처리
     await window.updateDoc(window.doc(window.db, "matches", record.matchId.toString()), { 
-        status: '종료', 
-        approvedAt: Date.now(),
-        resultValue: record.resultValue 
+        status: '종료', approvedAt: Date.now(), resultValue: record.resultValue 
     });
 }
 
@@ -2666,8 +2679,8 @@ function renderAdminGymManagement() {
     let html = '';
     // 이름순 정렬
     registeredGyms.sort((a,b) => a.name.localeCompare(b.name)).forEach(gym => {
-        // 소속 선수 숫자 파악
-        const memberCount = demoPlayers.filter(p => p.gym === gym.name).length;
+        // 소속 선수 숫자 파악 (ID 또는 이름으로 매칭)
+        const memberCount = demoPlayers.filter(p => p.gymId === gym.id || p.gym === gym.name).length;
 
         html += `
         <div style="background:#222; padding:12px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid var(--gold);">
@@ -2675,7 +2688,7 @@ function renderAdminGymManagement() {
                 <b style="color:white; font-size:1rem;">${gym.name}</b>
                 <div style="font-size:0.75rem; color:#aaa; margin-top:4px;">지역: ${gym.region || '정보없음'} | 소속 선수: ${memberCount}명</div>
             </div>
-            <button onclick="adminDeleteGym('${gym.name}')" style="background:#444; color:#ff7675; border:1px solid #555; padding:6px 12px; border-radius:4px; font-size:0.75rem; font-weight:bold; cursor:pointer;">
+            <button onclick="adminDeleteGym('${gym.id}', '${gym.name}')" style="background:#444; color:#ff7675; border:1px solid #555; padding:6px 12px; border-radius:4px; font-size:0.75rem; font-weight:bold; cursor:pointer;">
                 영구 삭제
             </button>
         </div>`;
@@ -2684,35 +2697,35 @@ function renderAdminGymManagement() {
 }
 
 // [신규] 체육관 영구 삭제 함수 (연쇄 업데이트 포함)
-async function adminDeleteGym(gymName) {
+async function adminDeleteGym(gymId, gymName) {
     if(!confirm(`'${gymName}' 체육관 정보를 영구 삭제하시겠습니까?\n해당 체육관의 랭킹 데이터가 서버에서 지워집니다.`)) return;
     
-    // 소속 선수가 있는지 확인
-    const members = demoPlayers.filter(p => p.gym === gymName);
+    // 소속 선수가 있는지 확인 (ID 또는 이름 매칭)
+    const members = demoPlayers.filter(p => p.gymId === gymId || p.gym === gymName);
     if(members.length > 0) {
         if(!confirm(`현재 해당 체육관에 소속된 선수가 ${members.length}명 있습니다.\n삭제 시 이 선수들은 모두 '무소속'으로 변경됩니다. 계속하시겠습니까?`)) return;
     }
 
     try {
-        // 1. Firebase gyms_registry 컬렉션에서 체육관 문서 삭제
-        const gymId = gymName.replace(/\s+/g, '_');
-        await window.deleteDoc(window.doc(window.db, "gyms_registry", gymId));
+        // 1. Firebase gyms_registry 컬렉션에서 실제 문서 ID로 삭제
+        await window.deleteDoc(window.doc(window.db, "gyms_registry", gymId.toString()));
         
-        // 2. 소속 선수들 '무소속'으로 일괄 변경
+        // 2. 소속 선수들 정보를 '무소속'으로 일괄 변경
         for (const member of members) {
             await window.updateDoc(window.doc(window.db, "users", member.id.toString()), { 
-                gym: '무소속' 
+                gym: '무소속',
+                gymId: ""
             });
         }
         
         alert(`'${gymName}' 체육관이 삭제되었으며, 관련 선수 ${members.length}명이 무소속으로 전환되었습니다.`);
         
-        // 3. UI 즉시 갱신
+        // 3. UI 갱신 (실시간 리스너가 호출하겠지만 즉시성 보장)
         renderAdminGymManagement();
         renderGyms();
     } catch (e) {
         console.error("체육관 삭제 오류:", e);
-        alert('삭제 처리 중 서버 오류가 발생했습니다.');
+        alert('삭제 처리 중 서버 오류가 발생했습니다. 권한을 확인해주세요.');
     }
 }
 
@@ -2866,6 +2879,9 @@ function updateLoginStateUI() {
     const header = document.querySelector('header');
     if (!header) return;
 
+    // 공통 아바타 스타일 계산
+    let avatarImg = currentUser.profilePic ? `url('${currentUser.profilePic}')` : '';
+
     // --- 관리자(Admin) 로그인 상태일 때 ---
     if (currentUser.isAdmin) {
         header.innerHTML = `
@@ -2873,7 +2889,10 @@ function updateLoginStateUI() {
                 <h1 onclick="handleTitleClick()" style="cursor:pointer; white-space: nowrap;">스파링클럽</h1>
             </div>
             <div class="header-right" id="header-auth">
-                <span style="color:var(--gold); font-weight:bold; font-size:0.75rem; margin-right:5px;">ADMIN</span>
+                <div class="user-mini-profile" onclick="openProfile('${currentUser.id}')" style="margin-right: 5px;">
+                    <div class="avatar" style="width:28px; height:28px; background-image:${avatarImg}; border:1px solid var(--gold);"></div>
+                    <span class="name" style="font-size: 0.8rem; color: var(--gold);">${currentUser.rawName} (관장)</span>
+                </div>
                 <button class="icon-btn" onclick="showPage('admin-dashboard')" title="관리자 페이지">🛠️</button>
                 <button class="icon-btn" onclick="logout()" title="로그아웃">🚪</button>
             </div>
@@ -2887,14 +2906,12 @@ function updateLoginStateUI() {
     } 
     // --- 일반 회원 로그인 상태일 때 ---
     else {
-        let avatarImg = currentUser.profilePic ? `url('${currentUser.profilePic}')` : '';
-        
         header.innerHTML = `
             <div class="header-left">
                 <h1 onclick="handleTitleClick()" style="cursor:pointer; white-space: nowrap;">스파링클럽</h1>
             </div>
             <div class="header-right" id="header-auth">
-                <div class="user-mini-profile" onclick="openProfile(${currentUser.id})" style="margin-right: 5px;">
+                <div class="user-mini-profile" onclick="openProfile('${currentUser.id}')" style="margin-right: 5px;">
                     <div class="avatar" style="width:28px; height:28px; background-image:${avatarImg}; border:1px solid var(--gold);"></div>
                     <span class="name" style="font-size: 0.8rem;">${currentUser.rawName}</span>
                 </div>
@@ -2995,14 +3012,18 @@ let currentStoryIndex = 0;
 let profileOwnerId = null;
 
 async function openProfile(id) {
-    const p = demoPlayers.find(x => x.id === id);
-    if(!p) return;
+    // 🔥 [수정] Firebase의 문자열 ID와 로컬 숫자 ID의 타입 차이로 인한 검색 실패 방지
+    const p = demoPlayers.find(x => String(x.id) === String(id));
+    if(!p) {
+        console.error("Profile not found for ID:", id);
+        return;
+    }
     profileOwnerId = id;
 
     // 1. 기본 정보 세팅
     document.getElementById('pm-name').innerHTML = formatName(p);
     document.getElementById('pm-info').innerHTML = `
-        <span onclick="openGymProfile('${p.gym}')" style="cursor:pointer; text-decoration:underline; color:var(--gold);">
+        <span onclick="openGymProfile('${p.gymId || p.gym}')" style="cursor:pointer; text-decoration:underline; color:var(--gold);">
             ${p.region || '지역미상'} | ${p.gym}
         </span>`;
     document.getElementById('pm-tier').innerText = `Tier ${p.tier}`;
@@ -3921,7 +3942,7 @@ async function submitSignup() {
     if (!isDuplicateChecked) { alert('가입 신청 전에 반드시 [중복조회] 버튼을 눌러주세요.'); return; }
 
     const inputId = document.getElementById('signup-id').value.trim();
-    const inputPw = document.getElementById('signup-pw').value.trim(); // 비밀번호 읽기 추가
+    const inputPw = document.getElementById('signup-pw').value.trim();
     let gymName = document.getElementById('signup-gym').value.trim();
 
     if(!gymName) { alert('소속 체육관을 입력 후 [조회]를 눌러주세요.'); return; }
@@ -3936,24 +3957,33 @@ async function submitSignup() {
     alert("신청 정보를 서버에 안전하게 전송 중입니다...");
 
     try {
-        // 1. 가입용 사진을 Storage에 먼저 업로드
+        // 1. 중복 체육관 체크 (이름 기반 검색 강화)
+        let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
+        const cleanName = gymName.replace(/\s+/g, ' ').trim();
+        const existing = registeredGyms.find(g => g.name.replace(/\s+/g, ' ').trim().toLowerCase() === cleanName.toLowerCase());
+
+        let finalGymId = tempSelectedGymId;
+        if (existing) {
+            finalGymId = existing.id;
+            gymName = existing.name; // 공식 이름으로 동기화
+        } else if (!finalGymId) {
+            // 완전히 새로운 체육관인 경우에만 생성 (초기 승점 0 설정)
+            finalGymId = "gym_" + Date.now();
+            await window.setDoc(window.doc(window.db, "gyms_registry", finalGymId), {
+                id: finalGymId, name: gymName, region: region, registeredAt: Date.now(), totalPt: 0
+            });
+        }
+
+        // 2. 사진 업로드 및 회원가입 처리 (기존 로직 유지)
         const tempImgId = Date.now();
         const response = await fetch(pendingSignupPic);
         const blob = await response.blob();
         const storageRef = window.ref(window.storage, `pending_profiles/${tempImgId}.jpg`);
         const snapshot = await window.uploadBytes(storageRef, blob);
         const profilePicUrl = await window.getDownloadURL(snapshot.ref);
-
-        let finalGymId = tempSelectedGymId;
-        if (!finalGymId) {
-            finalGymId = "gym_" + Date.now();
-            await window.setDoc(window.doc(window.db, "gyms_registry", finalGymId), {
-                id: finalGymId, name: gymName, region: region, registeredAt: Date.now()
-            });
-        }
         
         const userData = { 
-            rawName: inputId, name: inputId, pw: inputPw, // 비밀번호 필드 추가
+            rawName: inputId, name: inputId, pw: inputPw, 
             gymId: finalGymId, gym: gymName,
             weight: weight, tier: tier, region: region, trustScore: 0,
             createdAt: Date.now(), 
@@ -3975,7 +4005,7 @@ async function submitSignup() {
         closeModal('loginModal');
     } catch (e) { 
         console.error("가입 신청 실패:", e); 
-        alert("서버 오류로 신청되지 않았습니다. 인터넷 연결을 확인해주세요."); 
+        alert("서버 오류로 신청되지 않았습니다."); 
     }
 }
 
@@ -4501,7 +4531,8 @@ function openGymProfile(gymIdentifier) {
     if (!gymInfo) { alert("체육관 정보를 찾을 수 없습니다."); return; }
 
     const members = demoPlayers.filter(p => p.gymId === gymInfo.id || p.gym === gymInfo.name);
-    const totalPt = members.reduce((sum, p) => sum + (p.pt || 0), 0);
+    // [수정] 개인 점수 합산이 아닌 체육관 DB의 누적 점수 사용
+    const totalPt = gymInfo.totalPt || 0; 
     const region = gymInfo.region || (members[0]?.region || '지역 미상');
 
     document.getElementById('gp-name').innerText = gymInfo.name;
@@ -4562,7 +4593,7 @@ function toggleViewMode() {
     }
 }
 
-// 🔥 [체육관 영구 보존 버전] ID 기반 랭킹 집계
+// 🔥 [체육관 영구 보존 버전] 활동 누적 기반 랭킹 집계
 function renderGyms(filterRegion = 'all') {
     const podiumContainer = document.getElementById('gym-top-podium');
     const listContainer = document.getElementById('gym-list-container');
@@ -4580,21 +4611,29 @@ function renderGyms(filterRegion = 'all') {
     let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
     const gymStats = {};
 
-    // 1. 모든 등록된 체육관 ID를 키로 초기화
+    // 1. 모든 등록된 체육관 데이터를 키로 초기화 (개별 합산이 아닌 DB에 저장된 totalPt 사용)
     registeredGyms.forEach(g => {
-        gymStats[g.id] = { id: g.id, name: g.name, region: g.region, totalPt: 0, members: 0 };
+        gymStats[g.id] = { 
+            id: g.id, 
+            name: g.name, 
+            region: g.region, 
+            totalPt: g.totalPt || 0, // DB에서 관리되는 누적 활동 점수
+            members: 0 
+        };
     });
 
-    // 2. 선수 데이터를 ID 기반으로 합산 (gymId가 없으면 gym 이름으로 매칭 시도)
+    // 2. 현재 소속된 선수 숫자만 파악
     demoPlayers.forEach(p => {
         let gymId = p.gymId || registeredGyms.find(g => g.name === p.gym)?.id;
         if (gymId && gymStats[gymId]) {
-            gymStats[gymId].totalPt += (p.pt || 0);
             gymStats[gymId].members += 1;
         }
     });
 
-    const sortedGyms = Object.values(gymStats).sort((a, b) => b.totalPt - a.totalPt);
+    // 3. 누적 승점 순으로 정렬
+    const sortedGyms = Object.values(gymStats)
+        .filter(g => registeredGyms.some(rg => rg.id === g.id)) 
+        .sort((a, b) => b.totalPt - a.totalPt);
 
     let podiumHtml = '';
     const top3 = sortedGyms.slice(0, 3);
@@ -4626,11 +4665,11 @@ function renderGyms(filterRegion = 'all') {
             </div>
             <div style="text-align:right;">
                 <div style="color:var(--gold); font-weight:bold; font-size:1rem;">${gym.totalPt.toLocaleString()} P</div>
-                <div style="font-size:0.65rem; color:#555;">시즌 누적 승점</div>
+                <div style="font-size:0.65rem; color:#555;">소속 시 획득한 누적 승점</div>
             </div>
         </div>`;
     });
-    listContainer.innerHTML = listHtml || `<div style="text-align:center; padding:40px; color:#666;">데이터가 없습니다.</div>`;
+    listContainer.innerHTML = listHtml || `<div style="text-align:center; padding:40px; color:#666;">해당 지역에 등록된 체육관이 없습니다.</div>`;
 }
 
 
@@ -4838,32 +4877,37 @@ async function updateGym() {
     let newGymName = document.getElementById('edit-gym-input').value.trim();
     if(!currentUser) return;
 
-    // 🔥 [수정] 체육관 이름이 없으면 자동으로 '무소속'으로 처리
     const isUnaffiliated = !newGymName || newGymName === '무소속';
-    if (isUnaffiliated) {
-        newGymName = '무소속';
-    }
+    if (isUnaffiliated) newGymName = '무소속';
 
     if(!confirm(`소속을 '${newGymName}'(으)로 변경하시겠습니까?`)) return;
 
     try {
-        // 무소속인 경우 ID는 빈 값으로 설정
         let finalGymId = isUnaffiliated ? "" : tempSelectedGymId;
         
-        // '무소속'이 아니고 새로운 체육관인 경우에만 ID 생성
-        if (!isUnaffiliated && !finalGymId) {
-            finalGymId = "gym_" + Date.now();
-            await window.setDoc(window.doc(window.db, "gyms_registry", finalGymId), {
-                id: finalGymId, name: newGymName, region: currentUser.region || '전북', registeredAt: Date.now()
-            });
+        // '무소속'이 아닐 때 중복 체크 수행
+        if (!isUnaffiliated) {
+            let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
+            const cleanName = newGymName.replace(/\s+/g, ' ').trim();
+            const existing = registeredGyms.find(g => g.name.replace(/\s+/g, ' ').trim().toLowerCase() === cleanName.toLowerCase());
+
+            if (existing) {
+                finalGymId = existing.id;
+                newGymName = existing.name;
+            } else if (!finalGymId) {
+                // 완전히 새로운 이름인 경우만 신규 ID 부여 및 레지스트리 등록 (초기 승점 0 설정)
+                finalGymId = "gym_" + Date.now();
+                await window.setDoc(window.doc(window.db, "gyms_registry", finalGymId), {
+                    id: finalGymId, name: newGymName, region: currentUser.region || '전북', registeredAt: Date.now(), totalPt: 0
+                });
+            }
         }
 
-        // 유저 정보 업데이트 (gymId와 gym 이름을 모두 저장하여 호환성 유지)
+        // 유저 정보 업데이트
         await window.updateDoc(window.doc(window.db, "users", currentUser.id.toString()), { 
             gymId: finalGymId, gym: newGymName 
         });
 
-        // 로컬 데이터 동기화
         currentUser.gymId = finalGymId;
         currentUser.gym = newGymName;
         localStorage.setItem('sparring_session', JSON.stringify(currentUser));
@@ -4872,7 +4916,6 @@ async function updateGym() {
         tempSelectedGymId = null;
         document.getElementById('edit-gym-results').style.display = 'none';
         
-        // UI 갱신
         openProfile(currentUser.id);
         renderGyms();
         renderPlayers(); 
