@@ -2856,8 +2856,9 @@ async function approveUser(firebaseId) {
             // 고유 ID가 없다면 생성
             const newUserId = user.id || Date.now();
             
-            // 2. 'users' 컬렉션에 정식 회원 데이터 전송 (승인 완료)
-            await window.setDoc(window.doc(window.db, "users", newUserId.toString()), {
+            // 2. [수정] 'users' 컬렉션에 저장할 때 문서 이름을 사용자의 아이디(user.rawName)로 지정합니다.
+            // 기존에는 newUserId.toString()을 사용하여 숫자로 저장했기 때문에 로그인이 안 되었습니다.
+            await window.setDoc(window.doc(window.db, "users", user.rawName), {
                 ...user,
                 id: newUserId,
                 sW: 0, sD: 0, sL: 0, pt: 0, trustScore: 0, 
@@ -3181,7 +3182,7 @@ async function uploadStoryImage(isAppendToExisting = false) {
                     });
                 }
 
-                // 🔥 [중요] DB 응답(updateDoc)을 기다리지 않고 로컬 데이터를 즉시 바꿔서 화면을 먼저 그려버림
+                // 🔥 [중요] DB 응답을 기다리지 않고 로컬 데이터를 즉시 바꿔서 화면을 먼저 그려버림
                 p.stories = currentStories; 
                 const isOwner = currentUser && String(p.id) === String(currentUser.id);
                 
@@ -3195,11 +3196,11 @@ async function uploadStoryImage(isAppendToExisting = false) {
                 }
 
                 // 5. 서버 업데이트 수행 (로그인 시 사용하는 rawName 경로로 정확히 지정)
-                // profileOwnerId가 숫자일 수 있으므로, demoPlayers에서 해당 선수의 rawName을 찾아 경로로 사용합니다.
                 const userDocName = p.rawName || profileOwnerId.toString();
                 const userRef = window.doc(window.db, "users", userDocName);
                 
-                window.updateDoc(userRef, { stories: currentStories }).then(() => {
+                // 🔥 [수정] updateDoc은 문서가 없으면 에러가 발생하여 저장이 유실됩니다. setDoc에 merge 옵션을 사용하여 무조건 저장되도록 보강했습니다.
+                window.setDoc(userRef, { stories: currentStories }, { merge: true }).then(() => {
                     console.log("Firestore 스토리 저장 완료:", userDocName);
                     // 세션 스토리지 강제 동기화
                     if (currentUser && currentUser.rawName === userDocName) {
@@ -3266,8 +3267,11 @@ async function updateStoryUI() {
             group.views[currentStoryIndex] = currentImgViews;
             
             try {
-                const userRef = window.doc(window.db, "users", profileOwnerId.toString());
-                window.updateDoc(userRef, { stories: p.stories });
+                // 🔥 [수정] 숫자인 profileOwnerId 대신 반드시 문서 아이디인 p.rawName을 경로로 잡아야 에러가 나지 않습니다.
+                const userDocName = p.rawName || profileOwnerId.toString();
+                const userRef = window.doc(window.db, "users", userDocName);
+                // 🔥 [수정] 마찬가지로 setDoc에 merge 옵션으로 변경
+                window.setDoc(userRef, { stories: p.stories }, { merge: true });
             } catch(e) { console.error("방문자 업데이트 실패", e); }
         }
     }
@@ -3310,7 +3314,7 @@ async function updateStoryUI() {
 
 // 스토리 삭제 기능 (서버 연동 및 데이터 정합성 강화)
 async function deleteCurrentStory() {
-    const p = demoPlayers.find(x => x.id === profileOwnerId);
+    const p = demoPlayers.find(x => String(x.id) === String(profileOwnerId));
     if (!p || currentViewingStoryGroup === null) return;
 
     // 원본 데이터 보호를 위해 복사본 사용
@@ -3333,8 +3337,10 @@ async function deleteCurrentStory() {
     }
 
     try {
-        const userRef = window.doc(window.db, "users", profileOwnerId.toString());
-        await window.updateDoc(userRef, { stories: stories });
+        // 🔥 [수정] 삭제 내용 역시 숫자가 아닌 rawName 경로로 안전하게 setDoc 처리합니다.
+        const userDocName = p.rawName || profileOwnerId.toString();
+        const userRef = window.doc(window.db, "users", userDocName);
+        await window.setDoc(userRef, { stories: stories }, { merge: true });
         
         // UI 즉시 갱신 (그룹이 남아있을 때만)
         if (stories[currentViewingStoryGroup]) {
@@ -3399,11 +3405,14 @@ async function changeStoryCover() {
     if(!confirm("현재 보고 계신 사진을 이 그룹의 대표 아이콘(커버)으로 설정하시겠습니까?")) return;
     
     try {
-        const p = demoPlayers.find(x => x.id === profileOwnerId);
+        const p = demoPlayers.find(x => String(x.id) === String(profileOwnerId));
         const currentImg = p.stories[currentViewingStoryGroup].images[currentStoryIndex];
         p.stories[currentViewingStoryGroup].cover = currentImg;
 
-        await window.updateDoc(window.doc(window.db, "users", profileOwnerId.toString()), { stories: p.stories });
+        // 🔥 [수정] 커버 설정 로직도 올바른 경로(rawName)와 setDoc merge 로직으로 수정했습니다.
+        const userDocName = p.rawName || profileOwnerId.toString();
+        await window.setDoc(window.doc(window.db, "users", userDocName), { stories: p.stories }, { merge: true });
+        
         alert("커버 이미지가 변경되었습니다.");
         renderProfileStories(p, true);
     } catch(e) { console.error(e); }
@@ -4046,8 +4055,10 @@ async function submitSignup() {
         };
 
         if (isAutoJoin) {
+            // [수정] 문서 이름을 타임스탬프 숫자가 아닌 사용자의 아이디(inputId)로 저장합니다.
+            // 그래야 processLogin()에서 window.doc(db, "users", inputId)로 찾을 수 있습니다.
             const newUserId = Date.now();
-            await window.setDoc(window.doc(window.db, "users", newUserId.toString()), { ...userData, id: newUserId });
+            await window.setDoc(window.doc(window.db, "users", inputId), { ...userData, id: newUserId });
             alert(`'${inputId}' 선수님, 가입이 자동 승인되었습니다!`);
         } else {
             await window.addDoc(window.collection(window.db, "pendingUsers"), userData);
