@@ -3435,7 +3435,7 @@ async function updateRegion() {
     const newReg = document.getElementById('edit-region-select').value;
     if (currentUser) {
         try {
-            await window.updateDoc(window.doc(window.db, "users", currentUser.id.toString()), { region: newReg });
+            await window.updateDoc(window.doc(window.db, "users", currentUser.rawName), { region: newReg });
             currentUser.region = newReg;
             localStorage.setItem('sparring_session', JSON.stringify(currentUser));
             alert('주 활동 지역이 성공적으로 변경되었습니다!');
@@ -3449,7 +3449,7 @@ async function withdrawMembership() {
     if(confirm('정말로 탈퇴하시겠습니까?\n탈퇴 시 모든 전적 데이터가 영구 삭제됩니다.')) {
         if(currentUser) {
             try {
-                await window.deleteDoc(window.doc(window.db, "users", currentUser.id.toString()));
+                await window.deleteDoc(window.doc(window.db, "users", currentUser.rawName));
                 logout(); alert('탈퇴 완료되었습니다.');
             } catch(e) { console.error(e); }
         }
@@ -4981,7 +4981,7 @@ async function updateGym() {
         }
 
         // 유저 정보 업데이트
-        await window.updateDoc(window.doc(window.db, "users", currentUser.id.toString()), { 
+        await window.updateDoc(window.doc(window.db, "users", currentUser.rawName), { 
             gymId: finalGymId, gym: newGymName 
         });
 
