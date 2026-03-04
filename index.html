@@ -3067,15 +3067,16 @@ async function openProfile(id) {
 }
 
 // 프로필 스토리 리스트 그리기 (신규 사진 맨 왼쪽 배치 및 등록 버튼 우측 고정)
+// 프로필 스토리 리스트 그리기 (신규 사진 맨 왼쪽 배치 및 등록 버튼 우측 고정)
 function renderProfileStories(player, isOwner) {
     const container = document.getElementById('pm-story-section');
     if(!container) return;
     
-    // 현재 메모리에 있는 최신 스토리 데이터를 가져옴 (데이터 불변성 유지)
+    // 현재 메모리에 있는 최신 스토리 데이터를 가져옴
     const stories = player.stories || [];
     let html = '';
 
-    // 1. 등록된 하이라이트 그룹들을 먼저 루프 돌며 왼쪽에 순차 배치
+    // 1. 등록된 스토리들을 먼저 렌더링 (배열 순서대로 왼쪽부터 배치)
     stories.forEach((group, gIdx) => {
         html += `
         <div class="story-circle-wrap">
@@ -3086,7 +3087,7 @@ function renderProfileStories(player, isOwner) {
         </div>`;
     });
 
-    // 2. [핵심] '신규 등록' 버튼은 반복문 바깥 마지막에 위치시켜 항상 가장 오른쪽에 고정
+    // 2. '신규 등록' 버튼은 루프가 끝난 뒤 마지막(가장 오른쪽)에 무조건 추가
     if(isOwner) {
         html += `
         <div class="story-circle-wrap" onclick="document.getElementById('story-new-upload').click()" style="display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; width: 70px;">
@@ -3097,7 +3098,7 @@ function renderProfileStories(player, isOwner) {
 
     container.innerHTML = html;
     
-    // 업로드 직후 가장 왼쪽(신규 사진)이 바로 보이도록 가로 스크롤을 0으로 설정
+    // 신규 업로드 시 즉시 볼 수 있도록 가로 스크롤을 맨 왼쪽(0)으로 강제 이동
     container.scrollLeft = 0; 
 }
 
@@ -3199,27 +3200,31 @@ async function uploadStoryImage(isAppendToExisting = false) {
 
 // 스토리 뷰어 실행
 function viewStoryGroup(groupIndex) {
-    const p = demoPlayers.find(x => x.id === profileOwnerId);
+    // String 변환을 통해 ID 데이터 타입 불일치 방지
+    const p = demoPlayers.find(x => String(x.id) === String(profileOwnerId));
     if (!p || !p.stories || !p.stories[groupIndex]) return;
 
     currentViewingStoryGroup = groupIndex;
     currentStoryIndex = 0; // 항상 처음부터 시작
     
-    const isOwner = currentUser && profileOwnerId === currentUser.id;
+    const isOwner = currentUser && String(profileOwnerId) === String(currentUser.id);
 
     document.getElementById('storyViewer').style.display = 'flex';
     
-    // 관리자(본인) 버튼들 노출 여부
-    document.getElementById('story-top-plus-btn').style.display = isOwner ? 'flex' : 'none';
-    document.getElementById('story-delete-btn').style.display = isOwner ? 'flex' : 'none';
-    document.getElementById('story-cover-edit-btn').style.display = isOwner ? 'block' : 'none';
+    // 관리자(본인) 버튼들 노출 여부 제어
+    const plusBtn = document.getElementById('story-top-plus-btn');
+    const deleteBtn = document.getElementById('story-delete-btn');
+    const coverBtn = document.getElementById('story-cover-edit-btn');
+
+    if (plusBtn) plusBtn.style.display = isOwner ? 'flex' : 'none';
+    if (deleteBtn) deleteBtn.style.display = isOwner ? 'flex' : 'none';
+    if (coverBtn) coverBtn.style.display = isOwner ? 'block' : 'none';
 
     updateStoryUI();
 }
 
 // 스토리 UI 갱신 (원본 크기 비율 유지 및 전체 화면 보기 최적화)
 async function updateStoryUI() {
-    // ID 기반으로 최신 선수 데이터 획득
     const p = demoPlayers.find(x => String(x.id) === String(profileOwnerId));
     if (!p || currentViewingStoryGroup === null) return;
     
@@ -3227,47 +3232,58 @@ async function updateStoryUI() {
     const images = group.images;
     const currentImgUrl = images[currentStoryIndex];
     
-    // 조회수 배열 데이터 구조 안전성 검사
+    // 데이터 구조 안전성 확보
     if (!group.views) group.views = images.map(() => []);
     while(group.views.length < images.length) group.views.push([]);
 
-    // 1. 조회수 업데이트 로직 (본인 제외 실시간 기록)
+    // 1. [조회수 기록] 본인이 아니고 처음 보는 경우에만 기록
     if (currentUser && String(currentUser.id) !== String(profileOwnerId)) {
         let currentImgViews = group.views[currentStoryIndex] || [];
         if (!currentImgViews.includes(currentUser.rawName)) {
             currentImgViews.push(currentUser.rawName);
             group.views[currentStoryIndex] = currentImgViews;
             
-            const userRef = window.doc(window.db, "users", profileOwnerId.toString());
-            window.updateDoc(userRef, { stories: p.stories });
+            try {
+                const userRef = window.doc(window.db, "users", profileOwnerId.toString());
+                window.updateDoc(userRef, { stories: p.stories });
+            } catch(e) { console.error("방문자 업데이트 실패", e); }
         }
     }
 
-    // 2. 상단 진행 상태 바(Progress Bar) 업데이트
+    // 2. 프로그레스 바 렌더링
     const progressContainer = document.getElementById('story-progress');
-    let progressHtml = '';
-    images.forEach((_, i) => {
-        let statusClass = "";
-        if (i < currentStoryIndex) statusClass = "active";
-        else if (i === currentStoryIndex) statusClass = "current";
-        progressHtml += `<div class="progress-segment ${statusClass}"><div class="fill"></div></div>`;
-    });
-    progressContainer.innerHTML = progressHtml;
+    if (progressContainer) {
+        let progressHtml = '';
+        images.forEach((_, i) => {
+            let statusClass = "";
+            if (i < currentStoryIndex) statusClass = "active";
+            else if (i === currentStoryIndex) statusClass = "current";
+            progressHtml += `<div class="progress-segment ${statusClass}"><div class="fill"></div></div>`;
+        });
+        progressContainer.innerHTML = progressHtml;
+    }
 
-    // 3. [핵심] 이미지 원본 비율 출력
+    // 3. [핵심 수정] 이미지 출력 (원본 크기 비율 유지)
     const viewerImg = document.getElementById('story-viewer-img');
-    // background-size: contain을 사용하여 어떤 비율의 사진이든 잘리지 않고 원본 전체가 보이게 함
-    viewerImg.style.backgroundImage = `url('${currentImgUrl}')`;
-    viewerImg.style.backgroundSize = "contain"; 
-    viewerImg.style.backgroundRepeat = "no-repeat";
-    viewerImg.style.backgroundPosition = "center";
+    if (viewerImg) {
+        viewerImg.style.backgroundImage = `url('${currentImgUrl}')`;
+        // background-size: contain을 사용하여 잘림 없이 원본 비율 전체가 보이도록 함
+        viewerImg.style.backgroundSize = "contain"; 
+        viewerImg.style.backgroundRepeat = "no-repeat";
+        viewerImg.style.backgroundPosition = "center";
+        viewerImg.style.backgroundColor = "#000"; // 여백은 검정색 처리
+    }
 
-    // 4. 조회수 카운트 표시
-    const viewCount = group.views[currentStoryIndex] ? group.views[currentStoryIndex].length : 0;
-    document.getElementById('story-view-count').innerText = viewCount;
+    // 4. 조회수 숫자 업데이트
+    const viewCountDisplay = document.getElementById('story-view-count');
+    if (viewCountDisplay) {
+        const viewCount = group.views[currentStoryIndex] ? group.views[currentStoryIndex].length : 0;
+        viewCountDisplay.innerText = viewCount;
+    }
     
-    // 방문자 리스트 팝업 초기화
-    document.getElementById('story-viewer-popover').style.display = 'none';
+    // 팝업 닫기
+    const popover = document.getElementById('story-viewer-popover');
+    if (popover) popover.style.display = 'none';
 }
 
 // 스토리 삭제 기능 (서버 연동 및 데이터 정합성 강화)
