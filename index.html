@@ -13,7 +13,7 @@
 <script type="module">
   // Firebase 초기화 및 필수 함수 임포트 (Storage 추가)
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDoc, getDocs, onSnapshot, query, orderBy, doc, setDoc, updateDoc, deleteDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
   import { getStorage, ref, uploadBytes, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
   const firebaseConfig = {
@@ -1494,16 +1494,19 @@ window.onload = async function() {
     let deletedUsers = JSON.parse(localStorage.getItem('sparring_deleted_users')) || [];
     demoPlayers = demoPlayers.filter(p => !deletedUsers.includes(p.id));
 
-    // [핵심] admin 계정 서버 자동 생성 (이미 만들어진 계정으로 저장)
+    // [핵심] 기본 계정(admin, test, test1) 서버 자동 생성 및 동기화 (삭제 기능 작동을 위한 필수 작업)
     try {
-        const adminRef = window.doc(window.db, "users", "admin");
-        const adminSnap = await window.getDoc(adminRef);
-        if (!adminSnap.exists()) {
-            console.log("admin 계정이 서버에 없어 새로 생성합니다.");
-            const adminData = demoPlayers.find(p => p.rawName === 'admin');
-            await window.setDoc(adminRef, adminData);
+        const defaultAccounts = ['admin', 'test', 'test1'];
+        for (const rawId of defaultAccounts) {
+            const userRef = window.doc(window.db, "users", rawId);
+            const userSnap = await window.getDoc(userRef);
+            if (!userSnap.exists()) {
+                console.log(`${rawId} 계정이 서버에 없어 새로 생성합니다.`);
+                const userData = demoPlayers.find(p => p.rawName === rawId);
+                if (userData) await window.setDoc(userRef, userData);
+            }
         }
-    } catch(e) { console.error("Admin 초기화 실패:", e); }
+    } catch(e) { console.error("기본 계정 초기화 실패:", e); }
 
     // 2. 승인된 유저 데이터를 데모 목록에 동기화 (서버에서 가져온 스토리 데이터 포함)
     let savedPlayers = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
@@ -1622,6 +1625,8 @@ function initFirebaseRealtime() {
         let players = [];
         snapshot.forEach((doc) => players.push(doc.data()));
         
+        // 🔥 [수정] 삭제된 회원이 다시 나타나는 현상(부활 버그) 해결: 
+        // 모든 계정이 이제 Firebase 서버에 저장되므로, 더 이상 로컬에서 수동으로 push하지 않고 서버 데이터를 전적으로 신뢰합니다.
         demoPlayers = players;
         localStorage.setItem('sparring_approved_users', JSON.stringify(players));
         
@@ -1640,8 +1645,9 @@ function initFirebaseRealtime() {
         if (currentUser) updateLoginStateUI();
         
         const profileModal = document.getElementById('profileModal');
-        if (profileModal && profileModal.style.display === 'flex' && window.profileOwnerId) {
-            const p = players.find(x => String(x.id) === String(window.profileOwnerId));
+        // 🔥 [수정] window.profileOwnerId가 아닌 전역변수 profileOwnerId를 직접 참조하여 스토리 업로드 후 UI 즉시 갱신
+        if (profileModal && profileModal.style.display === 'flex' && typeof profileOwnerId !== 'undefined' && profileOwnerId !== null) {
+            const p = players.find(x => String(x.id) === String(profileOwnerId));
             if (p) {
                 const isOwner = currentUser && String(p.id) === String(currentUser.id);
                 renderProfileStories(p, isOwner);
@@ -1981,14 +1987,14 @@ async function insertEditorLocalImage(event) {
 
     try {
         // 1. 이미지 압축 최적화
-        updateUploadProgress(0, "이미지 최적화 중...");
-        const compressedFile = await compressImage(file);
+        window.updateUploadProgress(0, "이미지 최적화 중..."); // 🔥 [수정] 명확한 window 참조
+        const compressedFile = await window.compressImage(file);
         
         const fileName = "post_" + Date.now() + "_" + file.name;
         const storageRef = window.ref(window.storage, `community_images/${fileName}`);
         
         // 2. 실시간 업로드 추적
-        const uploadTask = uploadBytesResumable(storageRef, compressedFile);
+        const uploadTask = window.uploadBytesResumable(storageRef, compressedFile); // 🔥 [수정] ReferenceError 방지
         
         uploadTask.on('state_changed', 
             (snapshot) => {
@@ -2374,22 +2380,22 @@ async function submitSparringRecord() {
         let finalImageUrl = "";
         
         if (imageFile) {
-            updateUploadProgress(0, "인증 사진 최적화 중...");
-            const compressedFile = await compressImage(imageFile);
+            window.updateUploadProgress(0, "인증 사진 최적화 중...");
+            const compressedFile = await window.compressImage(imageFile);
             const fileName = `records/${Date.now()}_${imageFile.name}`;
             const storageRef = window.ref(window.storage, fileName);
             
-            const uploadTask = uploadBytesResumable(storageRef, compressedFile);
+            const uploadTask = window.uploadBytesResumable(storageRef, compressedFile); // 🔥 [수정] ReferenceError 방지
             
             await new Promise((resolve, reject) => {
                 uploadTask.on('state_changed', 
                     (snapshot) => {
                         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        updateUploadProgress(progress, "인증 자료 전송 중...");
+                        window.updateUploadProgress(progress, "인증 자료 전송 중...");
                     }, 
                     reject, 
                     async () => {
-                        finalImageUrl = await getDownloadURL(uploadTask.snapshot.ref);
+                        finalImageUrl = await window.getDownloadURL(uploadTask.snapshot.ref); // 🔥 [수정] 명확한 window 참조
                         resolve();
                     }
                 );
@@ -2899,9 +2905,24 @@ async function rejectUser(firebaseId) {
 async function adminDeleteMember(id) {
     if(!confirm('이 회원을 영구 삭제하시겠습니까?\n모든 기록과 랭킹이 서버에서 지워집니다.')) return;
     try {
-        await window.deleteDoc(window.doc(window.db, "users", id.toString()));
-        alert('회원이 삭제되었습니다.');
-    } catch(e) { console.error(e); }
+        // ID를 기반으로 해당 유저의 정확한 문서 이름(rawName)을 찾아 삭제합니다.
+        const targetUser = demoPlayers.find(p => String(p.id) === String(id));
+        const docName = targetUser ? targetUser.rawName : id.toString();
+        
+        // Firestore에서 문서 삭제
+        await window.deleteDoc(window.doc(window.db, "users", docName));
+        
+        // 만약 삭제한 대상이 현재 로그인한 본인이라면 로그아웃 처리
+        if (currentUser && currentUser.rawName === docName) {
+            logout();
+        }
+
+        alert('회원이 성공적으로 삭제되었습니다.');
+        // onSnapshot 리스너가 서버 변화를 감지하여 목록에서 즉시 사라지게 만듭니다.
+    } catch(e) { 
+        console.error("회원 삭제 실패:", e); 
+        alert("회원 삭제 중 오류가 발생했습니다.");
+    }
 }
 
 // --- 인증 및 프로필 등 유틸 ---
