@@ -1601,33 +1601,46 @@ function initFirebaseRealtime() {
     });
 
     // 3. 승인된 선수 명단 동기화 (프로필 모달 실시간 반영 로직 추가)
-    window.onSnapshot(window.collection(window.db, "users"), (snapshot) => {
-        let players = [];
-        snapshot.forEach((doc) => players.push(doc.data()));
-        demoPlayers = players;
-        localStorage.setItem('sparring_approved_users', JSON.stringify(players));
-        
-        renderFeed();
-        renderPlayers();
-        renderGyms();
-        if (currentUser) updateLoginStateUI();
-        
-        // 🔥 [추가] 현재 프로필 모달이 열려있다면 사진 목록 즉시 새로고침
-        const profileModal = document.getElementById('profileModal');
-        if (profileModal && profileModal.style.display === 'flex' && window.profileOwnerId) {
-            const p = players.find(x => String(x.id) === String(window.profileOwnerId));
-            if (p) {
-                const isOwner = currentUser && String(p.id) === String(currentUser.id);
-                renderProfileStories(p, isOwner);
-                // 경기 기록 및 기본 정보도 최신화
-                document.getElementById('pm-season-rec').innerText = `${p.sW || 0}승 ${p.sD || 0}무 ${p.sL || 0}패`;
-                document.getElementById('pm-season-pt').innerText = `${p.pt || 0} P`;
-            }
+window.onSnapshot(window.collection(window.db, "users"), (snapshot) => {
+    let players = [];
+    snapshot.forEach((doc) => players.push(doc.data()));
+    
+    // 전역 선수 명단 업데이트 및 로컬 스토리지 동기화
+    demoPlayers = players;
+    localStorage.setItem('sparring_approved_users', JSON.stringify(players));
+    
+    // 대시보드 및 리스트 UI 일괄 갱신
+    renderFeed();
+    renderPlayers();
+    renderGyms();
+    if (currentUser) updateLoginStateUI();
+    
+    // [보강] 프로필 모달이 열려 있는 경우 실시간으로 스토리를 다시 그려 즉시 반영 상태 유지
+    const profileModal = document.getElementById('profileModal');
+    if (profileModal && profileModal.style.display === 'flex' && window.profileOwnerId) {
+        // String 변환을 통해 ID 데이터 타입(Number/String) 불일치로 인한 검색 실패 방지
+        const p = players.find(x => String(x.id) === String(window.profileOwnerId));
+        if (p) {
+            const isOwner = currentUser && String(p.id) === String(currentUser.id);
+            // 스토리 섹션 즉시 리렌더링
+            renderProfileStories(p, isOwner);
+            
+            // 전적 및 포인트 정보 실시간 업데이트
+            const recEl = document.getElementById('pm-season-rec');
+            const ptEl = document.getElementById('pm-season-pt');
+            const trustEl = document.getElementById('pm-trust');
+            
+            if(recEl) recEl.innerText = `${p.sW || 0}승 ${p.sD || 0}무 ${p.sL || 0}패`;
+            if(ptEl) ptEl.innerText = `${(p.pt || 0).toLocaleString()} P`;
+            if(trustEl) trustEl.innerText = `${p.trustScore || 0} P`;
         }
+    }
 
-        // 관리자 회원 관리 목록 갱신
-        if (document.getElementById('admin-dashboard').classList.contains('active')) renderAdmin();
-    });
+    // 관리자 페이지 활성화 시 회원 목록 실시간 갱신
+    if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) {
+        renderAdmin();
+    }
+});
 
     // 4. 🔥 [신규] 체육관 레지스트리 동기화 (삭제 시 즉시 반영 핵심)
     window.onSnapshot(window.collection(window.db, "gyms_registry"), (snapshot) => {
@@ -3053,91 +3066,88 @@ async function openProfile(id) {
     openModal('profileModal');
 }
 
-// 프로필 스토리 리스트 그리기 (사진 전체 보기 및 버튼 우측 정렬 적용)
+// 프로필 스토리 리스트 그리기 (신규 사진 맨 왼쪽 배치 및 등록 버튼 우측 고정)
 function renderProfileStories(player, isOwner) {
     const container = document.getElementById('pm-story-section');
     if(!container) return;
     
+    // 현재 메모리에 있는 최신 스토리 데이터를 가져옴 (데이터 불변성 유지)
     const stories = player.stories || [];
     let html = '';
 
-    // 1. 등록된 스토리 아이콘들을 왼쪽에 먼저 배치
+    // 1. 등록된 하이라이트 그룹들을 먼저 루프 돌며 왼쪽에 순차 배치
     stories.forEach((group, gIdx) => {
         html += `
         <div class="story-circle-wrap">
-            <div class="story-circle" onclick="viewStoryGroup(${gIdx})" style="overflow:hidden; display:flex; align-items:center; justify-content:center;" title="클릭하여 원본 전체화면 보기">
-                <img src="${group.cover}" style="width:100%; height:100%; object-fit:contain;">
+            <div class="story-circle" onclick="viewStoryGroup(${gIdx})" style="overflow:hidden; display:flex; align-items:center; justify-content:center; border: 2px solid var(--primary-red); padding: 2px; background:#000;">
+                <img src="${group.cover}" style="width:100%; height:100%; border-radius: 50%; object-fit: cover;">
             </div>
-            <div class="story-circle-label">${group.title || '하이라이트'}</div>
+            <div class="story-circle-label" style="font-size: 0.7rem; color: #888; text-align: center; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 4px;">${group.title || '하이라이트'}</div>
         </div>`;
     });
 
-    // 2. 신규 등록 버튼을 가장 오른쪽에 배치 (새 사진이 왼쪽으로 생성되면서 자동으로 우측으로 밀려남)
+    // 2. [핵심] '신규 등록' 버튼은 반복문 바깥 마지막에 위치시켜 항상 가장 오른쪽에 고정
     if(isOwner) {
         html += `
-        <div class="story-circle-wrap" onclick="document.getElementById('story-new-upload').click()">
-            <div class="story-add-btn" style="border: 2px dashed #666; color:#888;">+</div>
-            <div class="story-circle-label">신규 등록</div>
+        <div class="story-circle-wrap" onclick="document.getElementById('story-new-upload').click()" style="display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; width: 70px;">
+            <div class="story-add-btn" style="width: 64px; height: 64px; border-radius: 50%; border: 2px dashed #444; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #666; cursor: pointer; background: #111;">+</div>
+            <div class="story-circle-label" style="font-size: 0.7rem; color: #888; text-align: center;">신규 등록</div>
         </div>`;
     }
 
     container.innerHTML = html;
     
-    // 업로드된 새 사진이 맨 왼쪽에 위치하므로 스크롤을 항상 가장 왼쪽으로 초기화하여 즉시 보이게 함
+    // 업로드 직후 가장 왼쪽(신규 사진)이 바로 보이도록 가로 스크롤을 0으로 설정
     container.scrollLeft = 0; 
 }
 
 // 스토리 업로드 로직 (용량 최적화 및 Firebase 저장)
 // 스토리 업로드 로직 (Firebase Storage 활용 - 무제한 용량 방식)
 // 스토리 업로드 로직 (Firebase Storage 활용 - 자동 압축 및 실시간 진행도 적용)
-// 스토리 업로드 로직 (사진 전체 보기 지원 및 실시간 UI 반영 강화)
+// 스토리 업로드 로직 (DB 응답 전 즉시 화면 반영 및 뷰어 원본 크기 최적화)
 async function uploadStoryImage(isAppendToExisting = false) {
     const fileEl = isAppendToExisting ? document.getElementById('story-inner-upload') : document.getElementById('story-new-upload');
     const file = fileEl.files[0];
     if (!file) return;
 
-    // 업로드 시작 시 즉시 진행 바 표시 (조작 방지)
-    window.updateUploadProgress(1, "이미지 최적화 준비 중...");
+    // 업로드 시작 및 진행 바 표시
+    window.updateUploadProgress(1, "이미지 최적화 중...");
 
     try {
-        // 1. 이미지 압축 (0.7 퀄리티로 용량 및 전송 에러 방지)
-        window.updateUploadProgress(10, "고화질 압축 작업 진행 중...");
+        // 1. 이미지 압축 (기존 유틸리티 유지)
         const compressedFile = await window.compressImage(file);
         
-        // 2. Storage 경로 설정 (유저별 폴더 구분)
+        // 2. Storage 업로드 시작
         const fileName = "story_" + Date.now() + "_" + file.name;
         const storageRef = window.ref(window.storage, `stories/${profileOwnerId}/${fileName}`);
-        
-        // 3. 실시간 업로드 태스크 시작
         const uploadTask = window.uploadBytesResumable(storageRef, compressedFile);
 
         uploadTask.on('state_changed', 
             (snapshot) => {
                 const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                window.updateUploadProgress(progress, "서버 전송 중...");
+                window.updateUploadProgress(progress, "서버로 안전하게 전송 중...");
             }, 
             (error) => {
                 console.error("업로드 에러:", error);
                 window.updateUploadProgress(100);
-                alert("업로드 실패! Firebase Storage 설정을 확인해주세요.");
+                alert("업로드 실패");
             }, 
             async () => {
-                // 4. 업로드 완료 후 URL 획득
+                // 3. 사진 주소(URL) 확보
                 const downloadURL = await window.getDownloadURL(uploadTask.snapshot.ref);
 
-                // 5. 로컬 데이터 갱신 (오류의 원인이었던 window. 제거)
+                // 4. 로컬 데이터 메모리 확보 (ID 타입 체크 보강)
                 let p = demoPlayers.find(x => String(x.id) === String(profileOwnerId));
                 if (!p) {
-                    alert("선수 정보를 찾을 수 없습니다.");
                     window.updateUploadProgress(100);
                     return;
                 }
 
-                // 기존 스토리 배열 복사 후 새 데이터 추가
+                // 기존 스토리 배열 깊은 복사
                 let currentStories = JSON.parse(JSON.stringify(p.stories || []));
 
                 if (isAppendToExisting && currentViewingStoryGroup !== null) {
-                    // 기존 그룹에 이미지 추가
+                    // 기존 그룹 내부 추가: 배열 끝에 추가
                     if (currentStories[currentViewingStoryGroup]) {
                         currentStories[currentViewingStoryGroup].images.push(downloadURL);
                         if(!currentStories[currentViewingStoryGroup].views) {
@@ -3147,9 +3157,8 @@ async function uploadStoryImage(isAppendToExisting = false) {
                         }
                     }
                 } else {
-                    // 새 하이라이트 그룹 생성
+                    // [핵심] 신규 하이라이트 생성: unshift()를 사용하여 무조건 0번(맨 왼쪽)에 배치
                     const title = prompt("하이라이트 제목을 입력하세요", "새 하이라이트") || "하이라이트";
-                    // 🔥 새 스토리를 배열의 가장 앞(맨 왼쪽)에 추가하도록 수정 (push -> unshift)
                     currentStories.unshift({
                         id: Date.now(),
                         title: title,
@@ -3159,32 +3168,32 @@ async function uploadStoryImage(isAppendToExisting = false) {
                     });
                 }
 
-                // 🔥 [핵심] 로컬 메모리의 데이터를 즉시 갱신하여 렌더링에 반영
-                p.stories = currentStories;
-
-                // 6. Firestore 서버 DB 업데이트 (오류의 원인이었던 window. 제거)
-                const userRef = window.doc(window.db, "users", profileOwnerId.toString());
-                await window.updateDoc(userRef, { stories: currentStories });
-                
-                window.updateUploadProgress(100, "업로드 완료!");
-                
-                // 7. UI 즉시 리렌더링 (자동 새로고침 반영)
+                // 🔥 [중요] DB 응답(updateDoc)을 기다리지 않고 로컬 데이터를 즉시 바꿔서 화면을 먼저 그려버림
+                p.stories = currentStories; 
                 const isOwner = currentUser && String(p.id) === String(currentUser.id);
+                
                 if(isAppendToExisting && currentViewingStoryGroup !== null) {
-                    currentStoryIndex = currentStories[currentViewingStoryGroup].images.length - 1;
+                    // 뷰어 안에서 추가한 경우 즉시 다음 장으로 넘겨서 보여줌
+                    currentStoryIndex = p.stories[currentViewingStoryGroup].images.length - 1;
                     updateStoryUI(); 
                 } else {
+                    // 외부에서 추가한 경우 프로필 모달의 리스트를 즉시 리프레시 (맨 왼쪽에 나타남)
                     renderProfileStories(p, isOwner);
                 }
+
+                // 5. 백그라운드에서 서버 업데이트 수행 (비동기 처리로 딜레이 제거)
+                const userRef = window.doc(window.db, "users", profileOwnerId.toString());
+                window.updateDoc(userRef, { stories: currentStories }).then(() => {
+                    console.log("Firestore 저장 완료");
+                });
                 
-                fileEl.value = ''; // 선택 파일 초기화
-                console.log("로컬 및 서버 동기화 완료");
+                window.updateUploadProgress(100, "완료!");
+                fileEl.value = ''; 
             }
         );
     } catch (err) { 
         console.error("업로드 전체 실패:", err); 
         window.updateUploadProgress(100);
-        alert("처리에 오류가 발생했습니다.");
     }
 }
 
@@ -3208,32 +3217,33 @@ function viewStoryGroup(groupIndex) {
     updateStoryUI();
 }
 
-// 스토리 UI 갱신 및 조회수 처리
+// 스토리 UI 갱신 (원본 크기 비율 유지 및 전체 화면 보기 최적화)
 async function updateStoryUI() {
-    const p = demoPlayers.find(x => x.id === profileOwnerId);
+    // ID 기반으로 최신 선수 데이터 획득
+    const p = demoPlayers.find(x => String(x.id) === String(profileOwnerId));
     if (!p || currentViewingStoryGroup === null) return;
     
     const group = p.stories[currentViewingStoryGroup];
     const images = group.images;
+    const currentImgUrl = images[currentStoryIndex];
     
-    // 데이터 구조 안전성 확보
+    // 조회수 배열 데이터 구조 안전성 검사
     if (!group.views) group.views = images.map(() => []);
     while(group.views.length < images.length) group.views.push([]);
 
-    // 1. [조회수 기록] 본인이 아니고 처음 보는 경우에만 기록
-    if (currentUser && currentUser.id !== profileOwnerId) {
+    // 1. 조회수 업데이트 로직 (본인 제외 실시간 기록)
+    if (currentUser && String(currentUser.id) !== String(profileOwnerId)) {
         let currentImgViews = group.views[currentStoryIndex] || [];
         if (!currentImgViews.includes(currentUser.rawName)) {
             currentImgViews.push(currentUser.rawName);
             group.views[currentStoryIndex] = currentImgViews;
             
-            try {
-                await window.updateDoc(window.doc(window.db, "users", profileOwnerId.toString()), { stories: p.stories });
-            } catch(e) { console.error("방문자 업데이트 실패", e); }
+            const userRef = window.doc(window.db, "users", profileOwnerId.toString());
+            window.updateDoc(userRef, { stories: p.stories });
         }
     }
 
-    // 2. 프로그레스 바 렌더링
+    // 2. 상단 진행 상태 바(Progress Bar) 업데이트
     const progressContainer = document.getElementById('story-progress');
     let progressHtml = '';
     images.forEach((_, i) => {
@@ -3244,14 +3254,19 @@ async function updateStoryUI() {
     });
     progressContainer.innerHTML = progressHtml;
 
-    // 3. 이미지 출력
-    document.getElementById('story-viewer-img').style.backgroundImage = `url('${images[currentStoryIndex]}')`;
+    // 3. [핵심] 이미지 원본 비율 출력
+    const viewerImg = document.getElementById('story-viewer-img');
+    // background-size: contain을 사용하여 어떤 비율의 사진이든 잘리지 않고 원본 전체가 보이게 함
+    viewerImg.style.backgroundImage = `url('${currentImgUrl}')`;
+    viewerImg.style.backgroundSize = "contain"; 
+    viewerImg.style.backgroundRepeat = "no-repeat";
+    viewerImg.style.backgroundPosition = "center";
 
-    // 4. 조회수 숫자 업데이트
+    // 4. 조회수 카운트 표시
     const viewCount = group.views[currentStoryIndex] ? group.views[currentStoryIndex].length : 0;
     document.getElementById('story-view-count').innerText = viewCount;
     
-    // 팝업은 일단 닫기
+    // 방문자 리스트 팝업 초기화
     document.getElementById('story-viewer-popover').style.display = 'none';
 }
 
