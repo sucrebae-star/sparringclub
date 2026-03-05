@@ -950,13 +950,15 @@
             <h3>스파링 결과 의무 인증</h3>
             <p style="font-size: 0.8rem; color: #ff7675;">* 승리 50P / 무승부 30P / 패배 10P 지급</p>
             <label>기록할 스파링 매치 선택</label>
-            <select id="record-match-select">
+            <select id="record-match-select" onchange="autoSetMatchType()">
                 <option value="">-- 성사된 매칭을 선택하세요 --</option>
             </select>
             <p id="no-match-msg" style="font-size: 0.75rem; color: #ff7675; display: none; margin-top: 5px;">* 현재 성사된 매칭이 없습니다.</p>
             
-            <label>매치 타입</label>
-            <select id="record-match-type"><option value="rank">랭크 스파링</option><option value="practice">연습 게임</option></select>
+            <label>매치 타입 (신청 당시 설정값 자동 지정)</label>
+            <input type="text" id="record-match-type-display" value="매치를 선택하세요" readonly style="background: #222; color: #aaa; font-weight: bold; border-color: #444;">
+            <input type="hidden" id="record-match-type" value="open">
+            
             <label>판정 방식 (인증 수단)</label>
             <select id="judge-select">
                 <option value="mutual">선수 상호 인정 (합의)</option>
@@ -1177,6 +1179,12 @@
             </div>
             
             <input type="password" id="signup-pw" placeholder="비밀번호 (숫자+영대소문자+특수기호)">
+
+            <label style="color:var(--gold);">가입 역할 (직급)</label>
+            <select id="signup-role" onchange="toggleSignupRoleFields()" style="border-color:var(--gold);">
+                <option value="player">일반 선수 (Player)</option>
+                <option value="manager">체육관 매니저 (Arena Manager)</option>
+            </select>
             
             <label>주 활동 지역</label>
             <select id="signup-region">
@@ -1202,21 +1210,23 @@
             </div>
             <div id="gym-search-results" style="display: none; background: #222; border: 1px solid #444; border-radius: 4px; padding: 8px; margin-top: 5px; font-size: 0.85rem;"></div>
             
-            <label>활동 체급 선택 (5kg 단위)</label>
-            <select id="signup-weight">
-                <option>-50kg</option><option>-55kg</option><option>-60kg</option>
-                <option>-65kg</option><option>-70kg</option><option>-75kg</option>
-                <option>-80kg</option><option>-85kg</option><option>-90kg</option>
-                <option>+90kg</option>
-            </select>
+            <div id="signup-player-fields">
+                <label>활동 체급 선택 (5kg 단위)</label>
+                <select id="signup-weight">
+                    <option>-50kg</option><option>-55kg</option><option>-60kg</option>
+                    <option>-65kg</option><option>-70kg</option><option>-75kg</option>
+                    <option>-80kg</option><option>-85kg</option><option>-90kg</option>
+                    <option>+90kg</option>
+                </select>
 
-            <select id="signup-tier" style="margin-top:10px;">
-                <option value="1">전적 없음 (Tier 1)</option>
-                <option value="2">생활체육 대회 입상 (Tier 2)</option>
-                <option value="3">시단위 아마추어/엘리트 (Tier 3)</option>
-                <option value="4">프로 시합 경력 (Tier 4)</option>
-                <option value="5">국내 20위권 랭커/챔피언 (Tier 5)</option>
-            </select>
+                <select id="signup-tier" style="margin-top:10px;">
+                    <option value="1">전적 없음 (Tier 1)</option>
+                    <option value="2">생활체육 대회 입상 (Tier 2)</option>
+                    <option value="3">시단위 아마추어/엘리트 (Tier 3)</option>
+                    <option value="4">프로 시합 경력 (Tier 4)</option>
+                    <option value="5">국내 20위권 랭커/챔피언 (Tier 5)</option>
+                </select>
+            </div>
             
             <label style="font-size: 0.75rem;">신분증 + 얼굴 사진 (주민번호 마스킹 필수)</label>
             <div style="display:flex; align-items:center; gap:10px;">
@@ -1301,18 +1311,55 @@
     <div class="modal-content">
         <span class="close-btn" onclick="closeModal('matchReqModal')">&times;</span>
         <h2 style="margin-top:0;">매칭 신청</h2>
+
+        <label style="color: var(--gold); font-weight: bold;">매치 타입 선택</label>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <label style="flex:1; display:flex; align-items:center; justify-content:center; background:#222; padding:10px; border-radius:8px; border:1px solid #444; cursor:pointer;">
+                <input type="radio" name="match-type-radio" value="open" checked onchange="validateMatchRank()"> 
+                <span style="margin-left:5px;">오픈 매치 (친선)</span>
+            </label>
+            <label style="flex:1; display:flex; align-items:center; justify-content:center; background:#222; padding:10px; border-radius:8px; border:1px solid #444; cursor:pointer;">
+                <input type="radio" name="match-type-radio" value="rank" id="match-type-rank-radio" onchange="validateMatchRank()"> 
+                <span style="margin-left:5px; color:var(--primary-red); font-weight:bold;">랭킹 매치 (공식)</span>
+            </label>
+        </div>
+        <div id="rank-match-warning" style="display:none; color:#ff7675; font-size:0.8rem; margin-bottom:15px; text-align:center;">
+            * 랭킹 매치는 동일 티어이거나 하위 티어 10위 이내 선수만 신청할 수 있습니다.
+        </div>
+
+        <div id="match-manager-select-wrap" style="display:none; margin-bottom:15px; background: rgba(253, 203, 110, 0.1); border:1px solid var(--gold); padding:10px; border-radius:8px;">
+            <label style="color: var(--gold); margin-top:0;">👑 [매니저 권한] 출전할 소속 선수 선택</label>
+            <select id="match-manager-player-select" style="background:#111; border:1px solid #444;" onchange="validateMatchRank()"></select>
+        </div>
+
         <div id="match-target-name" style="margin-bottom: 15px; font-weight: bold; font-size: 1.1rem; color: var(--primary-red);">VS 상대선수</div>
+        
         <label>희망 날짜 및 시간</label>
         <div style="display:flex; gap:5px;">
             <input type="date" id="match-date" style="flex:2;">
             <input type="time" id="match-time" style="flex:1;" step="900" min="10:00" max="22:00" list="interval-15min">
         </div>
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 10px; color: var(--gold); font-weight: bold;">
-            <input type="checkbox" id="match-negotiable" style="width: auto; margin: 0; transform: scale(1.2);"> 시간 조율 가능
+        
+        <label style="margin-top: 10px; display:block;">경기 장소 (체육관 아레나 필수 선택)</label>
+        <div style="display: flex; gap: 5px;">
+            <input type="text" id="match-gym-input" placeholder="등록된 체육관 검색" style="flex: 2; margin: 0; font-size: 0.9rem;" readonly>
+            <button class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555; flex: 1;" onclick="document.getElementById('match-gym-search-wrap').style.display='block'">검색</button>
+            <input type="hidden" id="match-gym-id">
+        </div>
+        <div id="match-gym-search-wrap" style="display:none; margin-top:5px; background: #222; padding: 10px; border-radius: 8px;">
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="match-gym-keyword" placeholder="체육관 이름" style="flex: 1; padding: 8px; font-size: 0.85rem;" onkeydown="if(event.key === 'Enter') searchArenaGym('match')">
+                <button class="btn-submit" style="margin: 0; width: 60px; padding: 0;" onclick="searchArenaGym('match')">조회</button>
+            </div>
+            <div id="match-gym-results" style="background: #111; border: 1px solid #444; border-radius: 4px; padding: 8px; margin-top: 5px; font-size: 0.8rem; max-height:120px; overflow-y:auto; display:none;"></div>
+        </div>
+
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 15px; color: var(--gold); font-weight: bold;">
+            <input type="checkbox" id="match-negotiable" style="width: auto; margin: 0; transform: scale(1.2);"> 조건(시간/장소) 조율 가능
         </label>
         <label>짧은 메시지 (인사말 등)</label>
         <textarea id="match-msg" rows="3" placeholder="한 수 배우고 싶습니다!"></textarea>
-        <button class="btn-submit" onclick="sendMatchRequest()">매칭 신청 보내기</button>
+        <button class="btn-submit" id="btn-send-match" onclick="sendMatchRequest()">매칭 신청 보내기</button>
     </div>
 </div>
 
@@ -1341,15 +1388,28 @@
 </div>
 
 <div id="modifyDateModal" class="modal" style="z-index: 2020;">
-    <div class="modal-content" style="max-width: 320px;">
+    <div class="modal-content" style="max-width: 350px;">
         <span class="close-btn" onclick="closeModal('modifyDateModal')">&times;</span>
-        <h3 style="margin-top:0;">희망 일시 변경 (조율)</h3>
+        <h3 style="margin-top:0;">조건 변경 제안 (조율)</h3>
         <label>새롭게 제안할 날짜 및 시간</label>
-        <div style="display: flex; gap: 5px; margin-bottom: 15px;">
+        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
             <input type="date" id="modify-date-input" style="flex: 2;">
             <input type="time" id="modify-time-input" style="flex: 1;" step="900" min="10:00" max="22:00" list="interval-15min">
         </div>
-        <button class="btn-submit" onclick="submitModifyDate()">일정 변경하기</button>
+        <label>새롭게 제안할 경기 장소 (체육관)</label>
+        <div style="display: flex; gap: 5px; margin-bottom: 15px;">
+            <input type="text" id="modify-gym-input" placeholder="등록된 체육관 검색" style="flex: 2; margin: 0; font-size: 0.9rem;" readonly>
+            <button class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555; flex: 1;" onclick="document.getElementById('modify-gym-search-wrap').style.display='block'">검색</button>
+            <input type="hidden" id="modify-gym-id">
+        </div>
+        <div id="modify-gym-search-wrap" style="display:none; margin-top:-10px; margin-bottom: 15px; background: #222; padding: 10px; border-radius: 8px;">
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="modify-gym-keyword" placeholder="체육관 이름" style="flex: 1; padding: 8px; font-size: 0.85rem;" onkeydown="if(event.key === 'Enter') searchArenaGym('modify')">
+                <button class="btn-submit" style="margin: 0; width: 60px; padding: 0;" onclick="searchArenaGym('modify')">조회</button>
+            </div>
+            <div id="modify-gym-results" style="background: #111; border: 1px solid #444; border-radius: 4px; padding: 8px; margin-top: 5px; font-size: 0.8rem; max-height:120px; overflow-y:auto; display:none;"></div>
+        </div>
+        <button class="btn-submit" onclick="submitModifyDate()">조건 역제안하기</button>
     </div>
 </div>
 
@@ -1397,19 +1457,36 @@
 <div id="gymProfileModal" class="modal">
     <div class="modal-content" style="max-width: 450px;">
         <span class="close-btn" onclick="closeModal('gymProfileModal')">&times;</span>
+        
+        <div id="gp-manager-badge" style="display:none; text-align:center; margin-bottom:15px; background: rgba(253, 203, 110, 0.1); border: 1px solid var(--gold); padding:10px; border-radius:8px;">
+            <span style="font-size:0.75rem; color:var(--gold); font-weight:bold; display:block; margin-bottom:5px;">👑 Arena Manager</span>
+            <div style="display:flex; justify-content:center; align-items:center; gap:10px;">
+                <div id="gp-manager-avatar" class="avatar" style="width:40px; height:40px; border:2px solid var(--gold);"></div>
+                <b id="gp-manager-name" style="font-size:1rem; color:white;">매니저 이름</b>
+            </div>
+        </div>
+
         <div style="text-align: center; margin-bottom: 20px;">
             <h2 id="gp-name" style="margin: 0; color: var(--gold);">체육관명</h2>
             <div id="gp-location" style="font-size: 0.85rem; color: #aaa; margin-top: 5px;">전북 지역</div>
         </div>
 
-        <div class="stat-grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="stat-grid" style="grid-template-columns: 1fr 1fr 1fr;">
             <div class="stat-box"><span>체육관 총 승점</span><b id="gp-total-pt" style="color:var(--gold);">0 P</b></div>
-            <div class="stat-box"><span>소속 선수</span><b id="gp-member-count">0명</b></div>
+            <div class="stat-box"><span>소속 인원</span><b id="gp-member-count">0명</b></div>
+            <div class="stat-box"><span>누적 스파링</span><b id="gp-match-count" style="color:var(--tier2);">0전</b></div>
+        </div>
+
+        <div style="margin-top: 15px;">
+            <h4 style="color: white; border-bottom: 1px solid #444; padding-bottom: 5px; margin-bottom:10px;">📸 아레나 스토리</h4>
+            <div id="gp-story-section" class="story-section" style="gap:10px;">
+                </div>
         </div>
 
         <div style="margin-top: 20px;">
-            <h4 style="color: var(--tier2); border-bottom: 1px solid #444; padding-bottom: 5px;">🥊 최근 경기 내역 (Top 5)</h4>
+            <h4 style="color: var(--tier2); border-bottom: 1px solid #444; padding-bottom: 5px;">🥊 아레나 경기 기록</h4>
             <div id="gp-recent-matches" style="font-size: 0.8rem; display: flex; flex-direction: column; gap: 8px; margin-top: 10px;"></div>
+            <div id="gp-match-pagination" class="pagination" style="margin-top: 10px; padding-bottom: 0;"></div>
         </div>
 
         <div style="margin-top: 20px;">
@@ -1455,6 +1532,7 @@ let isDuplicateChecked = false;
 let communityCurrentPage = 1;
 let currentSearchType = 'all';
 let currentSearchQuery = '';
+
 
 // 브라우저가 설치 가능 상태가 되면 실행됨
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -1726,7 +1804,7 @@ function getYoutubeEmbedUrl(url) {
     return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : null;
 }
 
-// 🔥 [실시간 활동 피드] 고유 번호(matchSeq) 기반 렌더링 버전 (삭제 시 번호 밀림 방지)
+// 🔥 [실시간 활동 피드] 고유 번호(matchSeq) 및 아레나 장소/시간 정보 시각화 강화 버전
 function renderFeed() {
     const container = document.getElementById('feed-container');
     let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
@@ -1793,6 +1871,9 @@ function renderFeed() {
         let statusText = m.status === '종료' ? "OFFICIAL" : m.status;
         let statusColor = m.status === '대기중' ? "var(--gold)" : (m.status === '매칭 성사' ? "var(--tier2)" : (m.status === '판정 대기' ? "var(--tier3)" : "#555"));
 
+        // 매치 타입(오픈/랭킹) 라벨 추가
+        let feedMatchTypeBadge = m.matchType === 'rank' ? '<span style="color:var(--primary-red); border:1px solid var(--primary-red); border-radius:4px; padding:1px 4px; font-size:0.65rem; margin-right:6px;">랭킹</span>' : '<span style="color:#0984e3; border:1px solid #0984e3; border-radius:4px; padding:1px 4px; font-size:0.65rem; margin-right:6px;">오픈</span>';
+
         let timelineHtml = `<div class="timeline-item"><span style="color:var(--gold); font-weight:bold; margin-right:8px;">${formatTimelineDate(m.id)}</span> 🥊 매칭 신청 전송</div>`;
         
         if(m.status === '매칭 성사' || m.status === '판정 대기' || m.status === '종료') {
@@ -1823,21 +1904,30 @@ function renderFeed() {
             </div>`;
         }
 
+        // 🔥 [장소 및 일시 정보 추가]
         html += `
         <div class="timeline-folder" style="border: 1px solid ${m.status === '종료' ? '#444' : 'var(--primary-red)'};">
-            <div class="timeline-header" onclick="toggleTimeline(${m.id})" style="background: ${m.status === '종료' ? '#252525' : '#2d2d2d'};">
-                <div style="display:flex; align-items:center; flex-wrap:wrap;">
-                    <span class="match-code" style="color:var(--gold); font-family:monospace; margin-right:12px;">${matchCode}</span>
-                    <b style="font-size:1rem; display:flex; align-items:center;">
-                        ${p1Label}
-                        <span class="clickable-name" onclick="event.stopPropagation(); openProfile('${p1.id}')">${p1.rawName}</span>
-                        <span style="color:#666; margin: 0 8px; font-weight:normal;">VS</span> 
-                        <span class="clickable-name" onclick="event.stopPropagation(); openProfile('${p2.id}')">${p2.rawName}</span>
-                        ${p2Label}
-                    </b>
-                    ${decisionType}
+            <div class="timeline-header" onclick="toggleTimeline(${m.id})" style="background: ${m.status === '종료' ? '#252525' : '#2d2d2d'}; flex-direction: column; align-items: flex-start; gap: 8px;">
+                <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+                    <div style="display:flex; align-items:center; flex-wrap:wrap;">
+                        <span class="match-code" style="color:var(--gold); font-family:monospace; margin-right:12px;">${matchCode}</span>
+                        <b style="font-size:1rem; display:flex; align-items:center;">
+                            ${feedMatchTypeBadge}
+                            ${p1Label}
+                            <span class="clickable-name" onclick="event.stopPropagation(); openProfile('${p1.id}')">${p1.rawName}</span>
+                            <span style="color:#666; margin: 0 8px; font-weight:normal;">VS</span> 
+                            <span class="clickable-name" onclick="event.stopPropagation(); openProfile('${p2.id}')">${p2.rawName}</span>
+                            ${p2Label}
+                        </b>
+                        ${decisionType}
+                    </div>
+                    <span class="status-badge" style="background:${statusColor}; color:#000; padding:2px 8px; border-radius:4px; font-weight:bold; font-size:0.7rem;">${statusText}</span>
                 </div>
-                <span class="status-badge" style="background:${statusColor}; color:#000; padding:2px 8px; border-radius:4px; font-weight:bold; font-size:0.7rem;">${statusText}</span>
+                <div style="font-size: 0.8rem; color: #aaa; background: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 4px; width: 100%; box-sizing: border-box; display:flex; gap: 10px; align-items:center;">
+                    <span>📍 <b style="color:#ddd;">${m.matchGymName || '장소미정'}</b></span>
+                    <span style="color:#555;">|</span>
+                    <span>⏰ <b style="color:#ddd;">${m.modifiedDate || m.date}</b></span>
+                </div>
             </div>
             <div id="timeline-content-${m.id}" class="timeline-content" style="display:none; padding-bottom: 15px;">
                 ${timelineHtml}
@@ -2379,6 +2469,18 @@ async function submitSparringRecord() {
     if (!matchId) { alert('기록을 등록할 매칭 대상을 먼저 선택해주세요.'); return; }
     if (!videoUrl && !imageFile) { alert('인증 자료(영상 또는 사진)가 반드시 필요합니다.'); return; }
 
+    // 매치 데이터 조회를 통해 누락되었던 상대방 정보 추출
+    let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
+    let m = allMatches.find(x => x.id == matchId);
+    if (!m) { alert('매칭 데이터를 찾을 수 없습니다.'); return; }
+
+    let oppRawName = (m.senderRawName === currentUser.rawName) ? m.receiverRawName : m.senderRawName;
+    let oppPlayer = demoPlayers.find(p => p.rawName === oppRawName);
+    let oppId = oppPlayer ? oppPlayer.id : 0;
+    
+    // 미디어 타입 정의
+    let mediaType = videoUrl ? 'video' : 'image';
+
     try {
         let finalImageUrl = "";
         
@@ -2414,7 +2516,7 @@ async function submitSparringRecord() {
             mediaType: mediaType, 
             requester: currentUser.rawName,
             requesterId: currentUser.id, 
-            opponentRawName: opponentRawName, opponentId: opponentId, time: new Date().toLocaleString()
+            opponentRawName: oppRawName, opponentId: oppId, time: new Date().toLocaleString()
         };
 
         if (judgeMethod === 'community') {
@@ -3068,47 +3170,53 @@ let currentStoryIndex = 0;
 let profileOwnerId = null;
 
 async function openProfile(id) {
-    // 🔥 [수정] Firebase의 문자열 ID와 로컬 숫자 ID의 타입 차이로 인한 검색 실패 방지
-    const p = demoPlayers.find(x => String(x.id) === String(id));
-    if(!p) {
-        console.error("Profile not found for ID:", id);
-        return;
+        // 🔥 [수정] Firebase의 문자열 ID와 로컬 숫자 ID의 타입 차이로 인한 검색 실패 방지
+        const p = demoPlayers.find(x => String(x.id) === String(id));
+        if(!p) {
+            console.error("Profile not found for ID:", id);
+            return;
+        }
+        profileOwnerId = id;
+
+        // 1. 기본 정보 세팅
+        document.getElementById('pm-name').innerHTML = formatName(p);
+        document.getElementById('pm-info').innerHTML = `
+            <span onclick="openGymProfile('${p.gymId || p.gym}')" style="cursor:pointer; text-decoration:underline; color:var(--gold);">
+                ${p.region || '지역미상'} | ${p.gym}
+            </span>`;
+        document.getElementById('pm-tier').innerText = `Tier ${p.tier}`;
+        document.getElementById('pm-tier').style.background = `var(--tier${p.tier})`;
+        document.getElementById('pm-season-rec').innerText = `${p.sW}승 ${p.sD}무 ${p.sL}패`;
+        document.getElementById('pm-season-pt').innerText = `${p.pt} P`;
+        document.getElementById('pm-trust').innerText = `${p.trustScore || 0} P`;
+
+        const withdrawBtn = document.getElementById('withdraw-btn');
+        const editSection = document.getElementById('profile-edit-section');
+        const avatarEl = document.getElementById('pm-avatar');
+        avatarEl.style.backgroundImage = p.profilePic ? `url(${p.profilePic})` : '';
+
+        // 🔥 [매니저 권한 고도화] 본인뿐만 아니라, 해당 체육관의 매니저도 선수 프로필 수정 및 방출(삭제) 가능하도록 권한 확장
+        const isSelf = currentUser && String(p.id) === String(currentUser.id);
+        const isManagerAuth = currentUser && currentUser.role === 'manager' && currentUser.gymId === p.gymId;
+        const canEdit = isSelf || isManagerAuth;
+
+        if(canEdit) {
+            withdrawBtn.style.display = 'block';
+            withdrawBtn.innerText = isSelf ? '회원 탈퇴하기' : '선수 강제 방출 (데이터 삭제)';
+            withdrawBtn.style.color = isSelf ? '#888' : '#ff7675';
+            withdrawBtn.style.borderColor = isSelf ? '#444' : '#ff7675';
+            editSection.style.display = 'block';
+            document.getElementById('edit-region-select').value = p.region || '전북';
+        } else {
+            withdrawBtn.style.display = 'none';
+            editSection.style.display = 'none';
+        }
+
+        // 2. [신규] 스토리(하이라이트) 렌더링
+        renderProfileStories(p, canEdit);
+
+        openModal('profileModal');
     }
-    profileOwnerId = id;
-
-    // 1. 기본 정보 세팅
-    document.getElementById('pm-name').innerHTML = formatName(p);
-    document.getElementById('pm-info').innerHTML = `
-        <span onclick="openGymProfile('${p.gymId || p.gym}')" style="cursor:pointer; text-decoration:underline; color:var(--gold);">
-            ${p.region || '지역미상'} | ${p.gym}
-        </span>`;
-    document.getElementById('pm-tier').innerText = `Tier ${p.tier}`;
-    document.getElementById('pm-tier').style.background = `var(--tier${p.tier})`;
-    document.getElementById('pm-season-rec').innerText = `${p.sW}승 ${p.sD}무 ${p.sL}패`;
-    document.getElementById('pm-season-pt').innerText = `${p.pt} P`;
-    document.getElementById('pm-trust').innerText = `${p.trustScore || 0} P`;
-
-    const withdrawBtn = document.getElementById('withdraw-btn');
-    const editSection = document.getElementById('profile-edit-section');
-    const avatarEl = document.getElementById('pm-avatar');
-    avatarEl.style.backgroundImage = p.profilePic ? `url(${p.profilePic})` : '';
-
-    // 🔥 [수정] 권한 체크 시 다른 사람의 프로필을 볼 때 타입 문제로 로딩이 멈추지 않도록 명확하게 String으로 통일
-    const isOwner = currentUser && String(p.id) === String(currentUser.id);
-    if(isOwner) {
-        withdrawBtn.style.display = 'block';
-        editSection.style.display = 'block';
-        document.getElementById('edit-region-select').value = p.region || '전북';
-    } else {
-        withdrawBtn.style.display = 'none';
-        editSection.style.display = 'none';
-    }
-
-    // 2. [신규] 스토리(하이라이트) 렌더링
-    renderProfileStories(p, isOwner);
-
-    openModal('profileModal');
-}
 
 // 프로필 스토리 리스트 그리기 (신규 사진 맨 왼쪽 배치 및 등록 버튼 우측 고정)
 // 프로필 스토리 리스트 그리기 (신규 사진 맨 왼쪽 배치 및 등록 버튼 우측 고정)
@@ -3125,7 +3233,9 @@ function renderProfileStories(player, isOwner) {
         // 🔥 [수정] 그룹 내 모든 사진의 조회수를 합산하되 중복된 사람은 한 명으로만 카운트하여 조회수 표시
         let uniqueViews = new Set();
         if (group.views) {
-            group.views.forEach(vArr => {
+            group.views.forEach(vItem => {
+                // 기존 배열 구조 호환 및 신규 객체 구조 반영
+                const vArr = Array.isArray(vItem) ? vItem : (vItem ? (vItem.list || []) : []);
                 if (Array.isArray(vArr)) {
                     vArr.forEach(viewer => uniqueViews.add(viewer));
                 }
@@ -3190,78 +3300,83 @@ async function uploadStoryImage(isAppendToExisting = false) {
                 alert("업로드 실패");
             }, 
             async () => {
-                // 3. 사진 주소(URL) 확보
-                const downloadURL = await window.getDownloadURL(uploadTask.snapshot.ref);
+                try {
+                    // 3. 사진 주소(URL) 확보
+                    const downloadURL = await window.getDownloadURL(uploadTask.snapshot.ref);
 
-                // 4. 로컬 데이터 메모리 확보 (ID 타입 체크 보강)
-                let p = demoPlayers.find(x => String(x.id) === String(profileOwnerId));
-                if (!p) {
-                    window.updateUploadProgress(100);
-                    alert("선수 정보를 찾을 수 없습니다.");
-                    return;
-                }
-
-                // 기존 스토리 배열 깊은 복사
-                let currentStories = JSON.parse(JSON.stringify(p.stories || []));
-
-                if (isAppendToExisting && currentViewingStoryGroup !== null) {
-                    // 기존 그룹 내부 추가: 배열 끝에 추가
-                    if (currentStories[currentViewingStoryGroup]) {
-                        if (!currentStories[currentViewingStoryGroup].images) currentStories[currentViewingStoryGroup].images = [];
-                        currentStories[currentViewingStoryGroup].images.push(downloadURL);
-                        
-                        // 조회수 배열 동기화
-                        if(!currentStories[currentViewingStoryGroup].views) {
-                            currentStories[currentViewingStoryGroup].views = currentStories[currentViewingStoryGroup].images.map(() => []);
-                        } else {
-                            currentStories[currentViewingStoryGroup].views.push([]);
-                        }
+                    // 4. 로컬 데이터 메모리 확보 (ID 타입 체크 보강)
+                    let p = demoPlayers.find(x => String(x.id) === String(profileOwnerId));
+                    if (!p) {
+                        window.updateUploadProgress(100);
+                        alert("선수 정보를 찾을 수 없습니다.");
+                        return;
                     }
-                } else {
-                    // [핵심] 신규 하이라이트 생성: unshift()를 사용하여 무조건 0번(맨 왼쪽)에 배치
-                    const title = prompt("하이라이트 제목을 입력하세요", "새 하이라이트") || "하이라이트";
-                    currentStories.unshift({
-                        id: Date.now(),
-                        title: title,
-                        cover: downloadURL,
-                        images: [downloadURL],
-                        views: [[]]
-                    });
-                }
 
-                // 🔥 [중요] DB 응답을 기다리지 않고 로컬 데이터를 즉시 바꿔서 화면을 먼저 그려버림
-                p.stories = currentStories; 
-                const isOwner = currentUser && String(p.id) === String(currentUser.id);
-                
-                if(isAppendToExisting && currentViewingStoryGroup !== null) {
-                    // 뷰어 안에서 추가한 경우 즉시 다음 장으로 넘겨서 보여줌
-                    currentStoryIndex = p.stories[currentViewingStoryGroup].images.length - 1;
-                    updateStoryUI(); 
-                } else {
-                    // 외부에서 추가한 경우 프로필 모달의 리스트를 즉시 리프레시 (맨 왼쪽에 나타남)
-                    renderProfileStories(p, isOwner);
-                }
+                    // 기존 스토리 배열 깊은 복사
+                    let currentStories = JSON.parse(JSON.stringify(p.stories || []));
 
-                // 5. 서버 업데이트 수행 (로그인 시 사용하는 rawName을 우선적으로 타겟팅)
-                // Firestore 문서 이름이 'admin', 'test1' 등 아이디 기반이므로 p.rawName이 필수입니다.
-                const userDocName = p.rawName || (isOwner ? currentUser.rawName : null) || profileOwnerId.toString();
-                const userRef = window.doc(window.db, "users", userDocName);
-                
-                // Firestore 업데이트 실행 (merge 옵션으로 기존 정보 유지하며 stories만 덮어쓰기)
-                await window.setDoc(userRef, { stories: currentStories }, { merge: true });
-                console.log("Firestore 스토리 저장 완료:", userDocName);
+                    if (isAppendToExisting && currentViewingStoryGroup !== null) {
+                        // 기존 그룹 내부 추가: 배열 끝에 추가
+                        if (currentStories[currentViewingStoryGroup]) {
+                            if (!currentStories[currentViewingStoryGroup].images) currentStories[currentViewingStoryGroup].images = [];
+                            currentStories[currentViewingStoryGroup].images.push(downloadURL);
+                            
+                            // 🔥 Firestore 다차원 배열 지원 불가 에러 방지를 위해 객체 형태({list: []})로 동기화
+                            if(!currentStories[currentViewingStoryGroup].views) {
+                                currentStories[currentViewingStoryGroup].views = currentStories[currentViewingStoryGroup].images.map(() => ({ list: [] }));
+                            } else {
+                                currentStories[currentViewingStoryGroup].views.push({ list: [] });
+                            }
+                        }
+                    } else {
+                        // [핵심] 신규 하이라이트 생성: unshift()를 사용하여 무조건 0번(맨 왼쪽)에 배치
+                        const title = prompt("하이라이트 제목을 입력하세요", "새 하이라이트") || "하이라이트";
+                        currentStories.unshift({
+                            id: Date.now(),
+                            title: title,
+                            cover: downloadURL,
+                            images: [downloadURL],
+                            views: [{ list: [] }] // 🔥 Firestore 저장 에러 방지용 객체 구조
+                        });
+                    }
 
-                // 🔥 [핵심 추가] 업로드 성공 즉시 로컬 스토리지 데이터도 갱신하여 새로고침 시 유실 방지
-                localStorage.setItem('sparring_approved_users', JSON.stringify(demoPlayers));
-                
-                // 본인인 경우 세션 정보도 즉시 업데이트
-                if (currentUser && (currentUser.rawName === userDocName || String(currentUser.id) === String(p.id))) {
-                    currentUser.stories = currentStories;
-                    localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+                    // 🔥 [중요] DB 응답을 기다리지 않고 로컬 데이터를 즉시 바꿔서 화면을 먼저 그려버림
+                    p.stories = currentStories; 
+                    const isOwner = currentUser && String(p.id) === String(currentUser.id);
+                    
+                    if(isAppendToExisting && currentViewingStoryGroup !== null) {
+                        // 뷰어 안에서 추가한 경우 즉시 다음 장으로 넘겨서 보여줌
+                        currentStoryIndex = p.stories[currentViewingStoryGroup].images.length - 1;
+                        updateStoryUI(); 
+                    } else {
+                        // 외부에서 추가한 경우 프로필 모달의 리스트를 즉시 리프레시 (맨 왼쪽에 나타남)
+                        renderProfileStories(p, isOwner);
+                    }
+
+                    // 5. 서버 업데이트 수행 (로그인 시 사용하는 rawName을 우선적으로 타겟팅)
+                    const userDocName = p.rawName || (isOwner ? currentUser.rawName : null) || profileOwnerId.toString();
+                    const userRef = window.doc(window.db, "users", userDocName);
+                    
+                    // Firestore 업데이트 실행 (이때 다차원 배열이 없으므로 에러가 나지 않고 정상 저장됨)
+                    await window.setDoc(userRef, { stories: currentStories }, { merge: true });
+                    console.log("Firestore 스토리 저장 완료:", userDocName);
+
+                    // 업로드 성공 즉시 로컬 스토리지 데이터도 갱신하여 새로고침 시 유실 방지
+                    localStorage.setItem('sparring_approved_users', JSON.stringify(demoPlayers));
+                    
+                    // 본인인 경우 세션 정보도 즉시 업데이트
+                    if (currentUser && (currentUser.rawName === userDocName || String(currentUser.id) === String(p.id))) {
+                        currentUser.stories = currentStories;
+                        localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+                    }
+                    
+                    window.updateUploadProgress(100, "업로드 완료!");
+                    fileEl.value = ''; 
+                } catch(innerErr) {
+                    console.error("Firestore 저장 중 치명적 오류:", innerErr);
+                    window.updateUploadProgress(100, "업로드 실패");
+                    alert("데이터 저장 중 문제가 발생했습니다: " + innerErr.message);
                 }
-                
-                window.updateUploadProgress(100, "업로드 완료!");
-                fileEl.value = ''; 
             }
         );
     } catch (err) { 
@@ -3305,17 +3420,21 @@ async function updateStoryUI() {
     const images = group.images;
     const currentImgUrl = images[currentStoryIndex];
     
-    // 데이터 구조 안전성 확보
-    if (!group.views) group.views = images.map(() => []);
-    while(group.views.length < images.length) group.views.push([]);
+    // 데이터 구조 안전성 확보 (Firestore 중첩 배열 에러 방지를 위해 객체 형태 사용)
+    if (!group.views) group.views = images.map(() => ({ list: [] }));
+    while(group.views.length < images.length) group.views.push({ list: [] });
 
     // 1. [조회수 기록] 본인이 아니고 처음 보는 경우에만 기록
     if (currentUser && String(currentUser.id) !== String(profileOwnerId)) {
-        let currentImgViews = group.views[currentStoryIndex] || [];
+        // 기존 배열 데이터와 신규 객체 데이터 호환
+        let vItem = group.views[currentStoryIndex];
+        let isLegacy = Array.isArray(vItem);
+        let currentImgViews = isLegacy ? vItem : (vItem ? (vItem.list || []) : []);
+        
         // 🔥 [수정] 이미 배열에 이름이 있는지 정확히 체크하여 중복 클릭 시 1번만 기록되도록 서버 방어벽 적용
         if (!currentImgViews.includes(currentUser.rawName)) {
             currentImgViews.push(currentUser.rawName);
-            group.views[currentStoryIndex] = currentImgViews;
+            group.views[currentStoryIndex] = { list: currentImgViews }; // 항상 객체 형태로 저장
             
             try {
                 const userDocName = p.rawName || profileOwnerId.toString();
@@ -3352,7 +3471,9 @@ async function updateStoryUI() {
     // 4. 조회수 숫자 업데이트
     const viewCountDisplay = document.getElementById('story-view-count');
     if (viewCountDisplay) {
-        const viewCount = group.views[currentStoryIndex] ? group.views[currentStoryIndex].length : 0;
+        let vItem = group.views[currentStoryIndex];
+        let currentImgViews = Array.isArray(vItem) ? vItem : (vItem ? (vItem.list || []) : []);
+        const viewCount = currentImgViews.length;
         viewCountDisplay.innerText = viewCount;
     }
     
@@ -3420,7 +3541,9 @@ function toggleViewerList(event) {
     if (popover.style.display === 'block') {
         popover.style.display = 'none';
     } else {
-        const viewers = group.views[currentStoryIndex] || [];
+        let vItem = group.views[currentStoryIndex];
+        const viewers = Array.isArray(vItem) ? vItem : (vItem ? (vItem.list || []) : []);
+        
         if (viewers.length === 0) {
             namesDiv.innerHTML = '<div style="font-size:0.8rem; color:#888; text-align:center; padding:10px;">아직 방문자가 없습니다.</div>';
         } else {
@@ -3469,29 +3592,36 @@ async function changeStoryCover() {
 
 
 async function updateRegion() {
-    const newReg = document.getElementById('edit-region-select').value;
-    if (currentUser) {
-        try {
-            await window.updateDoc(window.doc(window.db, "users", currentUser.rawName), { region: newReg });
-            currentUser.region = newReg;
-            localStorage.setItem('sparring_session', JSON.stringify(currentUser));
-            alert('주 활동 지역이 성공적으로 변경되었습니다!');
-            openProfile(currentUser.id);
-        } catch(e) { console.error(e); }
-    }
-}
-
-// [프로필] 회원 탈퇴
-async function withdrawMembership() {
-    if(confirm('정말로 탈퇴하시겠습니까?\n탈퇴 시 모든 전적 데이터가 영구 삭제됩니다.')) {
-        if(currentUser) {
+        const newReg = document.getElementById('edit-region-select').value;
+        const targetPlayer = demoPlayers.find(x => String(x.id) === String(profileOwnerId));
+        
+        if (targetPlayer) {
             try {
-                await window.deleteDoc(window.doc(window.db, "users", currentUser.rawName));
-                logout(); alert('탈퇴 완료되었습니다.');
+                await window.updateDoc(window.doc(window.db, "users", targetPlayer.rawName), { region: newReg });
+                targetPlayer.region = newReg;
+                
+                // 만약 본인 프로필을 수정한 것이라면 세션도 업데이트
+                if (currentUser && currentUser.id === targetPlayer.id) {
+                    currentUser.region = newReg;
+                    localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+                }
+                alert('주 활동 지역이 성공적으로 변경되었습니다!');
+                openProfile(targetPlayer.id);
             } catch(e) { console.error(e); }
         }
     }
-}
+
+// [프로필] 회원 탈퇴
+async function withdrawMembership() {
+        if(confirm('정말로 탈퇴하시겠습니까?\n탈퇴 시 모든 전적 데이터가 영구 삭제됩니다.')) {
+            if(currentUser) {
+                try {
+                    await window.deleteDoc(window.doc(window.db, "users", currentUser.rawName));
+                    logout(); alert('탈퇴 완료되었습니다.');
+                } catch(e) { console.error(e); }
+            }
+        }
+    }
 
 function renderNewMembers() {
     let container = document.getElementById('new-member-list');
@@ -3548,61 +3678,159 @@ function requestMatch(id) {
         openModal('loginModal'); return;
     }
 
-    // 🔥 [서버 동기화 데이터 기준 재검증] '종료'되지 않은 모든 매칭 케이스 확인
     let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-    let activeMatch = allMatches.find(m => 
-        m.status !== '종료' && (
-            (m.senderRawName === currentUser.rawName && m.receiverRawName === p.rawName) ||
-            (m.senderRawName === p.rawName && m.receiverRawName === currentUser.rawName)
-        )
-    );
+    
+    // 매니저 모드 UI 활성화
+    const isManager = currentUser.role === 'manager';
+    const managerWrap = document.getElementById('match-manager-select-wrap');
+    const playerSelect = document.getElementById('match-manager-player-select');
+    
+    if (isManager) {
+        managerWrap.style.display = 'block';
+        const myPlayers = demoPlayers.filter(pl => pl.gymId === currentUser.gymId && pl.role !== 'manager');
+        if(myPlayers.length === 0) {
+            alert('소속된 선수가 없어 매칭을 주선할 수 없습니다.'); return;
+        }
+        playerSelect.innerHTML = myPlayers.map(pl => `<option value="${pl.id}">${pl.rawName} (Tier ${pl.tier})</option>`).join('');
+    } else {
+        managerWrap.style.display = 'none';
+        if (p.id === currentUser.id) { alert('본인에게는 매칭을 신청할 수 없습니다.'); return; }
+        
+        let activeMatch = allMatches.find(m => 
+            m.status !== '종료' && (
+                (m.senderRawName === currentUser.rawName && m.receiverRawName === p.rawName) ||
+                (m.senderRawName === p.rawName && m.receiverRawName === currentUser.rawName)
+            )
+        );
 
-    // 이미 진행 중인 이벤트(신청, 수락, 판정대기)가 있다면 신청 폼을 열지 않고 바로 상세페이지로 이동
-    if (activeMatch) {
-        alert('해당 상대와 이미 진행 중인 매칭 이벤트가 존재합니다.\n상세 페이지로 이동합니다.');
-        openChat(activeMatch.id);
-        openModal('matchStatusModal');
-        return;
+        if (activeMatch) {
+            alert('해당 상대와 이미 진행 중인 매칭 이벤트가 존재합니다.\n상세 페이지로 이동합니다.');
+            openChat(activeMatch.id);
+            openModal('matchStatusModal');
+            return;
+        }
     }
     
     if (p.pending >= 5) { alert('이 선수는 현재 5개 이상의 매칭신청을 받고 있어 추가 신청이 불가능합니다.'); return; }
-    if (p.id === currentUser.id) { alert('본인에게는 매칭을 신청할 수 없습니다.'); return; }
     
     targetMatchPlayer = p;
     document.getElementById('match-target-name').innerText = `VS ${p.name}`;
     document.getElementById('match-date').value = '';
     document.getElementById('match-time').value = '';
+    document.getElementById('match-gym-input').value = '';
+    document.getElementById('match-gym-id').value = '';
+    document.getElementById('match-gym-keyword').value = '';
+    document.getElementById('match-gym-search-wrap').style.display = 'none';
     document.getElementById('match-negotiable').checked = false;
     document.getElementById('match-msg').value = '';
+    
+    document.querySelector('input[name="match-type-radio"][value="open"]').checked = true;
+    validateMatchRank();
+
     openModal('matchReqModal');
+}
+
+function validateMatchRank() {
+    const type = document.querySelector('input[name="match-type-radio"]:checked').value;
+    const btn = document.getElementById('btn-send-match');
+    const warn = document.getElementById('rank-match-warning');
+    
+    if (type === 'open') {
+        btn.disabled = false; btn.style.opacity = '1'; warn.style.display = 'none'; return;
+    }
+    
+    let senderPlayer = currentUser;
+    if (currentUser.role === 'manager') {
+        const senderId = document.getElementById('match-manager-player-select').value;
+        senderPlayer = demoPlayers.find(pl => String(pl.id) === String(senderId));
+    }
+
+    const senderTier = parseInt(senderPlayer.tier);
+    const targetTier = parseInt(targetMatchPlayer.tier);
+
+    if (senderTier === targetTier) {
+        btn.disabled = false; btn.style.opacity = '1'; warn.style.display = 'none'; return;
+    }
+
+    if (senderTier > targetTier) {
+        warn.innerText = "* 상위 티어 선수는 하위 티어 선수에게 랭킹전을 신청할 수 없습니다. (오픈 매치 이용)";
+        warn.style.display = 'block'; btn.disabled = true; btn.style.opacity = '0.5';
+        return;
+    }
+
+    // 하위 티어가 상위 티어에게 신청할 경우 랭킹 10위권 검사 (도전권)
+    const sameTierPlayers = demoPlayers.filter(pl => pl.tier == senderTier && pl.role !== 'manager').sort((a,b) => b.pt - a.pt);
+    const myRankIndex = sameTierPlayers.findIndex(pl => pl.id === senderPlayer.id);
+    
+    if (myRankIndex >= 0 && myRankIndex < 10) {
+        btn.disabled = false; btn.style.opacity = '1'; warn.style.display = 'none';
+    } else {
+        warn.innerText = `* 승격 랭킹전 도전 불가: 현재 소속 티어(Tier ${senderTier})에서 랭킹 10위 이내여야만 상위 티어에게 신청 가능합니다. (현재 ${myRankIndex + 1}위)`;
+        warn.style.display = 'block'; btn.disabled = true; btn.style.opacity = '0.5';
+    }
+}
+
+function searchArenaGym(type) {
+    const keyword = document.getElementById(`${type}-gym-keyword`).value.trim();
+    const resultsDiv = document.getElementById(`${type}-gym-results`);
+    if(!keyword) { resultsDiv.innerHTML = '<div style="color:#ff7675;">검색어를 입력해주세요.</div>'; resultsDiv.style.display = 'block'; return; }
+    
+    let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
+    let matched = registeredGyms.filter(g => g.name.includes(keyword));
+    
+    if(matched.length > 0) {
+        let html = '<div style="color:#aaa; margin-bottom:5px;">등록된 체육관 (선택하세요):</div>';
+        matched.forEach(g => { 
+            html += `<div style="padding: 5px 0; cursor: pointer; color: var(--gold); border-bottom:1px solid #333;" onclick="selectArenaGym('${type}', '${g.name}', '${g.id}')">▶ ${g.name} (${g.region})</div>`; 
+        });
+        resultsDiv.innerHTML = html;
+    } else {
+        resultsDiv.innerHTML = `<div style="color:#aaa;">검색 결과가 없습니다. 등록된 체육관만 지정할 수 있습니다.</div>`;
+    }
+    resultsDiv.style.display = 'block';
+}
+
+function selectArenaGym(type, name, id) {
+    document.getElementById(`${type}-gym-input`).value = name;
+    document.getElementById(`${type}-gym-id`).value = id;
+    document.getElementById(`${type}-gym-search-wrap`).style.display = 'none';
 }
 
 // 🔥 [영구 번호 배정] 매칭 신청 시 삭제 데이터와 무관하게 카운터를 이어가는 버전
 async function sendMatchRequest() {
     const date = document.getElementById('match-date').value;
     const time = document.getElementById('match-time').value;
+    const gymName = document.getElementById('match-gym-input').value;
+    const gymId = document.getElementById('match-gym-id').value;
     const negotiable = document.getElementById('match-negotiable').checked;
     const msg = document.getElementById('match-msg').value.trim();
+    const matchType = document.querySelector('input[name="match-type-radio"]:checked').value;
 
     if(!date || !time) { alert('희망 날짜와 시간을 정확히 선택해주세요.'); return; }
+    if(!gymName || !gymId) { alert('경기 장소(체육관)를 반드시 검색하여 지정해주세요.'); return; }
+
+    let senderPlayer = currentUser;
+    if (currentUser.role === 'manager') {
+        const senderId = document.getElementById('match-manager-player-select').value;
+        senderPlayer = demoPlayers.find(pl => String(pl.id) === String(senderId));
+        if(senderPlayer.id === targetMatchPlayer.id) {
+            alert('동일한 선수끼리는 매칭할 수 없습니다.'); return;
+        }
+    }
 
     try {
-        const isTestMatch = currentUser.rawName.toLowerCase().includes('test') || targetMatchPlayer.rawName.toLowerCase().includes('test');
+        const isTestMatch = senderPlayer.rawName.toLowerCase().includes('test') || targetMatchPlayer.rawName.toLowerCase().includes('test');
         const counterDocId = isTestMatch ? 'test' : 'sparring';
         const counterRef = window.doc(window.db, "match_counters", counterDocId);
         
-        // 1. 번호 카운터 가져오기 (getDoc을 사용하여 더 정확하게 조회)
         let lastSeq = 0;
         try {
             const counterSnap = await window.getDoc(counterRef);
             if (counterSnap.exists()) {
                 lastSeq = counterSnap.data().lastSeq || 0;
             }
-        } catch (e) {
-            console.log("카운터 문서가 없어 0번부터 시작합니다.");
-        }
+        } catch (e) { console.log("카운터 문서가 없어 0번부터 시작합니다."); }
 
-        // 2. 이중 체크: 로컬 데이터와 비교하여 번호 꼬임 방지
         let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
         allMatches.forEach(m => {
             const mIsTest = m.senderRawName.toLowerCase().includes('test') || m.receiverRawName.toLowerCase().includes('test');
@@ -3614,26 +3842,19 @@ async function sendMatchRequest() {
         const nextSeq = lastSeq + 1;
         const matchId = Date.now().toString();
 
-        // 3. 경기 정보 객체 생성
         let newMatch = {
-            id: parseInt(matchId),
-            matchSeq: nextSeq,
-            senderRawName: currentUser.rawName,
-            senderName: currentUser.rawName, // 닉네임 대신 실명(ID) 사용
-            receiverRawName: targetMatchPlayer.rawName,
-            receiverName: targetMatchPlayer.rawName,
-            date: `${date} ${time}`,
-            negotiable: negotiable,
-            status: '대기중',
-            createdAt: Date.now(),
-            messages: msg ? [{ sender: currentUser.rawName, text: msg, time: Date.now() }] : []
+            id: parseInt(matchId), matchSeq: nextSeq, matchType: matchType,
+            senderRawName: senderPlayer.rawName, senderName: senderPlayer.rawName, 
+            receiverRawName: targetMatchPlayer.rawName, receiverName: targetMatchPlayer.rawName,
+            date: `${date} ${time}`, matchGymName: gymName, matchGymId: gymId,
+            negotiable: negotiable, status: '대기중', createdAt: Date.now(),
+            messages: msg ? [{ sender: senderPlayer.rawName, text: msg, time: Date.now() }] : []
         };
 
-        // 4. Firestore 서버 전송 (경기데이터 + 카운터)
         await window.setDoc(window.doc(window.db, "matches", matchId), newMatch);
         await window.setDoc(counterRef, { lastSeq: nextSeq });
 
-        alert(`매칭 신청 완료! (경기 번호: ${isTestMatch ? 'Test' : 'Sparring'} ${String(nextSeq).padStart(3, '0')})`);
+        alert(`${matchType === 'rank' ? '랭킹 매치' : '오픈 매치'} 신청 완료! (경기 번호: ${isTestMatch ? 'Test' : 'Sparring'} ${String(nextSeq).padStart(3, '0')})`);
         closeModal('matchReqModal');
     } catch (error) {
         console.error("매칭 신청 서버 오류 상세:", error);
@@ -3691,17 +3912,20 @@ function renderMatchList() {
         let negotiableHtml = m.negotiable ? `<b style="color:#74b9ff;">[조율가능]</b>` : '';
         let dDayText = getDday(m.date); 
         
-        let modifiedDateHtml = m.modifiedDate ? `<div style="color: var(--gold); margin-top: 4px; font-weight: bold;">↳ 변경된 희망일시: ${m.modifiedDate} (${getDday(m.modifiedDate)})</div>` : '';
+        let modifiedDateHtml = m.modifiedDate ? `<div style="color: var(--gold); margin-top: 4px; font-weight: bold;">↳ 변경된 조건: ${m.matchGymName || '장소미정'} / ${m.modifiedDate} (${getDday(m.modifiedDate)})</div>` : '';
         let originalDateStyle = m.modifiedDate ? 'text-decoration: line-through; color: #666;' : '';
+        
+        // 매치 타입 라벨 (오픈매치 / 랭킹매치)
+        let matchTypeBadge = m.matchType === 'rank' ? '<span style="color:var(--primary-red); font-weight:bold; font-size:0.8rem; margin-right:5px;">[랭킹매치]</span>' : '<span style="color:#0984e3; font-weight:bold; font-size:0.8rem; margin-right:5px;">[오픈매치]</span>';
 
         html += `
         <div style="background: #222; padding: 12px; border-radius: 8px; border-left: 4px solid ${isConfirmed ? (isPast ? '#0984e3' : '#ff4757') : 'var(--primary-red)'}; margin-bottom: 10px; cursor: pointer;" onclick="openChat(${m.id})">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <b style="font-size: 1.05rem;">VS ${opponent}</b>
+                <b style="font-size: 1.05rem;">${matchTypeBadge} VS ${opponent}</b>
                 <span style="font-size: 0.75rem; color: ${badgeColor}; background: ${badgeBg}; padding: 3px 8px; border-radius: 12px;">${displayStatus}</span>
             </div>
             <div style="font-size: 0.8rem; color: #aaa; margin-top: 6px;">
-                희망 일시: <span style="${originalDateStyle}">${m.date} <b style="color:var(--tier2);">(${dDayText})</b></span> ${negotiableHtml}
+                기존 신청: <span style="${originalDateStyle}">${m.matchGymName || '장소미정'} / ${m.date} <b style="color:var(--tier2);">(${dDayText})</b></span> ${negotiableHtml}
                 ${modifiedDateHtml}
             </div>
         </div>`;
@@ -3945,7 +4169,10 @@ function goToRecordPage(matchId) {
     showPage('record'); 
     setTimeout(() => {
         const select = document.getElementById('record-match-select');
-        if (select) select.value = matchId;
+        if (select) {
+            select.value = matchId;
+            autoSetMatchType(); // 진입 시 해당 매칭의 타입 자동 반영
+        }
     }, 100);
 }
 
@@ -3972,6 +4199,38 @@ function renderRecordMatchSelect() {
             html += `<option value="${m.id}">VS ${opponent} (${m.date})</option>`;
         });
         select.innerHTML = html;
+    }
+    
+    // 매치 목록 렌더링 후 화면 초기화
+    document.getElementById('record-match-type-display').value = '매치를 선택하세요';
+    document.getElementById('record-match-type').value = '';
+}
+
+function autoSetMatchType() {
+    const matchId = document.getElementById('record-match-select').value;
+    const displayEl = document.getElementById('record-match-type-display');
+    const hiddenEl = document.getElementById('record-match-type');
+    
+    if(!matchId) {
+        displayEl.value = '매치를 선택하세요';
+        hiddenEl.value = '';
+        displayEl.style.color = '#aaa';
+        return;
+    }
+    
+    let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
+    let m = allMatches.find(x => x.id == matchId);
+    
+    if(m) {
+        if(m.matchType === 'rank') {
+            displayEl.value = '[랭킹 매치] 공식 전적 반영';
+            displayEl.style.color = 'var(--primary-red)';
+            hiddenEl.value = 'rank';
+        } else {
+            displayEl.value = '[오픈 매치] 친선 게임 (전적 무관)';
+            displayEl.style.color = '#0984e3';
+            hiddenEl.value = 'open';
+        }
     }
 }
 
@@ -4050,26 +4309,38 @@ function checkDuplicateId() {
     }
 }
 
+// [신규] 회원가입 폼 역할 선택 토글
+function toggleSignupRoleFields() {
+    const role = document.getElementById('signup-role').value;
+    const playerFields = document.getElementById('signup-player-fields');
+    if (role === 'manager') {
+        playerFields.style.display = 'none';
+    } else {
+        playerFields.style.display = 'block';
+    }
+}
+
 async function submitSignup() {
     if (!isDuplicateChecked) { alert('가입 신청 전에 반드시 [중복조회] 버튼을 눌러주세요.'); return; }
 
     const inputId = document.getElementById('signup-id').value.trim();
     const inputPw = document.getElementById('signup-pw').value.trim();
     let gymName = document.getElementById('signup-gym').value.trim();
+    const role = document.getElementById('signup-role').value;
 
     if(!gymName) { alert('소속 체육관을 입력 후 [조회]를 눌러주세요.'); return; }
     if(!inputPw) { alert('비밀번호를 입력해주세요.'); return; }
     if (!pendingSignupPic) { alert('사진 등록이 필요합니다.'); return; }
 
-    const weight = document.getElementById('signup-weight').value;
-    const tier = document.getElementById('signup-tier').value;
+    // 매니저는 티어 10(논외), 선수는 입력값 사용
+    const weight = role === 'player' ? document.getElementById('signup-weight').value : 'N/A';
+    const tier = role === 'player' ? document.getElementById('signup-tier').value : '10'; 
     const region = document.getElementById('signup-region').value;
     const isAutoJoin = localStorage.getItem('sparring_auto_join') === 'true';
 
     alert("신청 정보를 서버에 안전하게 전송 중입니다...");
 
     try {
-        // 1. 중복 체육관 체크 (이름 기반 검색 강화)
         let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
         const cleanName = gymName.replace(/\s+/g, ' ').trim();
         const existing = registeredGyms.find(g => g.name.replace(/\s+/g, ' ').trim().toLowerCase() === cleanName.toLowerCase());
@@ -4077,16 +4348,14 @@ async function submitSignup() {
         let finalGymId = tempSelectedGymId;
         if (existing) {
             finalGymId = existing.id;
-            gymName = existing.name; // 공식 이름으로 동기화
+            gymName = existing.name; 
         } else if (!finalGymId) {
-            // 완전히 새로운 체육관인 경우에만 생성 (초기 승점 0 설정)
             finalGymId = "gym_" + Date.now();
             await window.setDoc(window.doc(window.db, "gyms_registry", finalGymId), {
-                id: finalGymId, name: gymName, region: region, registeredAt: Date.now(), totalPt: 0
+                id: finalGymId, name: gymName, region: region, registeredAt: Date.now(), totalPt: 0, stories: []
             });
         }
 
-        // 2. 사진 업로드 및 회원가입 처리 (기존 로직 유지)
         const tempImgId = Date.now();
         const response = await fetch(pendingSignupPic);
         const blob = await response.blob();
@@ -4096,7 +4365,7 @@ async function submitSignup() {
         
         const userData = { 
             rawName: inputId, name: inputId, pw: inputPw, 
-            gymId: finalGymId, gym: gymName,
+            gymId: finalGymId, gym: gymName, role: role, // 역할 필드 추가
             weight: weight, tier: tier, region: region, trustScore: 0,
             createdAt: Date.now(), 
             profilePic: profilePicUrl,
@@ -4104,11 +4373,9 @@ async function submitSignup() {
         };
 
         if (isAutoJoin) {
-            // [수정] 문서 이름을 타임스탬프 숫자가 아닌 사용자의 아이디(inputId)로 저장합니다.
-            // 그래야 processLogin()에서 window.doc(db, "users", inputId)로 찾을 수 있습니다.
             const newUserId = Date.now();
             await window.setDoc(window.doc(window.db, "users", inputId), { ...userData, id: newUserId });
-            alert(`'${inputId}' 선수님, 가입이 자동 승인되었습니다!`);
+            alert(`'${inputId}' 님, 가입이 자동 승인되었습니다!`);
         } else {
             await window.addDoc(window.collection(window.db, "pendingUsers"), userData);
             alert('가입 신청이 완료되었습니다! 관장님 승인을 기다려주세요.');
@@ -4640,54 +4907,165 @@ window.onload = function() {
 // 2. 체육관 상세 프로필 열기 (ID 기반)
 function openGymProfile(gymIdentifier) {
     let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
-    // ID로 먼저 찾고, 없으면 이름으로 찾음 (기존 데이터 호환)
     const gymInfo = registeredGyms.find(g => g.id === gymIdentifier || g.name === gymIdentifier);
     if (!gymInfo) { alert("체육관 정보를 찾을 수 없습니다."); return; }
+    
+    currentViewingGymId = gymInfo.id;
 
     const members = demoPlayers.filter(p => p.gymId === gymInfo.id || p.gym === gymInfo.name);
-    // [수정] 개인 점수 합산이 아닌 체육관 DB의 누적 점수 사용
+    const playerMembers = members.filter(p => p.role !== 'manager');
+    const manager = members.find(p => p.role === 'manager'); 
+    
     const totalPt = gymInfo.totalPt || 0; 
     const region = gymInfo.region || (members[0]?.region || '지역 미상');
+
+    const allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
+    const gymMatches = allMatches.filter(m => m.matchGymId === gymInfo.id && m.status === '종료').sort((a,b) => b.id - a.id);
+    
+    currentGymProfileMatches = gymMatches;
+    currentGymHistoryPage = 1;
+
+    // 매니저 뱃지 노출
+    const managerBadge = document.getElementById('gp-manager-badge');
+    if (manager) {
+        managerBadge.style.display = 'block';
+        document.getElementById('gp-manager-name').innerText = manager.rawName;
+        document.getElementById('gp-manager-avatar').style.backgroundImage = manager.profilePic ? `url(${manager.profilePic})` : '';
+        managerBadge.onclick = () => { closeModal('gymProfileModal'); openProfile(manager.id); };
+        managerBadge.style.cursor = 'pointer';
+    } else {
+        managerBadge.style.display = 'none';
+    }
 
     document.getElementById('gp-name').innerText = gymInfo.name;
     document.getElementById('gp-location').innerText = `${region} 지역`;
     document.getElementById('gp-total-pt').innerText = `${totalPt.toLocaleString()} P`;
-    document.getElementById('gp-member-count').innerText = `${members.length}명`;
+    document.getElementById('gp-member-count').innerText = `${playerMembers.length}명`;
+    
+    const gpMatchCount = document.getElementById('gp-match-count');
+    if (gpMatchCount) gpMatchCount.innerText = `${gymMatches.length}전`;
 
-    // 최근 경기 내역 필터링 (최대 5개)
-    const allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-    const gymMatches = allMatches.filter(m => 
-        members.some(mem => mem.rawName === m.senderRawName || mem.rawName === m.receiverRawName)
-    ).slice(-5).reverse();
+    renderGymHistoryPage();
+    renderGymStories(gymInfo);
 
-    const matchContainer = document.getElementById('gp-recent-matches');
-    matchContainer.innerHTML = gymMatches.length ? '' : '<div style="color:#666;">최근 활동 내역이 없습니다.</div>';
-    gymMatches.forEach(m => {
-        matchContainer.innerHTML += `
-            <div style="background:#222; padding:8px; border-radius:4px; display:flex; justify-content:space-between;">
-                <span>${m.senderName} vs ${m.receiverName}</span>
-                <span style="color:var(--gold);">${m.status}</span>
-            </div>`;
-    });
-
-    // 티어별 선수 명단 요약
+    // 티어별 선수 명단 요약 (매니저 권한 시 선수 삭제 버튼 노출)
+    const isMyManager = currentUser && currentUser.role === 'manager' && currentUser.gymId === gymInfo.id;
     const rosterContainer = document.getElementById('gp-tier-roster');
     rosterContainer.innerHTML = '';
     [5, 4, 3, 2, 1].forEach(t => {
-        const tierMembers = members.filter(p => p.tier == t);
+        const tierMembers = playerMembers.filter(p => p.tier == t);
         if(tierMembers.length > 0) {
-            let memberNames = tierMembers.map(m => m.rawName).join(', ');
+            let htmlMembers = tierMembers.map(m => {
+                let delBtn = isMyManager ? `<span onclick="managerDeleteMember('${m.id}')" style="color:#ff7675; cursor:pointer; font-weight:bold; margin-left:5px; font-size:0.7rem;">[삭제]</span>` : '';
+                return `<span style="margin-right:8px; display:inline-block; margin-bottom:4px;">${m.rawName}${delBtn}</span>`;
+            }).join('');
+            
             rosterContainer.innerHTML += `
                 <div style="margin-bottom:10px;">
                     <div style="color:var(--tier${t}); font-weight:bold; font-size:0.85rem; margin-bottom:3px;">
                         Tier ${t} (${tierMembers.length}명)
                     </div>
-                    <div style="color:#ccc; font-size:0.8rem; padding-left:10px; line-height:1.4;">${memberNames}</div>
+                    <div style="color:#ccc; font-size:0.8rem; padding-left:10px; line-height:1.4;">${htmlMembers}</div>
                 </div>`;
         }
     });
 
     openModal('gymProfileModal');
+}
+
+async function managerDeleteMember(memberId) {
+    if(!confirm('선수의 소속을 "무소속"으로 강제 방출하시겠습니까?')) return;
+    try {
+        const member = demoPlayers.find(p => String(p.id) === String(memberId));
+        if(!member) return;
+        await window.updateDoc(window.doc(window.db, "users", member.rawName), { gym: '무소속', gymId: "" });
+        alert('소속에서 해제되었습니다.');
+        openGymProfile(currentViewingGymId); // UI 리프레시
+    } catch(e) { console.error(e); alert('서버 에러가 발생했습니다.'); }
+}
+
+function renderGymStories(gymInfo) {
+    const container = document.getElementById('gp-story-section');
+    const stories = gymInfo.stories || [];
+    const isMyManager = currentUser && currentUser.role === 'manager' && currentUser.gymId === gymInfo.id;
+    
+    let html = '';
+    stories.forEach((st, idx) => {
+        html += `
+        <div style="display:flex; flex-direction:column; align-items:center; gap:6px; flex-shrink:0; width:70px;">
+            <div onclick="viewGymStoryImage('${st.cover}')" style="width:64px; height:64px; border-radius:8px; border:2px solid var(--gold); padding:2px; cursor:pointer; background:#000; overflow:hidden;">
+                <img src="${st.cover}" style="width:100%; height:100%; border-radius:4px; object-fit:cover;">
+            </div>
+            <div style="font-size:0.7rem; color:#888; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">${st.title}</div>
+        </div>`;
+    });
+
+    if (isMyManager) {
+        html += `
+        <div style="display:flex; flex-direction:column; align-items:center; gap:6px; flex-shrink:0; width:70px;">
+            <div onclick="document.getElementById('gym-story-upload').click()" style="width:64px; height:64px; border-radius:8px; border:2px dashed #444; display:flex; align-items:center; justify-content:center; font-size:1.5rem; color:#666; cursor:pointer; background:#111;">+</div>
+            <div style="font-size:0.7rem; color:#888;">스토리 추가</div>
+            <input type="file" id="gym-story-upload" accept="image/*" style="display:none;" onchange="uploadGymStory(event)">
+        </div>`;
+    }
+
+    container.innerHTML = html || (isMyManager ? html : '<div style="color:#666; font-size:0.8rem; padding-left:10px;">등록된 아레나 스토리가 없습니다.</div>');
+}
+
+async function uploadGymStory(event) {
+    const file = event.target.files[0];
+    if (!file || !currentViewingGymId) return;
+
+    window.updateUploadProgress(1, "이미지 최적화 중...");
+    try {
+        const compressedFile = await window.compressImage(file);
+        const fileName = "gym_story_" + Date.now() + "_" + file.name;
+        const storageRef = window.ref(window.storage, `gym_stories/${currentViewingGymId}/${fileName}`);
+        const uploadTask = window.uploadBytesResumable(storageRef, compressedFile);
+
+        uploadTask.on('state_changed', 
+            (snapshot) => { window.updateUploadProgress((snapshot.bytesTransferred / snapshot.totalBytes) * 100); }, 
+            (error) => { window.updateUploadProgress(100); alert("업로드 실패"); }, 
+            async () => {
+                const downloadURL = await window.getDownloadURL(uploadTask.snapshot.ref);
+                
+                let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
+                const gymInfo = registeredGyms.find(g => g.id === currentViewingGymId);
+                if(!gymInfo) return;
+
+                let currentStories = JSON.parse(JSON.stringify(gymInfo.stories || []));
+                const title = prompt("스토리 주제(제목)를 입력하세요", "아레나 시설/일상") || "아레나 시설/일상";
+                currentStories.unshift({ id: Date.now(), title: title, cover: downloadURL, images: [downloadURL] });
+
+                await window.setDoc(window.doc(window.db, "gyms_registry", currentViewingGymId), { stories: currentStories }, { merge: true });
+                window.updateUploadProgress(100, "업로드 완료!");
+                openGymProfile(currentViewingGymId); // UI 갱신
+            }
+        );
+    } catch (e) { alert("업로드 중 오류가 발생했습니다."); window.updateUploadProgress(100); }
+}
+
+function viewGymStoryImage(url) {
+    const viewerImg = document.getElementById('story-viewer-img');
+    const popover = document.getElementById('story-viewer-popover');
+    const actions = document.querySelector('.story-top-actions');
+    const viewsBtn = document.getElementById('story-views-btn');
+    const progress = document.getElementById('story-progress');
+    const coverBtn = document.getElementById('story-cover-edit-btn');
+    
+    // 체육관 스토리는 단순 뷰어로만 사용 (선수 전용 UI 일시 숨김)
+    if(actions) actions.style.display = 'none';
+    if(viewsBtn) viewsBtn.style.display = 'none';
+    if(popover) popover.style.display = 'none';
+    if(progress) progress.style.display = 'none';
+    if(coverBtn) coverBtn.style.display = 'none';
+    
+    document.getElementById('storyViewer').style.display = 'flex';
+    viewerImg.style.backgroundImage = `url('${url}')`;
+    viewerImg.style.backgroundSize = "contain"; 
+    viewerImg.style.backgroundRepeat = "no-repeat";
+    viewerImg.style.backgroundPosition = "center";
+    viewerImg.style.backgroundColor = "#000"; 
 }
 
 // 3. 페이지 전환 함수 수정 (기존 showPage 함수 내부에 추가 필요)
@@ -4988,56 +5366,63 @@ function selectEditGym(gymName) {
 
 // [프로필] 소속 체육관 최종 업데이트 로직 (ID 기반)
 async function updateGym() {
-    let newGymName = document.getElementById('edit-gym-input').value.trim();
-    if(!currentUser) return;
+        let newGymName = document.getElementById('edit-gym-input').value.trim();
+        const targetPlayer = demoPlayers.find(x => String(x.id) === String(profileOwnerId));
+        if(!targetPlayer) return;
 
-    const isUnaffiliated = !newGymName || newGymName === '무소속';
-    if (isUnaffiliated) newGymName = '무소속';
+        const isUnaffiliated = !newGymName || newGymName === '무소속';
+        if (isUnaffiliated) newGymName = '무소속';
 
-    if(!confirm(`소속을 '${newGymName}'(으)로 변경하시겠습니까?`)) return;
+        if(!confirm(`소속을 '${newGymName}'(으)로 변경하시겠습니까?`)) return;
 
-    try {
-        let finalGymId = isUnaffiliated ? "" : tempSelectedGymId;
-        
-        // '무소속'이 아닐 때 중복 체크 수행
-        if (!isUnaffiliated) {
-            let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
-            const cleanName = newGymName.replace(/\s+/g, ' ').trim();
-            const existing = registeredGyms.find(g => g.name.replace(/\s+/g, ' ').trim().toLowerCase() === cleanName.toLowerCase());
+        try {
+            let finalGymId = isUnaffiliated ? "" : tempSelectedGymId;
+            
+            // '무소속'이 아닐 때 중복 체크 수행
+            if (!isUnaffiliated) {
+                let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
+                const cleanName = newGymName.replace(/\s+/g, ' ').trim();
+                const existing = registeredGyms.find(g => g.name.replace(/\s+/g, ' ').trim().toLowerCase() === cleanName.toLowerCase());
 
-            if (existing) {
-                finalGymId = existing.id;
-                newGymName = existing.name;
-            } else if (!finalGymId) {
-                // 완전히 새로운 이름인 경우만 신규 ID 부여 및 레지스트리 등록 (초기 승점 0 설정)
-                finalGymId = "gym_" + Date.now();
-                await window.setDoc(window.doc(window.db, "gyms_registry", finalGymId), {
-                    id: finalGymId, name: newGymName, region: currentUser.region || '전북', registeredAt: Date.now(), totalPt: 0
-                });
+                if (existing) {
+                    finalGymId = existing.id;
+                    newGymName = existing.name;
+                } else if (!finalGymId) {
+                    // 완전히 새로운 이름인 경우만 신규 ID 부여 및 레지스트리 등록 (초기 승점 0 설정)
+                    finalGymId = "gym_" + Date.now();
+                    await window.setDoc(window.doc(window.db, "gyms_registry", finalGymId), {
+                        id: finalGymId, name: newGymName, region: targetPlayer.region || '전북', registeredAt: Date.now(), totalPt: 0, stories: []
+                    });
+                }
             }
+
+            // 유저 정보 업데이트
+            await window.updateDoc(window.doc(window.db, "users", targetPlayer.rawName), { 
+                gymId: finalGymId, gym: newGymName 
+            });
+
+            targetPlayer.gymId = finalGymId;
+            targetPlayer.gym = newGymName;
+            
+            // 본인 프로필 수정 시 세션 동기화
+            if (currentUser && currentUser.id === targetPlayer.id) {
+                currentUser.gymId = finalGymId;
+                currentUser.gym = newGymName;
+                localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+            }
+            
+            alert('소속이 성공적으로 변경되었습니다!');
+            tempSelectedGymId = null;
+            document.getElementById('edit-gym-results').style.display = 'none';
+            
+            openProfile(targetPlayer.id);
+            renderGyms();
+            renderPlayers(); 
+        } catch(e) { 
+            console.error("체육관 변경 실패:", e); 
+            alert('변경 처리 중 오류가 발생했습니다.'); 
         }
-
-        // 유저 정보 업데이트
-        await window.updateDoc(window.doc(window.db, "users", currentUser.rawName), { 
-            gymId: finalGymId, gym: newGymName 
-        });
-
-        currentUser.gymId = finalGymId;
-        currentUser.gym = newGymName;
-        localStorage.setItem('sparring_session', JSON.stringify(currentUser));
-        
-        alert('소속이 성공적으로 변경되었습니다!');
-        tempSelectedGymId = null;
-        document.getElementById('edit-gym-results').style.display = 'none';
-        
-        openProfile(currentUser.id);
-        renderGyms();
-        renderPlayers(); 
-    } catch(e) { 
-        console.error("체육관 변경 실패:", e); 
-        alert('변경 처리 중 오류가 발생했습니다.'); 
     }
-}
 
 </script>
 <div id="storyViewer" class="story-viewer">
