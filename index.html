@@ -2450,7 +2450,6 @@ function showFeedMatchDetail(matchId) {
 }
 
 // 🔥 [선수 매칭] 복합 필터링(티어/지역) 및 UI 전면 개편
-// 🔥 [선수 매칭] 복합 필터링(티어/지역) 및 UI 전면 개편
 let currentMatchingTier = 'all';
 let currentMatchingRegion = 'all';
 
@@ -6172,12 +6171,21 @@ function toggleViewMode() {
 }
 
 // 🔥 [체육관 영구 보존 버전] 활동 누적 기반 랭킹 집계
-// 🔥 [체육관 영구 보존 버전] 활동 누적 기반 랭킹 집계
 function renderGyms(filterRegion = 'all') {
     const podiumContainer = document.getElementById('gym-top-podium');
     const listContainer = document.getElementById('gym-list-container');
+    const pageTitle = document.getElementById('gym-page-title'); // 타이틀 요소 선택
     if(!podiumContainer || !listContainer) return;
     
+    // 🔥 동적 타이틀 변경 로직
+    if (pageTitle) {
+        if (filterRegion === 'all') {
+            pageTitle.innerText = '🏆 전국 체육관 랭킹';
+        } else {
+            pageTitle.innerText = `🏆 ${filterRegion} 지역 체육관 랭킹`;
+        }
+    }
+
     const allBtns = document.querySelectorAll('.region-btn');
     allBtns.forEach(btn => {
         if ((filterRegion === 'all' && (btn.innerText.includes('전체') || btn.innerText.includes('전국'))) || (btn.innerText === filterRegion)) {
