@@ -990,6 +990,33 @@
                 <div style="grid-column: 1 / -1;"><span style="color: var(--tier5); font-weight: bold;">■ Tier 5:</span> 국내 20위권 랭커/챔피언</div>
             </div>
         </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; gap: 6px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; -ms-overflow-style: none;" id="matching-tier-tabs">
+                <button id="tier-btn-5" onclick="switchMatchingTier(5)" style="flex:1; padding: 10px 0; background: rgba(253, 203, 110, 0.1); color: var(--tier5); border: 1px solid var(--tier5); border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85rem;">Tier 5</button>
+                <button id="tier-btn-4" onclick="switchMatchingTier(4)" style="flex:1; padding: 10px 0; background: #222; color: #aaa; border: 1px solid #444; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85rem;">Tier 4</button>
+                <button id="tier-btn-3" onclick="switchMatchingTier(3)" style="flex:1; padding: 10px 0; background: #222; color: #aaa; border: 1px solid #444; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85rem;">Tier 3</button>
+                <button id="tier-btn-2" onclick="switchMatchingTier(2)" style="flex:1; padding: 10px 0; background: #222; color: #aaa; border: 1px solid #444; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85rem;">Tier 2</button>
+                <button id="tier-btn-1" onclick="switchMatchingTier(1)" style="flex:1; padding: 10px 0; background: #222; color: #aaa; border: 1px solid #444; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85rem;">Tier 1</button>
+            </div>
+            <select id="matching-region-filter" onchange="changeMatchingRegion()" style="width: 100%; background: #1a1a1a; color: white; border: 1px solid var(--primary-red); padding: 12px; border-radius: 8px; font-size: 0.95rem; outline: none; box-shadow: 0 0 10px rgba(214, 48, 49, 0.2);">
+                <option value="all">🌍 전국 지역 전체보기</option>
+                <optgroup label="특별시/광역시">
+                    <option value="서울">서울</option><option value="부산">부산</option>
+                    <option value="대구">대구</option><option value="인천">인천</option>
+                    <option value="광주">광주</option><option value="대전">대전</option>
+                    <option value="울산">울산</option><option value="세종">세종</option>
+                </optgroup>
+                <optgroup label="도 단위">
+                    <option value="경기">경기</option><option value="강원">강원</option>
+                    <option value="충북">충북</option><option value="충남">충남</option>
+                    <option value="전북">전북</option><option value="전남">전남</option>
+                    <option value="경북">경북</option><option value="경남">경남</option>
+                    <option value="제주">제주</option>
+                </optgroup>
+            </select>
+        </div>
+
         <div id="tier-container"></div>
     </div>
 
@@ -2272,87 +2299,127 @@ function showFeedMatchDetail(matchId) {
     alert(`[🥊 스파링 확정 안내]\n\n상대선수: ${m.senderName} vs ${m.receiverName}\n확정일시: ${m.date}\n남은기간: ${dDayStr}\n\n* 상세 조율은 '매칭 확인' 메뉴의 채팅창을 이용해주세요.`);
 }
 
-// 🔥 [선수 매칭] 스탯 강조 및 UI 최적화 버전 (중복 소속 제거)
+// 🔥 [선수 매칭] 복합 필터링(티어/지역) 및 UI 전면 개편
+let currentMatchingTier = 5;
+let currentMatchingRegion = 'all';
+
+function switchMatchingTier(tier) {
+    currentMatchingTier = tier;
+    const colorMap = {1: 'var(--tier1)', 2: 'var(--tier2)', 3: 'var(--tier3)', 4: 'var(--tier4)', 5: 'var(--tier5)'};
+    
+    // 탭 UI 하이라이팅 변경
+    for(let i=1; i<=5; i++) {
+        const btn = document.getElementById(`tier-btn-${i}`);
+        if(btn) {
+            if(i === tier) {
+                btn.style.background = 'rgba(255, 255, 255, 0.1)';
+                btn.style.color = colorMap[i];
+                btn.style.borderColor = colorMap[i];
+            } else {
+                btn.style.background = '#222';
+                btn.style.color = '#aaa';
+                btn.style.borderColor = '#444';
+            }
+        }
+    }
+    renderPlayers();
+}
+
+function changeMatchingRegion() {
+    const select = document.getElementById('matching-region-filter');
+    currentMatchingRegion = select.value;
+    renderPlayers();
+}
+
 function renderPlayers() {
     const container = document.getElementById('tier-container');
     let html = '';
     let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
 
-    [5, 4, 3, 2, 1].forEach(t => {
-        const tPlayers = demoPlayers.filter(p => p.tier == t).sort((a, b) => b.pt - a.pt);
-        const tierColor = `var(--tier${t})`;
-        
-        html += `<div class="tier-header" style="border-left-color: ${tierColor}; color: ${tierColor};" onclick="toggleTier('tlist-${t}')">[Tier ${t}] 선수 목록 ▼</div>`;
-        html += `<div id="tlist-${t}" class="tier-list" style="display:block;">`;
-        
-        if(tPlayers.length > 0) {
-            tPlayers.forEach((p, idx) => {
-                let avatarStyle = p.profilePic ? `background-image: url('${p.profilePic}');` : '';
-                
-                // 진행 중인 매칭 확인 로직 (기존 기능 유지)
-                let activeMatch = null;
-                if(currentUser) {
-                    activeMatch = allMatches.find(m => 
-                        m.status !== '종료' && (
-                            (m.senderRawName === currentUser.rawName && m.receiverRawName === p.rawName) ||
-                            (m.senderRawName === p.rawName && m.receiverRawName === currentUser.rawName)
-                        )
-                    );
-                }
+    // 1. 티어 및 지역 필터링 교집합
+    let filteredPlayers = demoPlayers.filter(p => p.tier == currentMatchingTier);
+    if (currentMatchingRegion !== 'all') {
+        filteredPlayers = filteredPlayers.filter(p => p.region === currentMatchingRegion);
+    }
 
-                let btnHtml = '';
-                if (currentUser && (currentUser.id === p.id || currentUser.rawName === p.rawName)) {
-                    btnHtml = ''; 
-                } else if (activeMatch) {
-                    btnHtml = `<button class="btn-match" style="background: #333; color: var(--gold); border: 1px solid var(--gold); min-width:85px;" onclick="openChat(${activeMatch.id}); openModal('matchStatusModal');">진행중</button>`;
-                } else {
-                    btnHtml = `<button class="btn-match" style="min-width:85px;" onclick="requestMatch(${p.id})">매칭 신청</button>`;
-                }
+    // 2. 포인트 내림차순 정렬
+    filteredPlayers.sort((a, b) => b.pt - a.pt);
 
-                // 공통 스탯 영역: 포인트(PT) 크게 강조, 전적은 깔끔하게 화이트 톤으로
-                const statHtml = `
-                    <div style="margin-top: 6px; display: flex; align-items: baseline; gap: 8px;">
-                        <span style="color:var(--gold); font-size: 1.05rem; font-weight: 800; letter-spacing: -0.5px;">${p.pt.toLocaleString()} <small style="font-size:0.7rem; font-weight:normal;">P</small></span>
-                        <span style="color: rgba(255,255,255,0.3); font-size: 0.8rem;">|</span>
-                        <span style="color: #eee; font-size: 0.85rem; font-weight: 500;">시즌 ${p.sW}승 ${p.sD}무 ${p.sL}패</span>
-                    </div>`;
+    const tierColor = `var(--tier${currentMatchingTier})`;
+    html += `<div id="tlist-${currentMatchingTier}" class="tier-list" style="display:block;">`;
+    
+    if(filteredPlayers.length > 0) {
+        filteredPlayers.forEach((p, idx) => {
+            let avatarStyle = p.profilePic ? `background-image: url('${p.profilePic}');` : '';
+            
+            // 매칭 상태 확인
+            let activeMatch = null;
+            if(currentUser) {
+                activeMatch = allMatches.find(m => 
+                    m.status !== '종료' && (
+                        (m.senderRawName === currentUser.rawName && m.receiverRawName === p.rawName) ||
+                        (m.senderRawName === p.rawName && m.receiverRawName === currentUser.rawName)
+                    )
+                );
+            }
 
-                if (idx === 0) {
-                    // 1위 카드 디자인 (더욱 웅장하게)
-                    html += `
-                    <div class="top-rankers" style="display:flex; justify-content:space-between; align-items:center; padding:15px; background: linear-gradient(145deg, rgba(0,0,0,0.5), rgba(40,40,40,0.3)); border: 1px solid ${tierColor}; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-                        <div class="rank-1" style="border-bottom:none; margin-bottom:0; padding-bottom:0; display:flex; align-items:center; gap:15px;">
-                            <div class="avatar" style="border-color:${tierColor}; width:55px; height:55px; ${avatarStyle}; box-shadow: 0 0 10px ${tierColor}44;"></div>
-                            <div>
-                                <div style="display:flex; align-items:center; gap:5px;">
-                                    <span style="color:${tierColor}; font-weight:900; font-size:0.9rem;">🥇 1위</span>
-                                    <span class="clickable-name" onclick="openProfile(${p.id})">${formatName(p)}</span>
-                                </div>
-                                ${statHtml}
-                            </div>
+            // 버튼 생성 (본인 제외)
+            let btnHtml = '';
+            if (currentUser && (currentUser.id === p.id || currentUser.rawName === p.rawName)) {
+                btnHtml = ''; 
+            } else if (activeMatch) {
+                btnHtml = `<button class="btn-match" style="background: #333; color: var(--gold); border: 1px solid var(--gold); min-width:85px; font-size:0.85rem; padding:10px;" onclick="openChat(${activeMatch.id}); openModal('matchStatusModal');">진행중</button>`;
+            } else {
+                btnHtml = `<button class="btn-match" style="min-width:85px; font-size:0.85rem; padding:10px;" onclick="requestMatch(${p.id})">매칭 신청</button>`;
+            }
+
+            // 메달 및 랭크 산정
+            const rankMedal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '🎖️'));
+            const rankText = `<span style="color:${idx < 3 ? tierColor : '#aaa'}; font-weight:bold; font-size:0.85rem; margin-bottom:2px; display:inline-block;">${rankMedal} ${idx + 1}위</span>`;
+            
+            // 체급 및 체육관 데이터 
+            let weight = (p.weight || '').replace(' 급', '').replace('급', ''); 
+            let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
+            let gymInfo = registeredGyms.find(g => g.id === p.gymId) || registeredGyms.find(g => g.name === p.gym) || { name: p.gym || '무소속' };
+            let gymIdForProfile = gymInfo.id || p.gymId || p.gym; 
+
+            // 스탯 라인 (포인트 글자수가 많아져도 무조건 한 줄에 맞추는 Flex + min 비율 폰트 처리)
+            const statLineHtml = `
+                <div style="display:flex; justify-content:space-between; align-items:center; width:100%; white-space:nowrap; margin-top:2px;">
+                    <span style="color:var(--gold); font-size:min(3.8vw, 1.05rem); font-weight:800; overflow:hidden; text-overflow:ellipsis; flex-shrink:1;">${p.pt.toLocaleString()}<small style="font-size:0.7em; font-weight:normal; margin-left:2px;">P</small></span>
+                    <span style="color: rgba(255,255,255,0.3); font-size: 0.8rem; margin:0 5px; flex-shrink:0;">|</span>
+                    <span style="color: #eee; font-size:min(3.2vw, 0.85rem); font-weight:500; overflow:hidden; text-overflow:ellipsis; flex-shrink:1;">시즌 ${p.sW}승 ${p.sD}무 ${p.sL}패</span>
+                </div>`;
+
+            // 상위 랭커 시각적 강조 차이
+            let cardStyle = idx === 0 
+                ? `padding:15px; background: linear-gradient(145deg, rgba(0,0,0,0.5), rgba(40,40,40,0.3)); border: 1px solid ${tierColor}; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.4);` 
+                : `padding: 15px 12px; background:#1a1a1a; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 12px;`;
+
+            html += `
+            <div class="player-card" style="${cardStyle} display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                <div style="display:flex; align-items:center; gap:12px; overflow:hidden; flex:1;">
+                    <div class="avatar" style="border:2px solid ${idx === 0 ? tierColor : '#555'}; width:55px; height:55px; ${avatarStyle} flex-shrink:0;"></div>
+                    <div style="display:flex; flex-direction:column; overflow:hidden; width:100%;">
+                        ${rankText}
+                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:2px; overflow:hidden; white-space:nowrap;">
+                            <span class="clickable-name" onclick="openProfile('${p.id}')" style="font-size:1.1rem; font-weight:900; flex-shrink:0;">${p.name}</span>
+                            <span style="color:var(--gold); font-size:0.75rem; overflow:hidden; text-overflow:ellipsis; opacity:0.8;">
+                                [${weight} · <span onclick="event.stopPropagation(); openGymProfile('${gymIdForProfile}')" style="cursor:pointer; text-decoration:underline;">${gymInfo.name}</span>]
+                            </span>
                         </div>
-                        ${btnHtml}
-                    </div>`;
-                } else {
-                    // 일반 선수 디자인 (회색 소속 제거 및 스탯 강조)
-                    html += `
-                    <div class="player-row" style="padding: 15px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center;">
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <div class="avatar" style="${avatarStyle}; width:45px; height:45px;"></div>
-                            <div>
-                                <span class="clickable-name" onclick="openProfile(${p.id})">${formatName(p)}</span>
-                                ${statHtml}
-                            </div>
-                        </div>
-                        ${btnHtml}
-                    </div>`;
-                }
-            });
-        } else {
-            html += `<div style="text-align:center; padding:30px; color:#555; font-size:0.85rem;">현재 이 티어에 등록된 선수가 없습니다.</div>`;
-        }
-        html += `</div>`;
-    });
+                        ${statLineHtml}
+                    </div>
+                </div>
+                <div style="flex-shrink:0;">
+                    ${btnHtml}
+                </div>
+            </div>`;
+        });
+    } else {
+        html += `<div style="text-align:center; padding:40px; color:#666; font-size:0.85rem; background:#1a1a1a; border-radius:12px; border:1px solid #333;">해당 조건(티어/지역)에 등록된 선수가 없습니다.</div>`;
+    }
+    html += `</div>`;
     container.innerHTML = html;
 }
 
