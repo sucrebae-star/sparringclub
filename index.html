@@ -1308,6 +1308,18 @@
                     <button class="btn-submit" style="margin:0; flex:1; background:#555;" onclick="resetBackground()">기본 리셋</button>
                 </div>
             </div>
+
+            <div class="card" style="border: 2px solid var(--gold); background: rgba(253, 203, 110, 0.05); margin-top: 20px;">
+                <h3 style="color: var(--gold); margin-top: 0;">🌍 글로벌 레전드 활성화 (테스트 전용)</h3>
+                <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 15px;">
+                    * 세계적인 복서 30명과 전국 각지의 가상 체육관 데이터를 생성하여 상호 교류하는 분위기를 연출합니다.<br>
+                    * 모든 가상 인물의 이름 뒤에는 <b>[test]</b>가 붙으며, 프로필 사진이 자동으로 주입됩니다.
+                </p>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="activateHypeMode()" style="flex: 1; padding: 12px; background: var(--gold); color: #000; font-weight: bold; border: none; border-radius: 8px; cursor: pointer;">🔥 전설 30인 네트워크 소환</button>
+                    <button onclick="clearHypeData()" style="flex: 1; padding: 12px; background: #444; color: #fff; font-weight: bold; border: none; border-radius: 8px; cursor: pointer;">🧹 가상 데이터 전체 삭제</button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -6196,6 +6208,166 @@ async function updateGym() {
             console.error("체육관 변경 실패:", e); 
             alert('변경 처리 중 오류가 발생했습니다.'); 
         }
+    }
+
+    // --- [가상 데이터] 세계관 최강자 30인 및 전국구 네트워크 활성화 모드 ---
+    async function activateHypeMode() {
+        if(!confirm("세계적인 전설의 복서 30명을 소환하여 플랫폼을 전국구로 활성화하시겠습니까?")) return;
+        
+        alert("전설적인 복서 30명, 지역 간 스파링 피드, 커뮤니티 활동을 프로필 사진과 함께 생성합니다...");
+
+        const legends = [
+            {name: "무함마드 알리", weight: "+90kg", tier: 5, pt: 8500000, gym: "효천 메인관", region: "전북"},
+            {name: "마이크 타이슨", weight: "+90kg", tier: 5, pt: 8400000, gym: "효천 메인관", region: "전북"},
+            {name: "플로이드 메이웨더", weight: "-65kg", tier: 5, pt: 9999999, gym: "팀 파이터", region: "서울"},
+            {name: "매니 파퀴아오", weight: "-65kg", tier: 5, pt: 9500000, gym: "MP 짐", region: "부산"},
+            {name: "카넬로 알바레즈", weight: "-75kg", tier: 5, pt: 9200000, gym: "강철 복싱", region: "경기"},
+            {name: "슈가 레이 레너드", weight: "-65kg", tier: 5, pt: 8800000, gym: "대전 챔프", region: "대전"},
+            {name: "로이 존스 주니어", weight: "-80kg", tier: 5, pt: 8700000, gym: "빛고을 복싱", region: "광주"},
+            {name: "게나디 골로프킨", weight: "-75kg", tier: 5, pt: 8600000, gym: "대구 불주먹", region: "대구"},
+            {name: "타이슨 퓨리", weight: "+90kg", tier: 5, pt: 8500000, gym: "울산 히어로", region: "울산"},
+            {name: "올렉산드르 우식", weight: "+90kg", tier: 5, pt: 8400000, gym: "키예프 짐", region: "경북"},
+            {name: "나오야 이노우에", weight: "-55kg", tier: 5, pt: 8900000, gym: "몬스터 짐", region: "경남"},
+            {name: "로베르토 듀란", weight: "-65kg", tier: 5, pt: 8200000, gym: "돌주먹 짐", region: "강원"},
+            {name: "토마스 헌즈", weight: "-65kg", tier: 5, pt: 8100000, gym: "히트맨 아카데미", region: "충북"},
+            {name: "마빈 헤글러", weight: "-75kg", tier: 5, pt: 8000000, gym: "마블러스 짐", region: "충남"},
+            {name: "조지 포먼", weight: "+90kg", tier: 5, pt: 8300000, gym: "제주 그릴", region: "제주"},
+            {name: "바실 로마첸코", weight: "-60kg", tier: 5, pt: 8600000, gym: "매트릭스 짐", region: "전남"},
+            {name: "테렌스 크로포드", weight: "-65kg", tier: 5, pt: 8750000, gym: "세종 버드", region: "세종"},
+            {name: "오스카 델 라 호야", weight: "-65kg", tier: 4, pt: 5200000, gym: "골든보이 짐", region: "인천"},
+            {name: "안소니 조슈아", weight: "+90kg", tier: 4, pt: 5100000, gym: "팀 파이터", region: "서울"},
+            {name: "드온테이 와일더", weight: "+90kg", tier: 4, pt: 5000000, gym: "MP 짐", region: "부산"},
+            {name: "에롤 스펜스 Jr", weight: "-65kg", tier: 4, pt: 4900000, gym: "대구 불주먹", region: "대구"},
+            {name: "라이언 가르시아", weight: "-60kg", tier: 4, pt: 4800000, gym: "효천 메인관", region: "전북"},
+            {name: "거본타 데이비스", weight: "-60kg", tier: 4, pt: 4700000, gym: "강철 복싱", region: "경기"},
+            {name: "아르투르 베테르비에프", weight: "-80kg", tier: 4, pt: 4600000, gym: "돌주먹 짐", region: "강원"},
+            {name: "드미트리 비볼", weight: "-80kg", tier: 4, pt: 4500000, gym: "마블러스 짐", region: "충남"},
+            {name: "샤커 스티븐슨", weight: "-60kg", tier: 4, pt: 4400000, gym: "매트릭스 짐", region: "전남"},
+            {name: "훌리오 세자르 차베스", weight: "-60kg", tier: 4, pt: 4300000, gym: "제주 그릴", region: "제주"},
+            {name: "블라디미르 클리츠코", weight: "+90kg", tier: 4, pt: 4200000, gym: "키예프 짐", region: "경북"},
+            {name: "레녹스 루이스", weight: "+90kg", tier: 4, pt: 4100000, gym: "울산 히어로", region: "울산"},
+            {name: "에반더 홀리필드", weight: "+90kg", tier: 4, pt: 4000000, gym: "빛고을 복싱", region: "광주"}
+        ];
+
+        try {
+            // 1. 전국구 가상 체육관 생성
+            const uniqueGyms = [...new Set(legends.map(l => l.gym))];
+            for (const gymName of uniqueGyms) {
+                const gymId = `dummy_gym_${gymName.replace(/\s+/g, '_')}`;
+                const region = legends.find(l => l.gym === gymName).region;
+                await window.setDoc(window.doc(window.db, "gyms_registry", gymId), {
+                    id: gymId, name: gymName, region: region, totalPt: Math.floor(Math.random() * 50000) + 10000,
+                    registeredAt: Date.now(), stories: [], isDummy: true
+                });
+            }
+
+            // 2. 가상 선수 30명 생성 (동적 프로필 사진 URL 포함)
+            for (let i = 0; i < legends.length; i++) {
+                const l = legends[i];
+                const rawId = `dummy_user_${l.name.replace(/\s+/g, '_')}`;
+                const gymId = `dummy_gym_${l.gym.replace(/\s+/g, '_')}`;
+                const profilePicUrl = `https://picsum.photos/seed/${encodeURIComponent(l.name)}/200/200`; 
+
+                await window.setDoc(window.doc(window.db, "users", rawId), {
+                    id: Date.now() + i,
+                    rawName: l.name + "[test]",
+                    name: l.name + "[test]",
+                    pw: "0694",
+                    gym: l.gym,
+                    gymId: gymId,
+                    tier: l.tier,
+                    pt: l.pt,
+                    sW: 80, sL: 0, sD: 0,
+                    tW: 150, tL: 0, tD: 0,
+                    region: l.region,
+                    weight: l.weight,
+                    role: "player",
+                    profilePic: profilePicUrl,
+                    isDummy: true
+                });
+            }
+
+            // 3. 전국구 지역 간 교류전 피드 생성 (실시간 활동)
+            for (let j = 0; j < 15; j++) {
+                const matchId = Date.now() + 500 + j;
+                const p1 = legends[j % legends.length];
+                const p2 = legends[(j + 15) % legends.length];
+                
+                let status = "종료";
+                if(j === 0) status = "대기중";
+                else if(j === 1) status = "매칭 성사";
+
+                await window.setDoc(window.doc(window.db, "matches", matchId.toString()), {
+                    id: matchId, matchSeq: 2000 + j, matchType: "rank",
+                    senderRawName: p1.name + "[test]", senderName: p1.name + "[test]",
+                    receiverRawName: p2.name + "[test]", receiverName: p2.name + "[test]",
+                    status: status, date: "2026-03-20 20:00",
+                    matchGymName: p2.gym, matchGymId: `dummy_gym_${p2.gym.replace(/\s+/g, '_')}`,
+                    resultValue: status === "종료" ? (j % 3 === 0 ? "draw" : "win") : "",
+                    approvedAt: status === "종료" ? Date.now() - (j * 3600000) : null,
+                    createdAt: Date.now() - (j * 7200000),
+                    isDummy: true
+                });
+            }
+
+            // 4. 커뮤니티 활성화 게시글 (지역 교류 + 유머)
+            const posts = [
+                {prefix: "[자유게시]", title: "부산 밀면 먹고 쳤더니 잽이 더 날카로워졌네요", content: "역시 MP 짐 시설 최고입니다. 부산 분들 매너 좋으시네요!", author: "마이크 타이슨[test]"},
+                {prefix: "[경기결과]", title: "전주 효천 메인관 원정 스파링 후기", content: "타이슨 님 펀치 정말 무겁습니다. 전주까지 와서 한 수 잘 배웠습니다!", author: "매니 파퀴아오[test]"},
+                {prefix: "[자유게시]", title: "마이크 타이슨[test] 선수가 메이웨더[test] 선수에게 원정 랭킹전을 신청했습니다!", content: "전북 효천에서 서울 팀파이터까지 원정 스파링 가시네요 ㄷㄷ 진짜 교류의 장입니다 응원합시다!"},
+                {prefix: "[복싱지식]", title: "강철 복싱 체육관만의 숄더롤 연습법", content: "경기 지역에서 배우는 카넬로 스타일 방어법 공유합니다.", author: "카넬로 알바레즈[test]"},
+                {prefix: "[자유게시]", title: "서울 팀 파이터 원정 다녀왔습니다.", content: "조슈아[test] 선수 만나서 영광이었습니다.", author: "나오야 이노우에[test]"},
+                {prefix: "[시스템피드백]", title: "타 지역 매칭도 더 활성화되면 좋겠네요.", content: "요즘 전국구로 원정 다니는 맛에 복싱합니다.", author: "슈가 레이 레너드[test]"},
+                {prefix: "[자유게시]", title: "제주도 그릴 복싱짐 스파링 시설 좋네요", content: "운동 끝나고 흑돼지까지 완벽합니다.", author: "조지 포먼[test]"},
+                {prefix: "[경기결과]", title: "빛고을 복싱 아레나 결과 올립니다.", content: "광주까지 갔는데 존스 주니어[test] 스텝 못 따라가겠네요 ㅠㅠ", author: "로베르토 듀란[test]"},
+                {prefix: "[복싱질문]", title: "원정 스파링갈 때 헤드기어 보통 챙기시나요?", content: "타 체육관 공용 쓰려니 좀 찝찝해서요.", author: "토마스 헌즈[test]"},
+                {prefix: "[자유게시]", title: "대구 불주먹 아카데미 짱짱", content: "골로프킨[test] 선수랑 땀 빼고 사진 찍었습니다 ㅎㅎ", author: "마빈 헤글러[test]"}
+            ];
+
+            for (let k = 0; k < posts.length; k++) {
+                const p = posts[k];
+                const postId = Date.now() + 1000 + k;
+                const authorName = p.author || "시스템 봇";
+                const randomImg = `https://picsum.photos/seed/post_${k}/600/400`;
+
+                await window.setDoc(window.doc(window.db, "community_posts", postId.toString()), {
+                    id: postId, prefix: p.prefix, title: p.title, 
+                    content: `${p.content}<br><img src="${randomImg}">`,
+                    imageUrl: randomImg,
+                    authorId: 0, authorName: authorName,
+                    time: Date.now() - (k * 7200000), comments: [], type: "normal", isDummy: true
+                });
+            }
+
+            alert("글로벌 레전드 30인 네트워크가 전국 단위로 소환되었습니다! (프로필 사진 적용 완료)");
+            location.reload();
+        } catch(e) { console.error(e); alert("데이터 생성 실패"); }
+    }
+
+    // --- [데이터 청소] 가상 데이터 일괄 삭제 ---
+    async function clearHypeData() {
+        if(!confirm("주의: 모든 가상(테스트용) 데이터가 일괄 삭제됩니다. 실제 유저의 데이터는 안전하게 유지됩니다. 계속할까요?")) return;
+
+        const collections = ["users", "matches", "community_posts", "gyms_registry"];
+        
+        for (const colName of collections) {
+            try {
+                const snap = await window.getDocs(window.collection(window.db, colName));
+                let deleteCount = 0;
+                
+                for (const docSnap of snap.docs) {
+                    if (docSnap.data().isDummy === true) {
+                        await window.deleteDoc(window.doc(window.db, colName, docSnap.id));
+                        deleteCount++;
+                    }
+                }
+                console.log(`${colName} 컬렉션에서 ${deleteCount}개의 가상 데이터를 삭제했습니다.`);
+            } catch(e) {
+                console.error(`${colName} 삭제 중 오류:`, e);
+            }
+        }
+        alert("가상 데이터 정리가 완료되었습니다. 클린한 플랫폼이 준비되었습니다.");
+        location.reload();
     }
 
 </script>
