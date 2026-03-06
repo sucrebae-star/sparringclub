@@ -1064,7 +1064,7 @@ self.addEventListener('notificationclick', function(event) {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <h2 style="margin: 0; font-size: 1.1rem; letter-spacing: -0.5px;">실시간 활동 피드</h2>
-                <button id="clean-feed-btn" onclick="toggleCleanFeedMode()" style="background: #333; color: #ccc; border: 1px solid #555; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; transition: all 0.2s;">🤖 클린 피드 모드 OFF</button>
+                <button id="clean-feed-btn" onclick="toggleCleanFeedMode()" style="background: #333; color: #ccc; border: 1px solid #555; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; transition: all 0.2s;">🤖 TEST모드 OFF</button>
             </div>
             <div style="display: flex; gap: 5px; background: #222; padding: 4px; border-radius: 8px; border: 1px solid #444;">
                 <button id="feed-tab-upcoming" onclick="switchFeedTab('upcoming')" style="background: var(--primary-red); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s;">다가올 일정</button>
@@ -6699,12 +6699,12 @@ function toggleCleanFeedMode() {
     const btn = document.getElementById('clean-feed-btn');
     if (btn) {
         if (isActive) {
-            btn.innerText = '🤖 클린 피드 모드 ON';
+            btn.innerText = '🤖 TEST모드 ON';
             btn.style.background = 'var(--primary-red)';
             btn.style.color = 'white';
             btn.style.borderColor = 'var(--primary-red)';
         } else {
-            btn.innerText = '🤖 클린 피드 모드 OFF';
+            btn.innerText = '🤖 TEST모드 OFF';
             btn.style.background = '#333';
             btn.style.color = '#ccc';
             btn.style.borderColor = '#555';
@@ -6720,7 +6720,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const isActive = localStorage.getItem('sparring_clean_feed') === 'true';
     const btn = document.getElementById('clean-feed-btn');
     if (btn && isActive) {
-        btn.innerText = '🤖 클린 피드 모드 ON';
+        btn.innerText = '🤖 TEST모드 ON';
         btn.style.background = 'var(--primary-red)';
         btn.style.color = 'white';
         btn.style.borderColor = 'var(--primary-red)';
