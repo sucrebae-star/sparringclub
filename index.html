@@ -965,20 +965,47 @@
     </div>
 
     <div id="players" class="page">
-        <h2>티어별 선수 매칭</h2>
-        <div class="tier-info-box">
-            <b style="color: white; display:block; margin-bottom:5px;">[매칭 규정 및 티어 배정]</b>
-            <span style="color: var(--tier1);">■ Tier 1:</span> 전적 없음 / 신규 회원<br>
-            <span style="color: var(--tier2);">■ Tier 2:</span> 생활체육 대회 출전 및 입상<br>
-            <span style="color: var(--tier3);">■ Tier 3:</span> 시단위 이상 아마추어 / 엘리트<br>
-            <span style="color: var(--tier4);">■ Tier 4:</span> 프로 시합 출전 경력자<br>
-            <span style="color: var(--tier5);">■ Tier 5:</span> 국내 20위권 랭커 및 챔피언<br>
-            <hr style="border-color:#444; margin:10px 0;">
-            * <b style="color:var(--gold);">전적 반영 랭크전은 최대 2체급 차이까지만 매칭 가능합니다.</b><br>
-            * 매칭 신청 후 <b style="color:#ff7675;">7일 이내 무응답 시</b> 신뢰도 삭감<br>
-            * 대기 중인 매칭이 <b style="color:#ff7675;">5개 이상</b>인 선수는 신청 불가
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 style="margin: 0;">티어별 선수 매칭</h2>
+            <button onclick="openModal('tierGuideModal')" style="background: #333; color: var(--gold); border: 1px solid var(--gold); padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; font-weight: bold;">📖 상세 안내</button>
+        </div>
+        <div class="tier-info-box" style="padding: 10px 15px;">
+            <b style="color: white; display:block; margin-bottom:5px;">[티어 배정 기준 요약]</b>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.8rem;">
+                <div><span style="color: var(--tier1); font-weight: bold;">■ Tier 1:</span> 전적 없음/신규</div>
+                <div><span style="color: var(--tier2); font-weight: bold;">■ Tier 2:</span> 생체 출전/입상</div>
+                <div><span style="color: var(--tier3); font-weight: bold;">■ Tier 3:</span> 시단위/아마/엘리트</div>
+                <div><span style="color: var(--tier4); font-weight: bold;">■ Tier 4:</span> 프로 시합 경력</div>
+                <div style="grid-column: 1 / -1;"><span style="color: var(--tier5); font-weight: bold;">■ Tier 5:</span> 국내 20위권 랭커/챔피언</div>
+            </div>
         </div>
         <div id="tier-container"></div>
+    </div>
+
+    <div id="tierGuideModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close-btn" onclick="closeModal('tierGuideModal')">&times;</span>
+            <h3 style="margin-top: 0; color: var(--gold); text-align: center;">📖 매칭 규정 및 상세 안내</h3>
+            <div style="font-size: 0.85rem; color: #ccc; line-height: 1.6;">
+                <b style="color: white; display:block; margin-top:10px; margin-bottom:5px;">[티어 배정 기준]</b>
+                <span style="color: var(--tier1);">■ Tier 1:</span> 전적 없음 / 신규 회원<br>
+                <span style="color: var(--tier2);">■ Tier 2:</span> 생활체육 대회 출전 및 입상<br>
+                <span style="color: var(--tier3);">■ Tier 3:</span> 시단위 이상 아마추어 / 엘리트<br>
+                <span style="color: var(--tier4);">■ Tier 4:</span> 프로 시합 출전 경력자<br>
+                <span style="color: var(--tier5);">■ Tier 5:</span> 국내 20위권 랭커 및 챔피언<br>
+                
+                <hr style="border-color:#444; margin:15px 0;">
+                
+                <b style="color: white; display:block; margin-bottom:5px;">[스파링 매칭 및 페널티 규정]</b>
+                <ul style="padding-left: 20px; margin: 0;">
+                    <li style="margin-bottom: 5px;"><b style="color:var(--gold);">전적 반영 랭크전은 최대 2체급 차이까지만 매칭 가능합니다.</b></li>
+                    <li style="margin-bottom: 5px;">매칭 신청 후 <b style="color:#ff7675;">7일 이내 무응답 시</b> 신뢰도 삭감이 이루어지며 자동 거절 처리됩니다.</li>
+                    <li style="margin-bottom: 5px;">대기 중인 매칭이 <b style="color:#ff7675;">5개 이상</b>인 선수는 원활한 진행을 위해 추가 매칭 신청을 받을 수 없습니다.</li>
+                    <li>매너 있는 스파링 문화를 위해 합의된 시간과 장소를 엄수해 주시기 바랍니다.</li>
+                </ul>
+            </div>
+            <button class="btn-submit" onclick="closeModal('tierGuideModal')" style="margin-top: 20px; background: #444; color: white;">확인했습니다</button>
+        </div>
     </div>
 
 <div id="gyms" class="page">
@@ -1298,12 +1325,17 @@
                 </optgroup>
             </select>
 
-            <label>소속 체육관</label>
-            <div style="display: flex; gap: 5px;">
-                <input type="text" id="signup-gym" placeholder="체육관 검색 (예: 복싱아카데미)" style="flex: 1; margin: 0;">
-                <button type="button" class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555;" onclick="searchGym()">조회</button>
+            <label>소속 체육관 (반드시 검색하여 선택하세요)</label>
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="signup-gym-keyword" placeholder="체육관명 검색 (예: 복싱아카데미)" style="flex: 1; margin: 0;" onkeydown="if(event.key === 'Enter') searchGym()">
+                    <button type="button" class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555;" onclick="searchGym()">조회</button>
+                </div>
+                <div id="gym-search-results" style="display: none; background: #222; border: 1px solid #444; border-radius: 4px; padding: 8px; font-size: 0.85rem;"></div>
+                
+                <input type="text" id="signup-gym-display" placeholder="선택된 체육관 없음" style="flex: 1; margin: 0; margin-top: 5px; background: #1a1a1a; color: var(--gold); border: 1px solid var(--gold);" readonly>
+                <input type="hidden" id="signup-gym">
             </div>
-            <div id="gym-search-results" style="display: none; background: #222; border: 1px solid #444; border-radius: 4px; padding: 8px; margin-top: 5px; font-size: 0.85rem;"></div>
             
             <div id="signup-player-fields">
                 <label>활동 체급 선택 (5kg 단위)</label>
@@ -1580,11 +1612,13 @@
     <div class="modal-content" style="max-width: 450px;">
         <span class="close-btn" onclick="closeModal('gymProfileModal')">&times;</span>
         
-        <div id="gp-manager-badge" style="display:none; text-align:center; margin-bottom:15px; background: rgba(253, 203, 110, 0.1); border: 1px solid var(--gold); padding:10px; border-radius:8px;">
+        <h3 style="margin-top:0; text-align:center; color:#fff; font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px;">🏢 체육관 프로필</h3>
+
+        <div id="gp-manager-badge" style="display:none; text-align:center; margin-bottom:15px; background: rgba(253, 203, 110, 0.1); border: 1px solid var(--gold); padding:10px; border-radius:8px; cursor: pointer; transition: transform 0.2s;">
             <span style="font-size:0.75rem; color:var(--gold); font-weight:bold; display:block; margin-bottom:5px;">👑 Arena Manager</span>
             <div style="display:flex; justify-content:center; align-items:center; gap:10px;">
                 <div id="gp-manager-avatar" class="avatar" style="width:40px; height:40px; border:2px solid var(--gold);"></div>
-                <b id="gp-manager-name" style="font-size:1rem; color:white;">매니저 이름</b>
+                <b id="gp-manager-name" style="font-size:1rem; color:white; text-decoration: underline;">매니저 이름</b>
             </div>
         </div>
 
@@ -4826,7 +4860,7 @@ function autoSetMatchType() {
 let tempSelectedGymId = null; // 선택된 체육관 ID 임시 보관
 
 function searchGym() {
-    const input = document.getElementById('signup-gym').value.trim();
+    const input = document.getElementById('signup-gym-keyword').value.trim();
     const resultsDiv = document.getElementById('gym-search-results');
     if(!input) { resultsDiv.innerHTML = '<div style="color:#ff7675;">체육관 이름을 먼저 입력해주세요.</div>'; resultsDiv.style.display = 'block'; return; }
     
@@ -4836,18 +4870,23 @@ function searchGym() {
     if(matched.length > 0) {
         let html = '<div style="color:#aaa; margin-bottom:5px;">등록된 체육관 목록 (선택):</div>';
         matched.forEach(g => { 
-            html += `<div style="padding: 5px 0; cursor: pointer; color: var(--gold);" onclick="selectGym('${g.name}', '${g.id}')">▶ ${g.name} (${g.region})</div>`; 
+            html += `<div style="padding: 5px 0; cursor: pointer; color: var(--gold); border-bottom: 1px solid #333;" onclick="selectGym('${g.name}', '${g.id}')">▶ ${g.name} (${g.region})</div>`; 
         });
         resultsDiv.innerHTML = html;
     } else {
         tempSelectedGymId = null; // 신규 생성을 위해 ID 초기화
-        resultsDiv.innerHTML = `<div style="color:#aaa;">검색 결과가 없습니다.<br><b style="color:white;">'${input}'</b>(으)로 신규 고유ID가 생성됩니다.</div>`;
+        resultsDiv.innerHTML = `
+            <div style="color:#aaa; margin-bottom: 8px;">검색 결과가 없습니다.</div>
+            <div style="padding: 8px; background: #333; color: #fff; text-align: center; border-radius: 4px; cursor: pointer; border: 1px solid var(--gold);" onclick="selectGym('${input}', null)">
+                <b style="color:var(--gold);">'${input}'</b> (으)로 신규 생성 후 선택하기
+            </div>`;
     }
     resultsDiv.style.display = 'block';
 }
 
 function selectGym(gymName, gymId) {
-    document.getElementById('signup-gym').value = gymName;
+    document.getElementById('signup-gym-display').value = `[선택됨] ${gymName}`;
+    document.getElementById('signup-gym').value = gymName; // submitSignup() 연동을 위해 hidden 필드에 유지
     tempSelectedGymId = gymId; // 전역 변수에 ID 저장
     document.getElementById('gym-search-results').style.display = 'none';
 }
@@ -5584,7 +5623,6 @@ function openGymProfile(gymIdentifier) {
         document.getElementById('gp-manager-name').innerText = manager.rawName;
         document.getElementById('gp-manager-avatar').style.backgroundImage = manager.profilePic ? `url(${manager.profilePic})` : '';
         managerBadge.onclick = () => { closeModal('gymProfileModal'); openProfile(manager.id); };
-        managerBadge.style.cursor = 'pointer';
     } else {
         managerBadge.style.display = 'none';
     }
@@ -5608,16 +5646,17 @@ function openGymProfile(gymIdentifier) {
         const tierMembers = playerMembers.filter(p => p.tier == t);
         if(tierMembers.length > 0) {
             let htmlMembers = tierMembers.map(m => {
-                let delBtn = isMyManager ? `<span onclick="managerDeleteMember('${m.id}')" style="color:#ff7675; cursor:pointer; font-weight:bold; margin-left:5px; font-size:0.7rem;">[삭제]</span>` : '';
-                return `<span style="margin-right:8px; display:inline-block; margin-bottom:4px;">${m.rawName}${delBtn}</span>`;
+                let delBtn = isMyManager ? `<span onclick="event.stopPropagation(); managerDeleteMember('${m.id}')" style="color:#ff7675; cursor:pointer; font-weight:bold; margin-left:5px; font-size:0.7rem;">[삭제]</span>` : '';
+                // 명단 내 선수를 클릭하면 해당 선수의 상세 프로필 모달로 연결
+                return `<span onclick="closeModal('gymProfileModal'); openProfile('${m.id}')" style="margin-right:12px; display:inline-block; margin-bottom:6px; cursor:pointer; text-decoration:underline; color:#fff; transition: color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#fff'">${m.rawName}${delBtn}</span>`;
             }).join('');
             
             rosterContainer.innerHTML += `
-                <div style="margin-bottom:10px;">
-                    <div style="color:var(--tier${t}); font-weight:bold; font-size:0.85rem; margin-bottom:3px;">
+                <div style="margin-bottom:10px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+                    <div style="color:var(--tier${t}); font-weight:bold; font-size:0.85rem; margin-bottom:5px; border-bottom: 1px dashed #444; padding-bottom: 4px;">
                         Tier ${t} (${tierMembers.length}명)
                     </div>
-                    <div style="color:#ccc; font-size:0.8rem; padding-left:10px; line-height:1.4;">${htmlMembers}</div>
+                    <div style="color:#ccc; font-size:0.85rem; padding-left:5px; line-height:1.6;">${htmlMembers}</div>
                 </div>`;
         }
     });
