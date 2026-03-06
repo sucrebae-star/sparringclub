@@ -326,7 +326,7 @@
         
         body { font-family: 'Pretendard', sans-serif; margin: 0; background: var(--dark-bg); color: var(--text-white); padding-bottom: 90px; }
         
-        .season-banner { background: var(--primary-red); color: white; text-align: center; padding: 8px; font-size: 0.85rem; font-weight: bold; position: sticky; top: 0; z-index: 101; }
+        .season-banner { background: var(--primary-red); color: white; text-align: center; padding: 12px 8px; font-size: 16px; font-weight: bold; position: sticky; top: 0; z-index: 101; letter-spacing: 0.5px; }
         
         /* 헤더 구조 최적화 (기존 속성 + 새 속성 병합) */
         header { 
@@ -384,9 +384,9 @@
 
         .auth-btns button { background: none; color: white; border: 1px solid #555; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; margin-left: 5px; }
         
-        nav { position: fixed; bottom: 0; width: 100%; background: #000; display: flex; border-top: 1px solid #333; z-index: 1000; }
-        nav button { flex: 1; padding: 12px 0; border: none; background: none; color: #888; font-size: 0.75rem; cursor: pointer; }
-        nav button.active { color: var(--primary-red); font-weight: bold; }
+        nav { position: fixed; bottom: 0; width: 100%; background: #000; display: flex; border-top: 1px solid #333; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); }
+        nav button { flex: 1; padding: 16px 0; border: none; background: none; color: #888; font-size: 0.95rem; cursor: pointer; transition: all 0.2s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+        nav button.active { color: var(--primary-red); font-weight: bold; background: rgba(214, 48, 49, 0.1); border-top: 2px solid var(--primary-red); transform: translateY(-1px); }
         
         .page { display: none; }
         .page.active { display: block; }
@@ -446,7 +446,8 @@
         .rank-1 .avatar { border: 2px solid var(--gold); }
         .player-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 10px; border-bottom: 1px solid #444; }
         .avatar { width: 40px; height: 40px; border-radius: 50%; background: #555; background-size: cover; background-position: center; background-repeat: no-repeat; flex-shrink: 0; }
-        .btn-match { background: var(--primary-red); color: white; border: none; padding: 8px 12px; border-radius: 5px; font-size: 0.8rem; cursor: pointer; font-weight: bold; }
+        .btn-match { background: var(--primary-red); color: white; border: none; padding: 12px 16px; border-radius: 8px; font-size: 0.95rem; cursor: pointer; font-weight: bold; min-width: 90px; transition: transform 0.2s; box-shadow: 0 4px 10px rgba(214, 48, 49, 0.3); }
+        .btn-match:active { transform: scale(0.95); }
         
         label { display: block; margin: 15px 0 5px; font-size: 0.85rem; color: #ccc; }
         input, select, textarea { width: 100%; padding: 12px; background: #333; border: 1px solid #444; border-radius: 8px; color: white; box-sizing: border-box; font-size: 1rem; }
@@ -538,11 +539,10 @@
         .timeline-folder { background: rgba(255, 255, 255, 0.03) !important; border-radius: 8px; margin-bottom: 12px; border: 1px solid rgba(255, 255, 255, 0.05) !important; overflow: hidden; transition: transform 0.2s ease; }
         .timeline-folder:hover { transform: translateY(-2px); border-color: rgba(214, 48, 49, 0.3) !important; }
         
-        .timeline-header { padding: 12px 15px; background: #2d2d2d; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .timeline-header { padding: 16px 20px; background: #2d2d2d; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-radius: 8px 8px 0 0; }
         .timeline-header:hover { background: #383838; }
-        .match-code { color: var(--gold); font-weight: bold; font-size: 0.85rem; margin-right: 10px; }
-        .timeline-content { display: none; padding: 10px 15px; background: #1a1a1a; border-top: 1px solid #333; }
-        .timeline-item { position: relative; padding-left: 25px; margin-bottom: 12px; font-size: 0.85rem; border-left: 3px solid #444; line-height: 1.5; }
+        .match-code { color: var(--gold); font-weight: bold; font-size: 0.95rem; margin-right: 10px; }
+        .timeline-content { display: none; padding: 15px 20px; background: #1a1a1a; border-top: 1px solid #333; border-radius: 0 0 8px 8px; }        .timeline-item { position: relative; padding-left: 25px; margin-bottom: 12px; font-size: 0.85rem; border-left: 3px solid #444; line-height: 1.5; }
         .timeline-item:last-child { border-left: 3px solid var(--primary-red); }
         .timeline-item span { font-family: 'Pretendard', sans-serif; letter-spacing: 0.5px; }
         .timeline-item::before { content: ''; position: absolute; left: -4px; top: 5px; width: 7px; height: 7px; background: var(--primary-red); border-radius: 50%; }
@@ -4838,7 +4838,7 @@ async function submitSignup() {
     if(!inputPw) { alert('비밀번호를 입력해주세요.'); return; }
     if (!pendingSignupPic) { alert('사진 등록이 필요합니다.'); return; }
 
-    // 매니저는 티어 10(논외), 선수는 입력값 사용
+    // 매니자는 티어 10(논외), 선수는 입력값 사용
     const weight = role === 'player' ? document.getElementById('signup-weight').value : 'N/A';
     const tier = role === 'player' ? document.getElementById('signup-tier').value : '10'; 
     const region = document.getElementById('signup-region').value;
@@ -4894,6 +4894,14 @@ async function submitSignup() {
         pendingSignupPic = null; isDuplicateChecked = false; tempSelectedGymId = null;
         document.getElementById('signup-pic-preview').style.display = 'none';
         closeModal('loginModal');
+
+        // 🔥 [PWA 연동] 가입 직후 홈 화면 추가 유도
+        setTimeout(() => {
+            if (confirm("스파링클럽 앱을 홈 화면에 추가하시겠습니까?\n(더 빠르고 편하게 이용 가능합니다 🥊)")) {
+                showPWAInstallGuide();
+            }
+        }, 1000);
+
     } catch (e) { 
         console.error("가입 신청 실패:", e); 
         alert("서버 오류로 신청되지 않았습니다."); 
@@ -5409,12 +5417,59 @@ async function initBackground() {
 }
 
 // 기존 window.onload 에 추가
+// 🔥 [PWA] 홈 화면 추가(설치) 로직
+let isPWAInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+function isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+function showPWAInstallGuide() {
+    if (isPWAInstalled) return; // 이미 설치된 경우 무시
+    
+    if (isIOS()) {
+        openModal('iosInstallModal');
+    } else if (deferredPrompt) {
+        document.getElementById('pwa-install-banner').style.display = 'flex';
+    } else {
+        alert("브라우저 설정 메뉴에서 '홈 화면에 추가' 또는 '앱 설치'를 선택해주세요.");
+    }
+}
+
+function installPWA() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('User accepted the PWA prompt');
+            }
+            deferredPrompt = null;
+            closePWABanner();
+        });
+    }
+}
+
+function closePWABanner() {
+    document.getElementById('pwa-install-banner').style.display = 'none';
+    localStorage.setItem('sparring_pwa_dismissed', 'true');
+}
+
+// 기존 window.onload 에 추가
 const originalOnload = window.onload;
 window.onload = function() {
     if (originalOnload) originalOnload();
     initBackground();
     initFirebaseRealtime(); // 앱 켜지자마자 서버와 연결!
     autoRejectSystem(); // 🔥 [신규] 앱 구동 시 7일이 지난 대기중인 스파링 자동 정리
+
+    // 일정 시간 후 미설치 유저에게 배너 표시 (가입 외 자연스러운 노출)
+    setTimeout(() => {
+        if (!isPWAInstalled && !localStorage.getItem('sparring_pwa_dismissed')) {
+            if (!isIOS() && deferredPrompt) {
+                document.getElementById('pwa-install-banner').style.display = 'flex';
+            }
+        }
+    }, 4000);
 };
 
 
@@ -6014,6 +6069,33 @@ async function updateGym() {
     
     <div id="story-cover-edit-btn" style="margin-top: 25px; color: var(--gold); font-size: 0.85rem; cursor: pointer; text-decoration: underline; z-index: 6010;" onclick="changeStoryCover()">
         현재 미디어를 대표 아이콘으로 설정
+    </div>
+</div>
+
+<div id="pwa-install-banner" style="display: none; position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 450px; background: rgba(253, 203, 110, 0.95); color: #000; padding: 16px 20px; border-radius: 16px; z-index: 5000; box-shadow: 0 8px 25px rgba(0,0,0,0.6); align-items: center; justify-content: space-between; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+    <div style="text-align: left; line-height: 1.4;">
+        <b style="font-size: 1rem; color: #d35400;">🚀 스파링클럽 앱 설치</b><br>
+        <span style="font-size: 0.85rem; font-weight: 500;">홈 화면에 추가하고 더 빠르게 접속하세요!</span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <button onclick="installPWA()" style="background: #000; color: var(--gold); border: 1px solid #000; padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">설치</button>
+        <button onclick="closePWABanner()" style="background: transparent; border: none; color: #555; padding: 10px 10px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.2rem;">&times;</button>
+    </div>
+</div>
+
+<div id="iosInstallModal" class="modal" style="z-index: 6000;">
+    <div class="modal-content" style="text-align: center; background: #fff; color: #000; max-width: 320px; border-radius: 20px;">
+        <span class="close-btn" onclick="closeModal('iosInstallModal')" style="color: #000;">&times;</span>
+        <h3 style="margin-top: 0; color: #000; font-size: 1.2rem;">🍏 홈 화면에 추가하기</h3>
+        <p style="font-size: 0.9rem; color: #444; line-height: 1.6; margin-bottom: 20px;">
+            아이폰(iOS) 사용자는 아래 방법을 통해<br>앱처럼 간편하게 사용할 수 있습니다.
+        </p>
+        <div style="background: #f1f2f6; padding: 20px 15px; border-radius: 12px; margin-bottom: 20px; text-align: left; font-size: 0.9rem; color: #333; line-height: 1.8;">
+            1. 하단의 <b>공유 버튼( <span style="font-size: 1.2rem; color: #007aff;">⍐</span> )</b>을 누릅니다.<br>
+            2. 메뉴에서 <b>'홈 화면에 추가' ( <span style="font-size: 1.2rem; color: #007aff;">+</span> )</b> 선택!<br>
+            3. 우측 상단의 <b>'추가'</b>를 누르면 완료!
+        </div>
+        <button onclick="closeModal('iosInstallModal')" style="background: #000; color: white; border: none; padding: 14px 20px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1rem;">확인했습니다</button>
     </div>
 </div>
 
