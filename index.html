@@ -982,6 +982,48 @@
         <div id="tier-container"></div>
     </div>
 
+    <div id="tierGuideModal" class="modal" style="z-index: 4000;">
+        <div class="modal-content" style="max-width: 480px;">
+            <span class="close-btn" onclick="closeModal('tierGuideModal')">&times;</span>
+            <h3 style="margin-top: 0; color: var(--gold); text-align: center; margin-bottom: 20px;">🥊 스파링클럽 티어 및 매칭 규정 안내</h3>
+            
+            <div style="font-size: 0.85rem; color: #ccc; line-height: 1.6; max-height: 60vh; overflow-y: auto; padding-right: 5px;">
+                <b style="color: white; display:block; margin-bottom:8px; font-size: 0.95rem;">1. 티어별 정의 (Tier System)</b>
+                <ul style="padding-left: 20px; margin: 0 0 15px 0;">
+                    <li><span style="color: var(--tier1); font-weight: bold;">Tier 1 (입문):</span> 전적 없음 / 신규 회원</li>
+                    <li><span style="color: var(--tier2); font-weight: bold;">Tier 2 (숙련):</span> 생활체육 대회 출전 및 입상 경력</li>
+                    <li><span style="color: var(--tier3); font-weight: bold;">Tier 3 (선수):</span> 시 단위 이상 아마추어 및 엘리트 경력</li>
+                    <li><span style="color: var(--tier4); font-weight: bold;">Tier 4 (프로):</span> 프로 시합 출전 경력이 있는 전문 선수</li>
+                    <li><span style="color: var(--tier5); font-weight: bold;">Tier 5 (마스터):</span> 국내 20위권 랭커 및 챔피언급</li>
+                </ul>
+                
+                <b style="color: white; display:block; margin-bottom:8px; font-size: 0.95rem;">2. 매칭 신청 제한 및 로직</b>
+                <ul style="padding-left: 20px; margin: 0 0 15px 0;">
+                    <li><b style="color:#fff;">일일 신청 제한:</b> 모든 선수는 하루 최대 3회까지만 매칭 신청이 가능합니다.</li>
+                    <li><b style="color:#fff;">상위 티어 도전:</b> 본인 티어 내 순위 10위 이내 선수만 바로 위 상위 티어에게 랭킹전을 신청할 수 있습니다.</li>
+                    <li><b style="color:#fff;">체급 규정:</b> 안전을 위해 최대 2체급(10kg) 차이까지만 랭킹 매치가 가능합니다.</li>
+                    <li><b style="color:#fff;">신청 가능 상태:</b> 현재 대기 중인 매칭이 5개 이상인 선수에게는 추가 신청이 불가능합니다.</li>
+                </ul>
+
+                <b style="color: white; display:block; margin-bottom:8px; font-size: 0.95rem;">3. 신뢰도 시스템 (Trust Score)</b>
+                <ul style="padding-left: 20px; margin: 0 0 15px 0;">
+                    <li><b style="color:#fff;">초기 설정:</b> 모든 회원의 신뢰도는 100%에서 시작합니다.</li>
+                    <li><b style="color:var(--gold);">🤝 매칭 신뢰도:</b> 매칭 신청을 받은 후 5일 이내에 응답(수락/거절/조율)하지 않으면 자동 거절되며 신뢰도가 10점 하락합니다.</li>
+                    <li><b style="color:var(--gold);">⚖️ 판정 신뢰도:</b> 커뮤니티 '판정 아레나' 투표 시 다수결 결과와 일치할 경우 상승하며, 선수의 판정 정확도를 나타냅니다.</li>
+                </ul>
+
+                <b style="color: white; display:block; margin-bottom:8px; font-size: 0.95rem;">4. 시즌 포인트(PT) 및 랭킹</b>
+                <ul style="padding-left: 20px; margin: 0 0 15px 0;">
+                    <li><b style="color:var(--tier2);">승리:</b> +100 P (상대 점수 뺏기)</li>
+                    <li><b style="color:#fff;">무승부:</b> +10 P</li>
+                    <li><b style="color:#ff7675;">패배:</b> -50 P (포인트는 0 이하로 내려가지 않습니다)</li>
+                    <li><b style="color:#fff;">체육관 랭킹:</b> 개인의 승점은 소속 체육관의 누적 승점으로 합산되어 전체 체육관 랭킹에 기여합니다.</li>
+                </ul>
+            </div>
+            <button class="btn-submit" onclick="closeModal('tierGuideModal')" style="margin-top: 20px; background: #444; color: white;">확인했습니다</button>
+        </div>
+    </div>
+
     <div id="tierGuideModal" class="modal">
         <div class="modal-content" style="max-width: 400px;">
             <span class="close-btn" onclick="closeModal('tierGuideModal')">&times;</span>
