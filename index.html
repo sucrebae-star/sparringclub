@@ -29,6 +29,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, collection, getDocs, getDoc, addDoc, updateDoc, doc, deleteDoc, setDoc, onSnapshot, query, orderBy, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
   import { getStorage, ref, uploadBytes, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+  import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyB_-4dxADvEU1__WrhSYjn0RQ096Hj1fX4",
@@ -42,10 +43,22 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const storage = getStorage(app); // 🔥 Storage 초기화
+  
+  // FCM 초기화 (브라우저 지원 여부 확인 필요)
+  let messaging = null;
+  try {
+      if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+          messaging = getMessaging(app);
+      }
+  } catch (e) {
+      console.error("FCM 초기화 실패:", e);
+  }
 
   // 전역 window 객체 등록
   window.db = db;
   window.storage = storage; // 🔥 Storage 전역 등록
+  window.messaging = messaging;
+  window.getToken = getToken;
   window.ref = ref;         // 🔥 Storage 경로 설정용
   window.uploadBytes = uploadBytes; // 🔥 파일 업로드용 (기존 호환)
   window.uploadBytesResumable = uploadBytesResumable; // 🔥 실시간 진행 추적용
@@ -928,7 +941,7 @@
         <h1 onclick="handleTitleClick()" style="cursor:pointer; white-space: nowrap;">스파링클럽</h1>
     </div>
     <div class="header-right auth-btns" id="header-auth">
-        <button class="view-toggle-btn" onclick="installPWA()" id="install-app-btn" style="display: none; background: var(--gold); color: #000; border: none;">📱 체육관 랭킹톡 설치</button>
+        <button class="view-toggle-btn" onclick="installPWA()" id="install-app-btn" style="display: none; background: var(--gold); color: #000; border: none;">📱 홈 화면 앱 설치</button>
         <button onclick="openModal('loginModal')">로그인 / 가입</button>
     </div>
 </header>
@@ -955,7 +968,10 @@
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h2 style="margin: 0; font-size: 1.1rem; letter-spacing: -0.5px;">실시간 활동 피드</h2>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <h2 style="margin: 0; font-size: 1.1rem; letter-spacing: -0.5px;">실시간 활동 피드</h2>
+                <button id="clean-feed-btn" onclick="toggleCleanFeedMode()" style="background: #333; color: #ccc; border: 1px solid #555; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; transition: all 0.2s;">🤖 클린 피드 모드 OFF</button>
+            </div>
             <div style="display: flex; gap: 5px; background: #222; padding: 4px; border-radius: 8px; border: 1px solid #444;">
                 <button id="feed-tab-upcoming" onclick="switchFeedTab('upcoming')" style="background: var(--primary-red); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s;">다가올 일정</button>
                 <button id="feed-tab-result" onclick="switchFeedTab('result')" style="background: transparent; color: #888; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s;">경기 결과</button>
@@ -2121,10 +2137,18 @@ function renderFeed() {
     
     let displayMatches = [];
     
+    // 🔥 [신규] 클린 피드 모드 적용 (테스트 봇 필터링)
+    let isCleanFeedActive = localStorage.getItem('sparring_clean_feed') === 'true';
+    let filteredMatches = allMatches;
+    
+    if (isCleanFeedActive) {
+        filteredMatches = allMatches.filter(m => m.isDummy !== true);
+    }
+
     // 🔥 [수정] 피드 필터 탭 기능 적용
     if (currentFeedTab === 'upcoming') {
         // 종료된 경기 제외 ('대기중', '매칭 성사' 등의 예정된 일정만 노출)
-        displayMatches = allMatches.filter(m => m.status !== '종료');
+        displayMatches = filteredMatches.filter(m => m.status !== '종료');
         // 오늘 날짜와 가장 가까운 일정이 상단에 오도록 정렬 (오름차순 정렬)
         displayMatches.sort((a, b) => {
             const dateA = new Date(a.modifiedDate || a.date).getTime();
@@ -2133,7 +2157,7 @@ function renderFeed() {
         });
     } else {
         // 종료된 경기만 노출
-        displayMatches = allMatches.filter(m => m.status === '종료');
+        displayMatches = filteredMatches.filter(m => m.status === '종료');
         // 최근에 종료된 경기가 상단에 오도록 정렬 (내림차순 정렬)
         displayMatches.sort((a, b) => {
             const dateA = new Date(a.approvedAt || a.date).getTime();
@@ -3503,10 +3527,10 @@ function updateLoginStateUI() {
     // 공통 아바타 스타일 계산
     let avatarImg = currentUser.profilePic ? `url('${currentUser.profilePic}')` : '';
     
-    // PWA 설치 상태에 따라 앱 설치 버튼 노출 유무 결정
+    // PWA 설치 상태에 따라 앱 설치 버튼 노출 유무 철저히 검증 (iOS 스탠드얼론 및 PWA 디스플레이 모드 체크)
     let isPWAInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-    let installBtnStyle = (isPWAInstalled || (!isIOS() && !deferredPrompt)) ? "display: none;" : "display: inline-block;";
-    let installBtnHtml = `<button class="view-toggle-btn" onclick="installPWA()" id="install-app-btn" style="${installBtnStyle} background: var(--gold); color: #000; border: none;">📱 체육관 랭킹톡 설치</button>`;
+    let installBtnStyle = (isPWAInstalled) ? "display: none !important;" : "display: inline-block;";
+    let installBtnHtml = `<button class="view-toggle-btn" onclick="installPWA()" id="install-app-btn" style="${installBtnStyle} background: var(--gold); color: #000; border: none;">📱 홈 화면 앱 설치</button>`;
 
     // --- 관리자(Admin) 로그인 상태일 때 ---
     if (currentUser.isAdmin) {
@@ -3520,14 +3544,13 @@ function updateLoginStateUI() {
                     <div class="avatar" style="width:28px; height:28px; background-image:${avatarImg}; border:1px solid var(--gold);"></div>
                     <span class="name" style="font-size: 0.8rem; color: var(--gold);">${currentUser.rawName} (관장)</span>
                 </div>
+                <button class="icon-btn" onclick="openModal('notiModal')" title="알림 확인">🥊</button>
                 <button class="icon-btn" onclick="showPage('admin-dashboard')" title="관리자 페이지">🛠️</button>
                 <button class="icon-btn" onclick="logout()" title="로그아웃">🚪</button>
             </div>
         `;
-        // 관리자 로그인 시 즉시 '가입 관리' 탭으로 이동
         showPage('admin-dashboard');
         switchAdminTab('auth'); 
-        
         document.getElementById('main-nav').style.display = 'flex'; 
         renderAdmin(); 
     } 
@@ -3543,6 +3566,9 @@ function updateLoginStateUI() {
                     <div class="avatar" style="width:28px; height:28px; background-image:${avatarImg}; border:1px solid var(--gold);"></div>
                     <span class="name" style="font-size: 0.8rem;">${currentUser.rawName}</span>
                 </div>
+                <button class="icon-btn" onclick="openModal('notiModal')" title="알림 확인">
+                    🔔<span id="noti-badge" class="match-badge" style="top:-5px; right:-5px; display:none;">N</span>
+                </button>
                 <button class="icon-btn" onclick="openMatchStatus()" title="매칭 확인">
                     🥊<span id="match-badge" class="match-badge" style="top:-5px; right:-5px;">0</span>
                 </button>
@@ -6545,7 +6571,105 @@ async function updateGym() {
         alert("가상 데이터 정리가 완료되었습니다. 클린한 플랫폼이 준비되었습니다.");
         location.reload();
     }
+    
+// --- [신규] 클린 피드 모드 제어 ---
+function toggleCleanFeedMode() {
+    let isActive = localStorage.getItem('sparring_clean_feed') === 'true';
+    isActive = !isActive;
+    localStorage.setItem('sparring_clean_feed', isActive);
+    
+    const btn = document.getElementById('clean-feed-btn');
+    if (btn) {
+        if (isActive) {
+            btn.innerText = '🤖 클린 피드 모드 ON';
+            btn.style.background = 'var(--primary-red)';
+            btn.style.color = 'white';
+            btn.style.borderColor = 'var(--primary-red)';
+        } else {
+            btn.innerText = '🤖 클린 피드 모드 OFF';
+            btn.style.background = '#333';
+            btn.style.color = '#ccc';
+            btn.style.borderColor = '#555';
+        }
+    }
+    
+    // 즉시 피드 재렌더링
+    renderFeed();
+}
 
+// 초기 로드 시 클린 피드 버튼 상태 동기화
+window.addEventListener('DOMContentLoaded', () => {
+    const isActive = localStorage.getItem('sparring_clean_feed') === 'true';
+    const btn = document.getElementById('clean-feed-btn');
+    if (btn && isActive) {
+        btn.innerText = '🤖 클린 피드 모드 ON';
+        btn.style.background = 'var(--primary-red)';
+        btn.style.color = 'white';
+        btn.style.borderColor = 'var(--primary-red)';
+    }
+});
+
+// --- [신규] 알림(FCM) 및 설정 UI 제어 ---
+function toggleNotiSettings() {
+    const listArea = document.getElementById('noti-list-area');
+    const settingsArea = document.getElementById('noti-settings-area');
+    
+    if (listArea.style.display === 'none') {
+        listArea.style.display = 'block';
+        settingsArea.style.display = 'none';
+    } else {
+        listArea.style.display = 'none';
+        settingsArea.style.display = 'flex';
+        
+        // 기존 설정값 로드
+        if (currentUser && currentUser.pushSettings) {
+            document.getElementById('push-setting-match').checked = currentUser.pushSettings.match !== false;
+            document.getElementById('push-setting-remind').checked = currentUser.pushSettings.remind !== false;
+            document.getElementById('push-setting-comment').checked = currentUser.pushSettings.comment !== false;
+            document.getElementById('push-setting-trust').checked = currentUser.pushSettings.trust !== false;
+        }
+    }
+}
+
+async function saveNotiSettings() {
+    if (!currentUser) return;
+    
+    const settings = {
+        match: document.getElementById('push-setting-match').checked,
+        remind: document.getElementById('push-setting-remind').checked,
+        comment: document.getElementById('push-setting-comment').checked,
+        trust: document.getElementById('push-setting-trust').checked
+    };
+    
+    try {
+        // 알림 권한 요청 및 FCM 토큰 획득
+        if (window.messaging) {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                const token = await window.getToken(window.messaging, { 
+                    vapidKey: 'YOUR_PUBLIC_VAPID_KEY_HERE' // 프로젝트 설정 시 VAPID 키 발급받아 교체 필요
+                });
+                settings.fcmToken = token;
+                console.log("FCM 토큰 확보:", token);
+            } else {
+                alert("브라우저 알림 권한이 차단되어 푸시를 받을 수 없습니다.");
+            }
+        }
+        
+        // Firestore에 유저별 설정 저장
+        const userRef = window.doc(window.db, "users", currentUser.rawName);
+        await window.updateDoc(userRef, { pushSettings: settings });
+        
+        currentUser.pushSettings = settings;
+        localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+        
+        alert("알림 설정이 성공적으로 저장되었습니다.");
+        toggleNotiSettings(); // 목록 화면으로 복귀
+    } catch (e) {
+        console.error("알림 설정 저장 실패:", e);
+        alert("알림 설정을 저장하는 도중 오류가 발생했습니다.");
+    }
+}
 </script>
 <div id="storyViewer" class="story-viewer">
     <span class="story-close" onclick="closeStoryViewer()">&times;</span>
@@ -6607,6 +6731,46 @@ async function updateGym() {
             3. 우측 상단의 <b>'추가'</b>를 누르면 완료!
         </div>
         <button onclick="closeModal('iosInstallModal')" style="background: #000; color: white; border: none; padding: 14px 20px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1rem;">확인했습니다</button>
+    </div>
+</div>
+
+<div id="notiModal" class="modal" style="z-index: 5000;">
+    <div class="modal-content" style="max-width: 400px; min-height: 400px; display: flex; flex-direction: column;">
+        <span class="close-btn" onclick="closeModal('notiModal')">&times;</span>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px;">
+            <h3 style="margin: 0; color: var(--gold);">🔔 내 알림</h3>
+            <button onclick="toggleNotiSettings()" style="background: transparent; color: #aaa; border: 1px solid #555; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">⚙️ 알림 설정</button>
+        </div>
+
+        <div id="noti-list-area" style="flex: 1; overflow-y: auto; max-height: 350px;">
+            <div style="text-align: center; color: #666; padding: 20px;">새로운 알림이 없습니다.</div>
+        </div>
+
+        <div id="noti-settings-area" style="display: none; flex: 1; flex-direction: column; gap: 15px;">
+            <div style="background: rgba(253, 203, 110, 0.1); border: 1px solid rgba(253, 203, 110, 0.3); padding: 10px; border-radius: 8px; font-size: 0.8rem; color: #ccc; margin-bottom: 10px;">
+                * 푸시 알림을 받으려면 브라우저 권한 허용이 필요합니다.
+            </div>
+            
+            <label style="display: flex; justify-content: space-between; align-items: center; color: white; cursor: pointer;">
+                <span>🤝 스파링 신청 및 응답 알림</span>
+                <input type="checkbox" id="push-setting-match" checked style="width: auto;">
+            </label>
+            <label style="display: flex; justify-content: space-between; align-items: center; color: white; cursor: pointer;">
+                <span>⏰ 일정 자동 리마인드 (5일, 3일, 1일 전)</span>
+                <input type="checkbox" id="push-setting-remind" checked style="width: auto;">
+            </label>
+            <label style="display: flex; justify-content: space-between; align-items: center; color: white; cursor: pointer;">
+                <span>💬 내 게시글 댓글 알림</span>
+                <input type="checkbox" id="push-setting-comment" checked style="width: auto;">
+            </label>
+            <label style="display: flex; justify-content: space-between; align-items: center; color: white; cursor: pointer;">
+                <span>⚖️ 신뢰도 변동 알림</span>
+                <input type="checkbox" id="push-setting-trust" checked style="width: auto;">
+            </label>
+
+            <button class="btn-submit" onclick="saveNotiSettings()" style="margin-top: auto;">설정 저장 및 권한 허용</button>
+        </div>
     </div>
 </div>
 
