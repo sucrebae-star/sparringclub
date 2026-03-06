@@ -1340,15 +1340,18 @@
         
         <div id="pm-speech-bubble" class="speech-bubble" style="display: none;"></div>
 
-        <div class="profile-header" style="border-bottom:none; padding-bottom:0; margin-bottom:15px;">
-            <div class="avatar" style="width: 70px; height: 70px; border-radius: 50%; background-color: #555; background-size: cover; background-position: center;" id="pm-avatar"></div>
-            <div>
-                <h2 style="margin:0; font-size: 1.3rem; display:flex; align-items:center;">
-                    <span id="pm-name">선수 이름</span>
-                    <span id="pm-trust-badge" class="trust-badge trust-mid">신뢰도 0%</span>
-                </h2>
-                <div style="font-size: 0.8rem; color: #aaa; margin-top:3px;" id="pm-info">전주 | 복싱아카데미 | -75kg 급</div>
-                <span id="pm-tier" style="font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; color: #000; font-weight: bold; margin-top: 5px; display: inline-block;">Tier 5</span>
+        <div class="profile-header" style="border-bottom:none; padding-bottom:0; margin-bottom:15px; align-items: flex-start;">
+            <div class="avatar" style="width: 80px; height: 80px; border-radius: 50%; background-color: #555; background-size: cover; background-position: center; margin-top: 10px;" id="pm-avatar"></div>
+            <div style="flex: 1;">
+                <span id="pm-tier" style="font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; color: #000; font-weight: bold; margin-bottom: 4px; display: inline-block;">Tier 5</span>
+                <h2 style="margin:0; font-size: 1.4rem; color: white;" id="pm-name">선수 이름</h2>
+                <div style="font-size: 0.9rem; color: var(--gold); font-weight: bold; margin-top: 2px;" id="pm-weight-gym">-75kg | 복싱아카데미</div>
+                <div style="font-size: 0.75rem; color: #aaa; margin-top: 6px; display: flex; flex-wrap: wrap; gap: 8px;" id="pm-region-trust">
+                    <span>활동지역 : <span id="pm-region-text" style="color: white;">전북</span></span>
+                    <span style="color: #444;">|</span>
+                    <span id="pm-matching-trust" class="trust-badge trust-high" style="margin:0;">🤝 매칭 신뢰도 100%</span>
+                    <span id="pm-decision-trust" class="trust-badge trust-high" style="margin:0;">⚖️ 판정 신뢰도 100%</span>
+                </div>
             </div>
         </div>
 
@@ -1622,10 +1625,10 @@
 // --- 전역 데이터 및 상태 ---
 // [최종 수정] 관리자 및 테스트 계정 정보 설정 (비밀번호 0694 고정)
 let demoPlayers = [
-    { id: 1, name: 'test', rawName: 'test', pw: '0694', tier: 5, gym: '복싱아카데미', weight: '-75kg', region: '전북', sW: 3, sD: 0, sL: 0, pt: 150, trustScore: 50, pending: 2, noReply: 0, acc: 95 },
-    { id: 2, name: 'test1', rawName: 'test1', pw: '0694', tier: 5, gym: '서울팀파이터', weight: '-65kg', region: '서울', sW: 2, sD: 1, sL: 1, pt: 140, trustScore: 20, pending: 5, noReply: 1, acc: 80 },
+    { id: 1, name: 'test', rawName: 'test', pw: '0694', tier: 5, gym: '복싱아카데미', weight: '-75kg', region: '전북', sW: 3, sD: 0, sL: 0, pt: 150, matchingTrust: 100, decisionTrust: 100, pending: 2, noReply: 0, acc: 95 },
+    { id: 2, name: 'test1', rawName: 'test1', pw: '0694', tier: 5, gym: '서울팀파이터', weight: '-65kg', region: '서울', sW: 2, sD: 1, sL: 1, pt: 140, matchingTrust: 100, decisionTrust: 100, pending: 5, noReply: 1, acc: 80 },
     // admin 계정은 isAdmin: true 속성을 통해 모든 관리 권한을 가집니다.
-    { id: 999, name: '관리자', rawName: 'admin', pw: '0694', isAdmin: true, tier: 10, gym: '본부', weight: 'N/A', region: '전국', sW: 0, sD: 0, sL: 0, pt: 999, trustScore: 100, pending: 0, noReply: 0, acc: 100 }
+    { id: 999, name: '관리자', rawName: 'admin', pw: '0694', isAdmin: true, tier: 10, gym: '본부', weight: 'N/A', region: '전국', sW: 0, sD: 0, sL: 0, pt: 999, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100 }
 ];
 
 let demoFeeds = [
@@ -1744,7 +1747,8 @@ window.onload = async function() {
             existing.sD = sp.sD !== undefined ? sp.sD : existing.sD;
             existing.sL = sp.sL !== undefined ? sp.sL : existing.sL;
             existing.pt = sp.pt !== undefined ? sp.pt : existing.pt;
-            existing.trustScore = sp.trustScore !== undefined ? sp.trustScore : (existing.trustScore || 0);
+            existing.matchingTrust = sp.matchingTrust !== undefined ? sp.matchingTrust : (existing.matchingTrust || 100);
+            existing.decisionTrust = sp.decisionTrust !== undefined ? sp.decisionTrust : (existing.decisionTrust || 100);
             existing.region = sp.region || existing.region || '지역미상';
             
             // [중요 수정] 서버에 저장된 스토리(하이라이트) 정보를 로컬 명단에 유지함
@@ -1760,7 +1764,8 @@ window.onload = async function() {
                 sD: sp.sD || 0, 
                 sL: sp.sL || 0, 
                 pt: sp.pt || 0, 
-                trustScore: sp.trustScore || 0, 
+                matchingTrust: sp.matchingTrust !== undefined ? sp.matchingTrust : 100, 
+                decisionTrust: sp.decisionTrust !== undefined ? sp.decisionTrust : 100,
                 pending: 0, 
                 noReply: 0, 
                 acc: 0, 
@@ -2599,9 +2604,9 @@ async function closeVoting(postId, isManual = false) {
     try {
         await window.updateDoc(window.doc(window.db, "community_posts", postId.toString()), { title: newTitle, judgeData: jd });
         
-        // 투표 적중 유저 신뢰도 +10점 실시간 부여
+        // 투표 적중 유저 판정 신뢰도 +10점 실시간 부여
         for (let voterId of winningVoters) {
-            await window.updateDoc(window.doc(window.db, "users", voterId.toString()), { trustScore: window.increment(10) });
+            await window.updateDoc(window.doc(window.db, "users", voterId.toString()), { decisionTrust: window.increment(10) });
         }
         if (jd.recordData) {
             jd.recordData.resultValue = resultValue;
@@ -2928,7 +2933,8 @@ function savePlayersData() {
             approved[idx].sD = dp.sD;
             approved[idx].sL = dp.sL;
             approved[idx].pt = dp.pt;
-            approved[idx].trustScore = dp.trustScore;
+            approved[idx].matchingTrust = dp.matchingTrust;
+            approved[idx].decisionTrust = dp.decisionTrust;
             approved[idx].region = dp.region;
         }
     });
@@ -3205,7 +3211,7 @@ async function approveUser(firebaseId) {
             await window.setDoc(window.doc(window.db, "users", user.rawName), {
                 ...user,
                 id: newUserId,
-                sW: 0, sD: 0, sL: 0, pt: 0, trustScore: 0, 
+                sW: 0, sD: 0, sL: 0, pt: 0, matchingTrust: 100, decisionTrust: 100, 
                 pending: 0, noReply: 0, acc: 0
             });
 
@@ -3428,30 +3434,37 @@ async function openProfile(id) {
             bubble.style.display = 'none';
         }
 
-        // 2. 판정 신뢰도 지표 계산 및 색상 적용
-        const trustScore = p.trustScore || 0;
-        let trustClass = "trust-low";
-        if (trustScore >= 80) trustClass = "trust-high";
-        else if (trustScore >= 50) trustClass = "trust-mid";
+        // 2. 세분화된 신뢰도 지표 적용 (매칭/판정)
+        const mTrust = p.matchingTrust !== undefined ? p.matchingTrust : 100;
+        const dTrust = p.decisionTrust !== undefined ? p.decisionTrust : 100;
         
-        const trustBadge = document.getElementById('pm-trust-badge');
-        if(trustBadge) {
-            trustBadge.className = `trust-badge ${trustClass}`;
-            trustBadge.innerText = `신뢰도 ${trustScore}%`;
+        const mEl = document.getElementById('pm-matching-trust');
+        const dEl = document.getElementById('pm-decision-trust');
+        
+        if(mEl) {
+            mEl.innerText = `🤝 매칭 신뢰도 ${mTrust}%`;
+            mEl.className = `trust-badge ${mTrust >= 80 ? 'trust-high' : (mTrust >= 50 ? 'trust-mid' : 'trust-low')}`;
+        }
+        if(dEl) {
+            dEl.innerText = `⚖️ 판정 신뢰도 ${dTrust}%`;
+            dEl.className = `trust-badge ${dTrust >= 80 ? 'trust-high' : (dTrust >= 50 ? 'trust-mid' : 'trust-low')}`;
         }
 
-        // 3. 기본 정보 세팅
+        // 3. 레이아웃 기반 정보 세팅
         const nameEl = document.getElementById('pm-name');
-        if(nameEl) nameEl.innerHTML = formatName(p);
+        if(nameEl) nameEl.innerText = p.name || p.rawName;
         
-        const infoEl = document.getElementById('pm-info');
-        if(infoEl) {
-            infoEl.innerHTML = `
-            <span onclick="openGymProfile('${p.gymId || p.gym}')" style="cursor:pointer; text-decoration:underline; color:var(--gold);">
-                ${p.region || '지역미상'} | ${p.gym}
-            </span>`;
+        // 체급 | 체육관명
+        const weightGymEl = document.getElementById('pm-weight-gym');
+        if(weightGymEl) {
+            weightGymEl.innerHTML = `${p.weight || '체급미상'} | <span onclick="event.stopPropagation(); openGymProfile('${p.gymId || p.gym}')" style="cursor:pointer; text-decoration:underline; color:var(--gold);">${p.gym}</span>`;
         }
         
+        // 활동지역 텍스트
+        const regionEl = document.getElementById('pm-region-text');
+        if(regionEl) regionEl.innerText = p.region || '지역미상';
+        
+        // 티어 표시 (이름 상단 위치용)
         const tierEl = document.getElementById('pm-tier');
         if(tierEl) {
             tierEl.innerText = `Tier ${p.tier}`;
@@ -4611,34 +4624,34 @@ async function rejectMatch(matchId) {
     }
 }
 
-// [신규 로직] 7일 무응답 매칭 자동 거절 시스템 (시스템 백그라운드 구동)
+// [신규 로직] 5일 무응답 매칭 자동 거절 시스템 (시스템 백그라운드 구동)
 async function autoRejectSystem() {
     try {
         let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
         const now = Date.now();
-        const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+        const FIVE_DAYS = 5 * 24 * 60 * 60 * 1000;
         
         let pendingMatches = allMatches.filter(m => m.status === '대기중');
         
         for (let m of pendingMatches) {
-            if (now - m.createdAt > SEVEN_DAYS) {
+            if (now - m.createdAt > FIVE_DAYS) {
                 const matchRef = window.doc(window.db, "matches", m.id.toString());
                 const targetUserRef = window.doc(window.db, "users", m.receiverRawName);
                 
-                const updatedMessages = [...(m.messages || []), { sender: '시스템알림', text: `⏳ 7일 이상 무응답으로 매칭이 자동 거절되었습니다.` }];
+                const updatedMessages = [...(m.messages || []), { sender: '시스템알림', text: `⏳ 5일 이상 무응답으로 매칭이 자동 거절되었습니다.` }];
                 
                 // 1. 매칭 상태 자동 거절로 변환
                 await window.updateDoc(matchRef, {
                     status: '무응답자동거절',
-                    rejectReason: '7일 무응답 (시스템 자동 거절)',
+                    rejectReason: '5일 무응답 (시스템 자동 거절)',
                     endTime: Date.now(),
                     messages: updatedMessages
                 });
                 
-                // 2. 응답을 안 한 상대방에게 신뢰도 삭감 및 무응답 카운트 부여
+                // 2. 응답을 안 한 상대방에게 매칭 신뢰도 삭감 및 무응답 카운트 부여
                 await window.updateDoc(targetUserRef, {
                     noReply: window.increment(1),
-                    trustScore: window.increment(-10) // 10점 차감 (하한선은 UI단에서 Math.max 처리)
+                    matchingTrust: window.increment(-10) // 매칭 신뢰도 10점 차감
                 });
             }
         }
@@ -4942,7 +4955,7 @@ async function submitSignup() {
         const userData = { 
             rawName: inputId, name: inputId, hanjaName: "", pw: inputPw, 
             gymId: finalGymId, gym: gymName, role: role, greeting: "",
-            weight: weight, tier: tier, pendingTier: null, region: region, trustScore: 0,
+            weight: weight, tier: tier, pendingTier: null, region: region, matchingTrust: 100, decisionTrust: 100,
             createdAt: Date.now(), lastActive: Date.now(),
             profilePic: profilePicUrl,
             sW: 0, sD: 0, sL: 0, pt: 0, seasonRejectCount: 0,
