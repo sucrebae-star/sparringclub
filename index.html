@@ -977,7 +977,7 @@
 
     <div id="players" class="page">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h2 style="margin: 0;">티어별 선수 매칭</h2>
+            <h2 style="margin: 0;">복서 리스트(BOXER LIST)</h2>
             <button onclick="openModal('tierGuideModal')" style="background: #333; color: var(--gold); border: 1px solid var(--gold); padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; font-weight: bold;">📖 상세 안내</button>
         </div>
         <div class="tier-info-box" style="padding: 10px 15px;">
@@ -993,7 +993,8 @@
 
         <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
             <div style="display: flex; justify-content: space-between; gap: 6px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; -ms-overflow-style: none;" id="matching-tier-tabs">
-                <button id="tier-btn-5" onclick="switchMatchingTier(5)" style="flex:1; padding: 10px 0; background: rgba(253, 203, 110, 0.1); color: var(--tier5); border: 1px solid var(--tier5); border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85rem;">Tier 5</button>
+                <button id="tier-btn-all" onclick="switchMatchingTier('all')" style="flex:1; padding: 10px 0; background: rgba(253, 203, 110, 0.1); color: var(--gold); border: 1px solid var(--gold); border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85rem;">전체</button>
+                <button id="tier-btn-5" onclick="switchMatchingTier(5)" style="flex:1; padding: 10px 0; background: #222; color: #aaa; border: 1px solid #444; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85rem;">Tier 5</button>
                 <button id="tier-btn-4" onclick="switchMatchingTier(4)" style="flex:1; padding: 10px 0; background: #222; color: #aaa; border: 1px solid #444; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85rem;">Tier 4</button>
                 <button id="tier-btn-3" onclick="switchMatchingTier(3)" style="flex:1; padding: 10px 0; background: #222; color: #aaa; border: 1px solid #444; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85rem;">Tier 3</button>
                 <button id="tier-btn-2" onclick="switchMatchingTier(2)" style="flex:1; padding: 10px 0; background: #222; color: #aaa; border: 1px solid #444; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85rem;">Tier 2</button>
@@ -1364,7 +1365,7 @@
 
 <nav id="main-nav">
     <button onclick="showPage('dashboard')" id="nav-dashboard" class="active">대시보드</button>
-    <button onclick="showPage('players')" id="nav-players">선수 매칭</button> <button onclick="showPage('gyms')" id="nav-gyms">체육관 정보</button> 
+    <button onclick="showPage('players')" id="nav-players">복서 리스트</button> <button onclick="showPage('gyms')" id="nav-gyms">체육관 정보</button> 
     <button onclick="showPage('board')" id="nav-board">커뮤니티</button>
 </nav>
 
@@ -2300,15 +2301,16 @@ function showFeedMatchDetail(matchId) {
 }
 
 // 🔥 [선수 매칭] 복합 필터링(티어/지역) 및 UI 전면 개편
-let currentMatchingTier = 5;
+let currentMatchingTier = 'all';
 let currentMatchingRegion = 'all';
 
 function switchMatchingTier(tier) {
     currentMatchingTier = tier;
-    const colorMap = {1: 'var(--tier1)', 2: 'var(--tier2)', 3: 'var(--tier3)', 4: 'var(--tier4)', 5: 'var(--tier5)'};
+    const colorMap = {1: 'var(--tier1)', 2: 'var(--tier2)', 3: 'var(--tier3)', 4: 'var(--tier4)', 5: 'var(--tier5)', 'all': 'var(--gold)'};
     
     // 탭 UI 하이라이팅 변경
-    for(let i=1; i<=5; i++) {
+    const allTiers = ['all', 5, 4, 3, 2, 1];
+    allTiers.forEach(i => {
         const btn = document.getElementById(`tier-btn-${i}`);
         if(btn) {
             if(i === tier) {
@@ -2321,7 +2323,7 @@ function switchMatchingTier(tier) {
                 btn.style.borderColor = '#444';
             }
         }
-    }
+    });
     renderPlayers();
 }
 
@@ -2337,7 +2339,10 @@ function renderPlayers() {
     let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
 
     // 1. 티어 및 지역 필터링 교집합
-    let filteredPlayers = demoPlayers.filter(p => p.tier == currentMatchingTier);
+    let filteredPlayers = demoPlayers;
+    if (currentMatchingTier !== 'all') {
+        filteredPlayers = filteredPlayers.filter(p => p.tier == currentMatchingTier);
+    }
     if (currentMatchingRegion !== 'all') {
         filteredPlayers = filteredPlayers.filter(p => p.region === currentMatchingRegion);
     }
@@ -2345,7 +2350,6 @@ function renderPlayers() {
     // 2. 포인트 내림차순 정렬
     filteredPlayers.sort((a, b) => b.pt - a.pt);
 
-    const tierColor = `var(--tier${currentMatchingTier})`;
     html += `<div id="tlist-${currentMatchingTier}" class="tier-list" style="display:block;">`;
     
     if(filteredPlayers.length > 0) {
@@ -2373,9 +2377,12 @@ function renderPlayers() {
                 btnHtml = `<button class="btn-match" style="min-width:85px; font-size:0.85rem; padding:10px;" onclick="requestMatch(${p.id})">매칭 신청</button>`;
             }
 
+            // 개별 선수의 티어 색상 계산 (전체 탭일 경우 본인의 티어 색상 반영)
+            const currentTierColor = `var(--tier${p.tier})`;
+
             // 메달 및 랭크 산정
             const rankMedal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '🎖️'));
-            const rankText = `<span style="color:${idx < 3 ? tierColor : '#aaa'}; font-weight:bold; font-size:0.85rem; margin-bottom:2px; display:inline-block;">${rankMedal} ${idx + 1}위</span>`;
+            const rankText = `<span style="color:${idx < 3 ? currentTierColor : '#aaa'}; font-weight:bold; font-size:0.85rem; margin-bottom:2px; display:inline-block;">${rankMedal} ${idx + 1}위</span>`;
             
             // 체급 및 체육관 데이터 
             let weight = (p.weight || '').replace(' 급', '').replace('급', ''); 
@@ -2393,13 +2400,13 @@ function renderPlayers() {
 
             // 상위 랭커 시각적 강조 차이
             let cardStyle = idx === 0 
-                ? `padding:15px; background: linear-gradient(145deg, rgba(0,0,0,0.5), rgba(40,40,40,0.3)); border: 1px solid ${tierColor}; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.4);` 
+                ? `padding:15px; background: linear-gradient(145deg, rgba(0,0,0,0.5), rgba(40,40,40,0.3)); border: 1px solid ${currentTierColor}; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.4);` 
                 : `padding: 15px 12px; background:#1a1a1a; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 12px;`;
 
             html += `
             <div class="player-card" style="${cardStyle} display:flex; justify-content:space-between; align-items:center; gap:10px;">
                 <div style="display:flex; align-items:center; gap:12px; overflow:hidden; flex:1;">
-                    <div class="avatar" style="border:2px solid ${idx === 0 ? tierColor : '#555'}; width:55px; height:55px; ${avatarStyle} flex-shrink:0;"></div>
+                    <div class="avatar" style="border:2px solid ${idx === 0 ? currentTierColor : '#555'}; width:55px; height:55px; ${avatarStyle} flex-shrink:0;"></div>
                     <div style="display:flex; flex-direction:column; overflow:hidden; width:100%;">
                         ${rankText}
                         <div style="display:flex; align-items:center; gap:6px; margin-bottom:2px; overflow:hidden; white-space:nowrap;">
@@ -6033,15 +6040,20 @@ function renderGyms(filterRegion = 'all') {
         }
     });
 
-    // 3. 누적 승점 순으로 정렬
-    const sortedGyms = Object.values(gymStats)
-        .filter(g => registeredGyms.some(rg => rg.id === g.id)) 
-        .sort((a, b) => b.totalPt - a.totalPt);
+    // 3. 지역 필터링을 먼저 적용
+    let filteredGyms = Object.values(gymStats).filter(g => registeredGyms.some(rg => rg.id === g.id));
+    if (filterRegion !== 'all') {
+        filteredGyms = filteredGyms.filter(g => g.region === filterRegion);
+    }
 
+    // 4. 누적 승점 순으로 정렬
+    const sortedGyms = filteredGyms.sort((a, b) => b.totalPt - a.totalPt);
+
+    // 5. TOP 3 포디움 렌더링
     let podiumHtml = '';
     const top3 = sortedGyms.slice(0, 3);
     const medalData = [{c:'gold', i:'🥇'}, {c:'silver', i:'🥈'}, {c:'bronze', i:'🥉'}];
-    const visualOrder = [1, 0, 2]; 
+    const visualOrder = [1, 0, 2]; // 2위, 1위, 3위 순서로 시각적 배치
 
     visualOrder.forEach((pos) => {
         const gym = top3[pos];
@@ -6057,14 +6069,20 @@ function renderGyms(filterRegion = 'all') {
     });
     podiumContainer.innerHTML = podiumHtml;
 
-    let filteredList = (filterRegion === 'all') ? sortedGyms.slice(0, 10) : sortedGyms.filter(g => g.region === filterRegion);
+    // 6. 4위 이하 리스트 렌더링 (일반 리스트)
     let listHtml = '';
-    filteredList.forEach(gym => {
+    const restGyms = sortedGyms.slice(3); // 4위부터 끝까지
+    
+    restGyms.forEach((gym, index) => {
+        const rank = index + 4; // 실제 순위 계산
         listHtml += `
         <div class="card" onclick="openGymProfile('${gym.id}')" style="cursor:pointer; border-left: 4px solid var(--primary-red); display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:12px 15px;">
-            <div>
-                <b style="font-size:1.05rem; color:white;">${gym.name}</b>
-                <div style="font-size:0.75rem; color:#888; margin-top:4px;">${gym.region} | 선수 ${gym.members}명</div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <b style="color:var(--gold); font-size:1.1rem; width: 25px;">${rank}</b>
+                <div>
+                    <b style="font-size:1.05rem; color:white;">${gym.name}</b>
+                    <div style="font-size:0.75rem; color:#888; margin-top:4px;">${gym.region} | 선수 ${gym.members}명</div>
+                </div>
             </div>
             <div style="text-align:right;">
                 <div style="color:var(--gold); font-weight:bold; font-size:1rem;">${gym.totalPt.toLocaleString()} P</div>
