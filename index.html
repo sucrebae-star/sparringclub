@@ -928,7 +928,7 @@
         <h1 onclick="handleTitleClick()" style="cursor:pointer; white-space: nowrap;">스파링클럽</h1>
     </div>
     <div class="header-right auth-btns" id="header-auth">
-        <button class="view-toggle-btn" onclick="toggleViewMode()" id="view-mode-text">🖥️ PC모드로 보기</button>
+        <button class="view-toggle-btn" onclick="installPWA()" id="install-app-btn" style="display: none; background: var(--gold); color: #000; border: none;">📱 체육관 랭킹톡 설치</button>
         <button onclick="openModal('loginModal')">로그인 / 가입</button>
     </div>
 </header>
@@ -1090,7 +1090,7 @@
     </div>
 
 <div id="gyms" class="page">
-    <h2 style="text-align: center; margin-bottom: 5px;">🏆 전국 체육관 랭킹</h2>
+    <h2 id="gym-page-title" style="text-align: center; margin-bottom: 5px;">🏆 전국 체육관 랭킹</h2>
     <p style="text-align: center; color: #888; font-size: 0.8rem; margin-bottom: 20px;">시즌 승점 합계 기준</p>
 
     <div id="gym-top-podium" class="ranking-podium"></div>
@@ -1787,6 +1787,13 @@ let currentSearchQuery = '';
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault(); // 기본 팝업 방지
     deferredPrompt = e; // 이벤트를 저장해두었다가 나중에 실행
+    
+    // 설치 가능한 상태가 되면 숨겨둔 앱 설치 버튼을 다시 보이게 처리
+    let isPWAInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    const installBtns = document.querySelectorAll('#install-app-btn');
+    if (!isPWAInstalled) {
+        installBtns.forEach(btn => btn.style.display = 'inline-block');
+    }
 });
 
 // 모바일 제스처(핀치 줌, 더블 탭 확대) 완벽 차단 로직 적용
@@ -3495,6 +3502,11 @@ function updateLoginStateUI() {
 
     // 공통 아바타 스타일 계산
     let avatarImg = currentUser.profilePic ? `url('${currentUser.profilePic}')` : '';
+    
+    // PWA 설치 상태에 따라 앱 설치 버튼 노출 유무 결정
+    let isPWAInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    let installBtnStyle = (isPWAInstalled || (!isIOS() && !deferredPrompt)) ? "display: none;" : "display: inline-block;";
+    let installBtnHtml = `<button class="view-toggle-btn" onclick="installPWA()" id="install-app-btn" style="${installBtnStyle} background: var(--gold); color: #000; border: none;">📱 체육관 랭킹톡 설치</button>`;
 
     // --- 관리자(Admin) 로그인 상태일 때 ---
     if (currentUser.isAdmin) {
@@ -3503,6 +3515,7 @@ function updateLoginStateUI() {
                 <h1 onclick="handleTitleClick()" style="cursor:pointer; white-space: nowrap;">스파링클럽</h1>
             </div>
             <div class="header-right" id="header-auth">
+                ${installBtnHtml}
                 <div class="user-mini-profile" onclick="openProfile('${currentUser.id}')" style="margin-right: 5px;">
                     <div class="avatar" style="width:28px; height:28px; background-image:${avatarImg}; border:1px solid var(--gold);"></div>
                     <span class="name" style="font-size: 0.8rem; color: var(--gold);">${currentUser.rawName} (관장)</span>
@@ -3525,6 +3538,7 @@ function updateLoginStateUI() {
                 <h1 onclick="handleTitleClick()" style="cursor:pointer; white-space: nowrap;">스파링클럽</h1>
             </div>
             <div class="header-right" id="header-auth">
+                ${installBtnHtml}
                 <div class="user-mini-profile" onclick="openProfile('${currentUser.id}')" style="margin-right: 5px;">
                     <div class="avatar" style="width:28px; height:28px; background-image:${avatarImg}; border:1px solid var(--gold);"></div>
                     <span class="name" style="font-size: 0.8rem;">${currentUser.rawName}</span>
@@ -5744,15 +5758,24 @@ function showPWAInstallGuide() {
 }
 
 function installPWA() {
+    if (isIOS()) {
+        openModal('iosInstallModal');
+        return;
+    }
     if (deferredPrompt) {
         deferredPrompt.prompt();
         deferredPrompt.userChoice.then((choiceResult) => {
             if (choiceResult.outcome === 'accepted') {
                 console.log('User accepted the PWA prompt');
+                // 설치 수락 시 즉시 설치 버튼 숨김 처리
+                const installBtns = document.querySelectorAll('#install-app-btn');
+                installBtns.forEach(btn => btn.style.display = 'none');
             }
             deferredPrompt = null;
             closePWABanner();
         });
+    } else {
+        alert("이미 앱이 설치되어 있거나, 현재 브라우저 환경에서 지원하지 않습니다.\n설정 메뉴의 '홈 화면에 추가'를 이용해주세요.");
     }
 }
 
@@ -6007,8 +6030,18 @@ function toggleViewMode() {
 function renderGyms(filterRegion = 'all') {
     const podiumContainer = document.getElementById('gym-top-podium');
     const listContainer = document.getElementById('gym-list-container');
+    const pageTitle = document.getElementById('gym-page-title'); // 타이틀 요소 선택
     if(!podiumContainer || !listContainer) return;
     
+    // 🔥 동적 타이틀 변경 로직
+    if (pageTitle) {
+        if (filterRegion === 'all') {
+            pageTitle.innerText = '🏆 전국 체육관 랭킹';
+        } else {
+            pageTitle.innerText = `🏆 ${filterRegion} 지역 체육관 랭킹`;
+        }
+    }
+
     const allBtns = document.querySelectorAll('.region-btn');
     allBtns.forEach(btn => {
         if ((filterRegion === 'all' && (btn.innerText.includes('전체') || btn.innerText.includes('전국'))) || (btn.innerText === filterRegion)) {
