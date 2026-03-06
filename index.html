@@ -2020,8 +2020,8 @@ function renderFeed() {
         let statusText = m.status === '종료' ? "OFFICIAL" : m.status;
         let statusColor = m.status === '대기중' ? "var(--gold)" : (m.status === '매칭 성사' ? "var(--tier2)" : (m.status === '판정 대기' ? "var(--tier3)" : "#555"));
 
-        // 매치 타입(오픈/랭킹) 라벨 추가
-        let feedMatchTypeBadge = m.matchType === 'rank' ? '<span style="color:var(--primary-red); border:1px solid var(--primary-red); border-radius:4px; padding:1px 4px; font-size:0.65rem; margin-right:6px;">랭킹</span>' : '<span style="color:#0984e3; border:1px solid #0984e3; border-radius:4px; padding:1px 4px; font-size:0.65rem; margin-right:6px;">오픈</span>';
+        // 매치 타입(오픈/랭킹) 라벨 추가 - 디자인 최적화
+        let feedMatchTypeBadge = m.matchType === 'rank' ? '<span style="color:var(--primary-red); border:1px solid var(--primary-red); border-radius:4px; padding:2px 6px; font-size:0.7rem; font-weight:bold;">랭킹</span>' : '<span style="color:#0984e3; border:1px solid #0984e3; border-radius:4px; padding:2px 6px; font-size:0.7rem; font-weight:bold;">오픈</span>';
 
         let timelineHtml = `<div class="timeline-item"><span style="color:var(--gold); font-weight:bold; margin-right:8px;">${formatTimelineDate(m.id)}</span> 🥊 매칭 신청 전송</div>`;
         
@@ -2058,37 +2058,54 @@ function renderFeed() {
         let p1Rank = allPlayersRanked.findIndex(x => String(x.id) === String(p1.id)) + 1;
         let p2Rank = allPlayersRanked.findIndex(x => String(x.id) === String(p2.id)) + 1;
 
-        // 프로필 사진 HTML (좌측/우측 배치용)
-        let p1Pic = p1.profilePic ? `<img src="${p1.profilePic}" style="width:24px; height:24px; border-radius:50%; margin-right:6px; vertical-align:middle; border:2px solid var(--tier${p1.tier}); object-fit:cover;">` : `<div style="width:24px; height:24px; border-radius:50%; margin-right:6px; display:inline-block; vertical-align:middle; background:#555; border:2px solid var(--tier${p1.tier});"></div>`;
-        let p2Pic = p2.profilePic ? `<img src="${p2.profilePic}" style="width:24px; height:24px; border-radius:50%; margin-left:6px; vertical-align:middle; border:2px solid var(--tier${p2.tier}); object-fit:cover;">` : `<div style="width:24px; height:24px; border-radius:50%; margin-left:6px; display:inline-block; vertical-align:middle; background:#555; border:2px solid var(--tier${p2.tier});"></div>`;
+        // 프로필 사진 HTML (좌측/우측 배치용) - 마진 제거 및 크기 약간 확대 (36px)
+        let p1Pic = p1.profilePic ? `<img src="${p1.profilePic}" style="width:36px; height:36px; border-radius:50%; vertical-align:middle; border:2px solid var(--tier${p1.tier}); object-fit:cover; flex-shrink:0;">` : `<div style="width:36px; height:36px; border-radius:50%; display:inline-block; vertical-align:middle; background:#555; border:2px solid var(--tier${p1.tier}); flex-shrink:0;"></div>`;
+        let p2Pic = p2.profilePic ? `<img src="${p2.profilePic}" style="width:36px; height:36px; border-radius:50%; vertical-align:middle; border:2px solid var(--tier${p2.tier}); object-fit:cover; flex-shrink:0;">` : `<div style="width:36px; height:36px; border-radius:50%; display:inline-block; vertical-align:middle; background:#555; border:2px solid var(--tier${p2.tier}); flex-shrink:0;"></div>`;
 
-        // 🔥 [장소 및 일시 정보 추가]
+        // 🔥 [장소 및 일시 정보 추가] - 레이아웃 전면 개편
         html += `
-        <div class="timeline-folder" style="border: 1px solid ${m.status === '종료' ? '#444' : 'var(--primary-red)'};">
-            <div class="timeline-header" onclick="toggleTimeline(${m.id})" style="background: ${m.status === '종료' ? '#252525' : '#2d2d2d'}; flex-direction: column; align-items: flex-start; gap: 8px;">
-                <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
-                    <div style="display:flex; align-items:center; flex-wrap:wrap;">
-                        <span class="match-code" style="color:var(--gold); font-family:monospace; margin-right:12px;">${matchCode}</span>
-                        <b style="font-size:1rem; display:flex; align-items:center;">
-                            ${feedMatchTypeBadge}
-                            ${p1Label}
-                            ${p1Pic}
-                            <span class="clickable-name" onclick="event.stopPropagation(); openProfile('${p1.id}')">${p1.rawName} <span style="font-size:0.75rem; color:#aaa; font-weight:normal; margin-left:2px;">[T${p1.tier}, ${p1Rank}위]</span></span>
-                            <span style="color:#666; margin: 0 10px; font-weight:normal;">VS</span> 
-                            <span class="clickable-name" onclick="event.stopPropagation(); openProfile('${p2.id}')"><span style="font-size:0.75rem; color:#aaa; font-weight:normal; margin-right:2px;">[T${p2.tier}, ${p2Rank}위]</span> ${p2.rawName}</span>
-                            ${p2Pic}
-                            ${p2Label}
-                        </b>
-                        ${decisionType}
+        <div class="timeline-folder" style="border: 1px solid ${m.status === '종료' ? '#444' : 'var(--primary-red)'}; margin-bottom: 12px;">
+            <div class="timeline-header" onclick="toggleTimeline(${m.id})" style="background: ${m.status === '종료' ? '#252525' : '#2d2d2d'}; flex-direction: column; align-items: stretch; gap: 15px; padding: 16px 20px;">
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="match-code" style="color:var(--gold); font-family:monospace; font-size: 1.1rem; font-weight: bold; margin-right: 0;">${matchCode}</span>
+                        ${feedMatchTypeBadge}
                     </div>
-                    <span class="status-badge" style="background:${statusColor}; color:#000; padding:2px 8px; border-radius:4px; font-weight:bold; font-size:0.7rem;">${statusText}</span>
+                    <span class="status-badge" style="background:${statusColor}; color:#000; padding:4px 10px; border-radius:6px; font-weight:bold; font-size:0.75rem;">${statusText}</span>
                 </div>
-                <div style="font-size: 0.8rem; color: #aaa; background: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 4px; width: 100%; box-sizing: border-box; display:flex; gap: 10px; align-items:center;">
+                
+                <div style="display: flex; justify-content: center; align-items: center; width: 100%; gap: 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-end; text-align: right;">
+                        ${p1Label}
+                        <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                            <span class="clickable-name" onclick="event.stopPropagation(); openProfile('${p1.id}')" style="font-size: 1.05rem; display: block; line-height: 1.2;">${p1.rawName}</span>
+                            <span style="font-size: 0.75rem; color: #aaa; margin-top: 2px;">[T${p1.tier}, ${p1Rank}위]</span>
+                        </div>
+                        ${p1Pic}
+                    </div>
+                    
+                    <div style="font-size: 1.1rem; color: #666; font-weight: 900; font-style: italic;">VS</div>
+                    
+                    <div style="display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-start; text-align: left;">
+                        ${p2Pic}
+                        <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                            <span class="clickable-name" onclick="event.stopPropagation(); openProfile('${p2.id}')" style="font-size: 1.05rem; display: block; line-height: 1.2;">${p2.rawName}</span>
+                            <span style="font-size: 0.75rem; color: #aaa; margin-top: 2px;">[T${p2.tier}, ${p2Rank}위]</span>
+                        </div>
+                        ${p2Label}
+                    </div>
+                </div>
+                
+                ${decisionType ? `<div style="text-align: center; margin-top: -5px;">${decisionType}</div>` : ''}
+
+                <div style="font-size: 0.85rem; color: #aaa; background: rgba(0,0,0,0.3); padding: 10px 15px; border-radius: 8px; width: 100%; box-sizing: border-box; display:flex; justify-content: center; gap: 15px; align-items:center;">
                     <span>📍 <b style="color:#ddd;">${m.matchGymName || '장소미정'}</b></span>
                     <span style="color:#555;">|</span>
                     <span>⏰ <b style="color:#ddd;">${m.modifiedDate || m.date}</b></span>
                 </div>
             </div>
+            
             <div id="timeline-content-${m.id}" class="timeline-content" style="display:none; padding-bottom: 15px;">
                 ${timelineHtml}
             </div>
