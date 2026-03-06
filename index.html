@@ -1094,7 +1094,7 @@
     </div>
 
     <div id="post-detail" class="page">
-        <button onclick="showPage('board')" style="background: #333; color: white; border: none; padding: 5px 10px; border-radius: 4px; margin-bottom: 15px; cursor: pointer;">← 목록으로</button>
+        <button onclick="goBackFromPostDetail()" style="background: #333; color: white; border: none; padding: 5px 10px; border-radius: 4px; margin-bottom: 15px; cursor: pointer;">← 목록으로</button>
         <div class="card" id="pd-container"></div>
         
         <div class="card" style="margin-top:15px;">
@@ -1181,6 +1181,16 @@
                     <button type="button" onclick="document.getElementById('admin-local-file').click()">📁 사진</button>
                     <input type="file" id="admin-local-file" accept="image/*" style="display:none;" onchange="insertEditorLocalImage(event)">
                 </div>
+
+                <div style="background: rgba(253, 203, 110, 0.1); border: 1px solid rgba(253, 203, 110, 0.3); border-radius: 4px; padding: 12px; margin-top: 10px; margin-bottom: 10px; font-size: 0.85rem;">
+                    <b style="color: var(--gold); display: block; margin-bottom: 6px;">💡 공지사항 이미지 최적화 가이드</b>
+                    <ul style="margin: 0; padding-left: 20px; line-height: 1.6; color: #ccc;">
+                        <li>권장 해상도: 가로 1200px 이상 (세로 크기는 자유)</li>
+                        <li>추천 비율: 16:9 또는 4:3 (가로형 이미지 권장)</li>
+                        <li>파일 형식: 고효율 압축이 적용된 WebP 또는 JPG 형식 권장</li>
+                    </ul>
+                </div>
+
                 <div id="admin-notice-editor" class="rich-editor" contenteditable="true" style="min-height: 150px;" placeholder="공지 내용을 입력하세요."></div>
                 
                 <button class="btn-submit" onclick="submitAdminNotice()">공지사항 등록하기</button>
@@ -1764,6 +1774,10 @@ function initFirebaseRealtime() {
         // 피드 및 관련 UI 갱신
         renderFeed(); 
         renderPopularSparring(); // 🔥 [추가] 인기 스파링 실시간 갱신
+        
+        // 🔥 [신규] 실시간 공지사항 슬라이더 갱신 적용
+        startNoticeSlider(); 
+
         if (document.getElementById('board').classList.contains('active')) renderCommunity();
         if (document.getElementById('post-detail').classList.contains('active') && currentPostId) openPostDetail(currentPostId);
         // 관리자 공지 목록 갱신 추가
@@ -2339,7 +2353,19 @@ async function addCommunityPost() {
 }
 
 
+window.previousPageBeforePostDetail = 'board';
+
+function goBackFromPostDetail() {
+    showPage(window.previousPageBeforePostDetail || 'board');
+}
+
 function openPostDetail(postId) {
+    // [신규] 상세 진입 직전의 활성화된 페이지를 저장하여 지능형 복귀 경로를 설정합니다.
+    const activePage = document.querySelector('.page.active');
+    if (activePage && activePage.id !== 'post-detail') {
+        window.previousPageBeforePostDetail = activePage.id;
+    }
+
     currentPostId = postId;
     let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
     let post = posts.find(p => p.id === postId);
@@ -2368,7 +2394,7 @@ function openPostDetail(postId) {
             </div>`;
     }
 
-    // 상단 헤더 영역 (버튼 포함)
+    // 상단 헤더 영역 (버튼 포함) - 타이틀 최상단 노출
     let html = `
         <div style="margin-bottom: 15px;">
             ${actionBtns}
@@ -2401,8 +2427,20 @@ function openPostDetail(postId) {
         }
     }
 
-    // 본문 내용 영역
-    html += `<div class="post-content-view" style="font-size:0.95rem; line-height:1.6; color:#ccc; margin-bottom:30px; word-break: break-all;">${post.content}</div>`;
+    // [신규] 본문 내용 영역 (글과 함께 업로드된 이미지를 100% 비율로 하단 정렬시키는 동적 CSS 주입)
+    html += `
+    <div class="post-content-view" style="font-size:0.95rem; line-height:1.6; color:#ccc; margin-bottom:30px; word-break: break-all;">
+        <style>
+            .post-content-view img {
+                max-width: 100% !important;
+                height: auto !important;
+                border-radius: 8px;
+                display: block;
+                margin: 15px auto;
+            }
+        </style>
+        ${post.content}
+    </div>`;
 
     // 판정 투표 UI 로직 (기존 코드 유지)
     if(post.type === 'judge' && post.judgeData) {
