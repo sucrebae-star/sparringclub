@@ -2263,8 +2263,16 @@ function renderFeed() {
         filteredMatches = allMatches.filter(m => m.isDummy !== true && !(m.senderRawName && m.senderRawName.includes('[test]')) && !(m.receiverRawName && m.receiverRawName.includes('[test]')));
     }
     
-    // [핵심 변경] 관리자(admin) 활동 내역 완전 배제
-    filteredMatches = filteredMatches.filter(m => m.senderRawName !== 'admin' && m.receiverRawName !== 'admin');
+    // [핵심 변경] 관리자(admin) 활동 내역 완전 배제 (그림자 모드)
+    filteredMatches = filteredMatches.filter(m => {
+        const p1 = demoPlayers.find(p => p.rawName === m.senderRawName);
+        const p2 = demoPlayers.find(p => p.rawName === m.receiverRawName);
+        
+        const isP1Admin = p1 ? (p1.isAdmin === true || p1.rawName === 'admin' || p1.role === 'admin') : (m.senderRawName === 'admin');
+        const isP2Admin = p2 ? (p2.isAdmin === true || p2.rawName === 'admin' || p2.role === 'admin') : (m.receiverRawName === 'admin');
+        
+        return !isP1Admin && !isP2Admin;
+    });
 
     // 🔥 [수정] 피드 필터 탭 기능 적용
     if (currentFeedTab === 'upcoming') {
@@ -2493,8 +2501,8 @@ function renderPlayers() {
     // 🔥 [신규] TEST 모드 로직 반전 및 관리자 필터링 반영
     let isTestModeOn = localStorage.getItem('sparring_test_mode') === 'true';
     
-    // [핵심 변경] 관리자 계정 완전 배제
-    let basePlayers = demoPlayers.filter(p => p.isAdmin !== true && p.rawName !== 'admin');
+    // [핵심 변경] 관리자 계정 완전 배제 (ID가 admin이거나 역할이 관리자인 계정)
+    let basePlayers = demoPlayers.filter(p => p.isAdmin !== true && p.rawName !== 'admin' && p.role !== 'admin');
     
     // TEST 모드 OFF 시에만 가상(더미) 데이터 숨김 처리
     if (!isTestModeOn) {
@@ -4483,10 +4491,10 @@ function renderNewMembers() {
     if(!container) return;
     let approved = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
     
-    // [핵심 변경] 관리자 계정 완전 배제
-    let validMembers = approved.filter(p => p.isAdmin !== true && p.rawName !== 'admin');
+    // [핵심 변경] 관리자 계정 완전 배제 (ID가 admin이거나 역할이 관리자인 계정)
+    let validMembers = approved.filter(p => p.isAdmin !== true && p.rawName !== 'admin' && p.role !== 'admin');
     
-    // 🔥 [신규] TEST 모드 로직 반전 적용
+    // 🔥 [신규] TEST 모드 로직 반전 적용: OFF일 때 가상 데이터 완전 숨김
     let isTestModeOn = localStorage.getItem('sparring_test_mode') === 'true';
     if (!isTestModeOn) {
         validMembers = validMembers.filter(p => p.isDummy !== true && (!p.rawName || !p.rawName.includes('[test]')));
@@ -6253,8 +6261,8 @@ function renderGyms(filterRegion = 'all') {
         };
     });
 
-    // 2. 현재 소속된 선수 숫자만 파악 (관리자 제외, TEST 모드 연동 필터링)
-    let basePlayers = demoPlayers.filter(p => p.isAdmin !== true && p.rawName !== 'admin');
+    // 2. 현재 소속된 선수 숫자만 파악 (관리자 계정 완전 배제, TEST 모드 연동 필터링)
+    let basePlayers = demoPlayers.filter(p => p.isAdmin !== true && p.rawName !== 'admin' && p.role !== 'admin');
     if (!isTestModeOn) {
         basePlayers = basePlayers.filter(p => p.isDummy !== true && (!p.rawName || !p.rawName.includes('[test]')));
     }
@@ -6748,6 +6756,7 @@ async function updateGym() {
 
 // --- [신규] TEST 모드 제어 (논리 반전 및 UI 컬러 개선 반영) ---
 function toggleCleanFeedMode() {
+    // 기본값은 OFF (false)
     let isActive = localStorage.getItem('sparring_test_mode') === 'true';
     isActive = !isActive;
     localStorage.setItem('sparring_test_mode', isActive);
@@ -6771,12 +6780,17 @@ function toggleCleanFeedMode() {
     renderFeed();
     renderPlayers();
     renderGyms();
+    renderNewMembers(); // 신규 가입 소식도 즉시 반영되도록 추가
     renderCommunity();
     renderPopularSparring();
 }
 
 // 초기 로드 시 클린 피드 버튼 상태 동기화
 window.addEventListener('DOMContentLoaded', () => {
+    // 기본 상태 (Default): 값이 없으면 OFF (false) 상태로 강제 초기화
+    if (localStorage.getItem('sparring_test_mode') === null) {
+        localStorage.setItem('sparring_test_mode', 'false');
+    }
     const isActive = localStorage.getItem('sparring_test_mode') === 'true';
     const btn = document.getElementById('clean-feed-btn');
     if (btn) {
