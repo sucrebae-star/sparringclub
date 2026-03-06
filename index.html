@@ -439,13 +439,20 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
             position: relative; 
             margin-top: 5px; /* 필터가 사라진 자리에 적절한 간격 추가 */
+            max-height: 480px; /* 동시에 최대 3개의 카드만 보이도록 높이 제한 */
+            overflow-y: auto;
+            -ms-overflow-style: none; /* IE, Edge 스크롤바 숨김 */
+            scrollbar-width: none; /* Firefox 스크롤바 숨김 */
+        }
+        #feed-outer-box::-webkit-scrollbar {
+            display: none; /* Chrome, Safari 스크롤바 숨김 */
         }
 
         #feed-container { 
             display: flex; 
             flex-direction: column; 
             gap: 12px; 
-            padding-bottom: 20px; 
+            padding-bottom: 5px; 
         }
         .feed-item { border-left: 3px solid var(--primary-red); padding-left: 10px; margin-bottom: 15px; background: #222; padding: 12px; border-radius: 0 8px 8px 0; font-size: 0.9rem; line-height: 1.4; position: relative;}
         .feed-item.clickable { cursor: pointer; transition: all 0.2s ease; }          
@@ -2053,11 +2060,18 @@ function renderFeed() {
     let recordReqs = JSON.parse(localStorage.getItem('sparring_record_requests')) || [];
     let communityPosts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
     
-    // 최신순 정렬
-    allMatches.sort((a, b) => b.id - a.id);
+    // 종료된 경기 제외 ('대기중', '매칭 성사' 등의 예정된 일정만 노출)
+    let displayMatches = allMatches.filter(m => m.status !== '종료');
+
+    // 오늘 날짜와 가장 가까운 일정이 상단에 오도록 정렬 (오름차순 정렬)
+    displayMatches.sort((a, b) => {
+        const dateA = new Date(a.modifiedDate || a.date).getTime();
+        const dateB = new Date(b.modifiedDate || b.date).getTime();
+        return dateA - dateB;
+    });
 
     let html = '';
-    allMatches.forEach((m) => {
+    displayMatches.forEach((m) => {
         // 🔥 [수정] 실시간 계산이 아닌, 데이터에 저장된 영구 번호(matchSeq)를 직접 사용
         const isTest = m.senderRawName.toLowerCase().includes('test') || m.receiverRawName.toLowerCase().includes('test');
         const matchCode = generateMatchCode(m.matchSeq || 0, isTest);
@@ -2071,7 +2085,7 @@ function renderFeed() {
         let decisionType = "";
         let matchPostId = null;
 
-        // --- 승패 결과 판별 로직 ---
+        // --- 승패 결과 판별 로직 (종료된 경기를 제외했으므로 실제 노출되진 않지만 구조 유지를 위해 보존) ---
         if (m.status === '종료') {
             if (m.resultValue) {
                 if (m.resultValue === 'win') {
@@ -2108,6 +2122,11 @@ function renderFeed() {
                     matchPostId = communityResult.id;
                 }
             }
+        } else {
+            // 다가오는 일정(대기중, 매칭성사 등)에 대한 Official 라벨 최적화
+            decisionType = m.matchType === 'rank' 
+                ? `<small style="color:var(--primary-red); font-weight:bold; margin-left:10px;">(아레나 판정)</small>` 
+                : `<small style="color:#0984e3; font-weight:bold; margin-left:10px;">(상호 합의)</small>`;
         }
 
         let statusText = m.status === '종료' ? "OFFICIAL" : m.status;
@@ -2169,28 +2188,28 @@ function renderFeed() {
                 </div>
                 
                 <div style="display: flex; justify-content: center; align-items: center; width: 100%; gap: 15px;">
-                    <div style="display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-end; text-align: right;">
+                    <div style="display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-end; text-align: right; overflow: hidden;">
                         ${p1Label}
-                        <div style="display: flex; flex-direction: column; align-items: flex-end;">
-                            <span class="clickable-name" onclick="event.stopPropagation(); openProfile('${p1.id}')" style="font-size: 1.05rem; display: block; line-height: 1.2;">${p1.rawName}</span>
-                            <span style="font-size: 0.75rem; color: #aaa; margin-top: 2px;">[T${p1.tier}, ${p1Rank}위]</span>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; overflow: hidden;">
+                            <span class="clickable-name" onclick="event.stopPropagation(); openProfile('${p1.id}')" style="font-size: 1.05rem; display: block; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px;">${p1.rawName}</span>
+                            <span style="font-size: 0.75rem; color: #aaa; margin-top: 2px; white-space: nowrap;">[T${p1.tier}, ${p1Rank}위]</span>
                         </div>
                         ${p1Pic}
                     </div>
                     
-                    <div style="font-size: 1.1rem; color: #666; font-weight: 900; font-style: italic;">VS</div>
+                    <div style="font-size: 1.1rem; color: #666; font-weight: 900; font-style: italic; flex-shrink: 0;">VS</div>
                     
-                    <div style="display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-start; text-align: left;">
+                    <div style="display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-start; text-align: left; overflow: hidden;">
                         ${p2Pic}
-                        <div style="display: flex; flex-direction: column; align-items: flex-start;">
-                            <span class="clickable-name" onclick="event.stopPropagation(); openProfile('${p2.id}')" style="font-size: 1.05rem; display: block; line-height: 1.2;">${p2.rawName}</span>
-                            <span style="font-size: 0.75rem; color: #aaa; margin-top: 2px;">[T${p2.tier}, ${p2Rank}위]</span>
+                        <div style="display: flex; flex-direction: column; align-items: flex-start; overflow: hidden;">
+                            <span class="clickable-name" onclick="event.stopPropagation(); openProfile('${p2.id}')" style="font-size: 1.05rem; display: block; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px;">${p2.rawName}</span>
+                            <span style="font-size: 0.75rem; color: #aaa; margin-top: 2px; white-space: nowrap;">[T${p2.tier}, ${p2Rank}위]</span>
                         </div>
                         ${p2Label}
                     </div>
                 </div>
                 
-                ${decisionType ? `<div style="text-align: center; margin-top: -5px;">${decisionType}</div>` : ''}
+                <div style="text-align: center; margin-top: -5px;">${decisionType}</div>
 
                 <div style="font-size: 0.85rem; color: #aaa; background: rgba(0,0,0,0.3); padding: 10px 15px; border-radius: 8px; width: 100%; box-sizing: border-box; display:flex; justify-content: center; gap: 15px; align-items:center;">
                     <span>📍 <b style="color:#ddd;">${m.matchGymName || '장소미정'}</b></span>
@@ -2205,7 +2224,7 @@ function renderFeed() {
         </div>`;
     });
 
-    container.innerHTML = html || '<div style="color:#888; text-align:center; padding: 20px;">표시할 활동이 없습니다.</div>';
+    container.innerHTML = html || '<div style="color:#888; text-align:center; padding: 20px;">다가오는 활동 일정이 없습니다.</div>';
 }
 
 function showFeedMatchDetail(matchId) {
