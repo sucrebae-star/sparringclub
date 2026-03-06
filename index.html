@@ -2255,13 +2255,16 @@ function renderFeed() {
     
     let displayMatches = [];
     
-    // 🔥 [신규] 클린 피드 모드 적용 (테스트 봇 필터링)
-    let isCleanFeedActive = localStorage.getItem('sparring_clean_feed') === 'true';
+    // 🔥 [신규] TEST 모드 로직 반전 및 관리자 필터링 반영
+    let isTestModeOn = localStorage.getItem('sparring_test_mode') === 'true';
     let filteredMatches = allMatches;
     
-    if (isCleanFeedActive) {
-        filteredMatches = allMatches.filter(m => m.isDummy !== true);
+    if (!isTestModeOn) {
+        filteredMatches = allMatches.filter(m => m.isDummy !== true && !(m.senderRawName && m.senderRawName.includes('[test]')) && !(m.receiverRawName && m.receiverRawName.includes('[test]')));
     }
+    
+    // [핵심 변경] 관리자(admin) 활동 내역 완전 배제
+    filteredMatches = filteredMatches.filter(m => m.senderRawName !== 'admin' && m.receiverRawName !== 'admin');
 
     // 🔥 [수정] 피드 필터 탭 기능 적용
     if (currentFeedTab === 'upcoming') {
@@ -2487,10 +2490,14 @@ function renderPlayers() {
     let html = '';
     let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
 
-    // 🔥 [신규] 클린 피드 모드 적용 (테스트 봇 필터링)
-    let isCleanFeedActive = localStorage.getItem('sparring_clean_feed') === 'true';
-    let basePlayers = demoPlayers;
-    if (isCleanFeedActive) {
+    // 🔥 [신규] TEST 모드 로직 반전 및 관리자 필터링 반영
+    let isTestModeOn = localStorage.getItem('sparring_test_mode') === 'true';
+    
+    // [핵심 변경] 관리자 계정 완전 배제
+    let basePlayers = demoPlayers.filter(p => p.isAdmin !== true && p.rawName !== 'admin');
+    
+    // TEST 모드 OFF 시에만 가상(더미) 데이터 숨김 처리
+    if (!isTestModeOn) {
         basePlayers = basePlayers.filter(p => p.isDummy !== true && (!p.rawName || !p.rawName.includes('[test]')));
     }
 
@@ -2683,9 +2690,9 @@ function renderCommunity() {
     // 로컬 스토리지에서 게시글 로드 (최신 데이터 보장)
     let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
     
-    // 🔥 [신규] 클린 피드 모드 적용 (테스트 게시글 필터링)
-    let isCleanFeedActive = localStorage.getItem('sparring_clean_feed') === 'true';
-    if (isCleanFeedActive) {
+    // 🔥 [신규] TEST 모드 로직 반전
+    let isTestModeOn = localStorage.getItem('sparring_test_mode') === 'true';
+    if (!isTestModeOn) {
         posts = posts.filter(p => p.isDummy !== true);
     }
     
@@ -4475,8 +4482,18 @@ function renderNewMembers() {
     let container = document.getElementById('new-member-list');
     if(!container) return;
     let approved = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
+    
+    // [핵심 변경] 관리자 계정 완전 배제
+    let validMembers = approved.filter(p => p.isAdmin !== true && p.rawName !== 'admin');
+    
+    // 🔥 [신규] TEST 모드 로직 반전 적용
+    let isTestModeOn = localStorage.getItem('sparring_test_mode') === 'true';
+    if (!isTestModeOn) {
+        validMembers = validMembers.filter(p => p.isDummy !== true && (!p.rawName || !p.rawName.includes('[test]')));
+    }
+
     // 🔥 [수정] 최대 5개 노출로 변경
-    let recent = approved.slice(-5).reverse(); 
+    let recent = validMembers.slice(-5).reverse(); 
     if (recent.length === 0) { container.innerHTML = "<div style='text-align:center; color:#666; padding: 10px 0;'>최근 가입한 회원이 없습니다.</div>"; return; }
     
     let html = '';
@@ -5784,9 +5801,9 @@ function renderPopularSparring() {
 
     let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
 
-    // 🔥 [신규] 클린 피드 모드 적용 (테스트 게시글 필터링)
-    let isCleanFeedActive = localStorage.getItem('sparring_clean_feed') === 'true';
-    if (isCleanFeedActive) {
+    // 🔥 [신규] TEST 모드 로직 반전
+    let isTestModeOn = localStorage.getItem('sparring_test_mode') === 'true';
+    if (!isTestModeOn) {
         posts = posts.filter(p => p.isDummy !== true);
     }
 
@@ -6215,11 +6232,11 @@ function renderGyms(filterRegion = 'all') {
         }
     });
 
-    // 🔥 [신규] 클린 피드 모드 적용 (테스트 체육관 필터링)
-    let isCleanFeedActive = localStorage.getItem('sparring_clean_feed') === 'true';
+    // 🔥 [신규] TEST 모드 로직 반전
+    let isTestModeOn = localStorage.getItem('sparring_test_mode') === 'true';
     let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
     
-    if (isCleanFeedActive) {
+    if (!isTestModeOn) {
         registeredGyms = registeredGyms.filter(g => g.isDummy !== true);
     }
     
@@ -6236,9 +6253,9 @@ function renderGyms(filterRegion = 'all') {
         };
     });
 
-    // 2. 현재 소속된 선수 숫자만 파악 (가상 유저 필터링 추가)
-    let basePlayers = demoPlayers;
-    if (isCleanFeedActive) {
+    // 2. 현재 소속된 선수 숫자만 파악 (관리자 제외, TEST 모드 연동 필터링)
+    let basePlayers = demoPlayers.filter(p => p.isAdmin !== true && p.rawName !== 'admin');
+    if (!isTestModeOn) {
         basePlayers = basePlayers.filter(p => p.isDummy !== true && (!p.rawName || !p.rawName.includes('[test]')));
     }
     
@@ -6399,9 +6416,9 @@ function startMediaSlider() {
     
     let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
     
-    // 🔥 [신규] 클린 피드 모드 적용 (테스트 영상물 필터링)
-    let isCleanFeedActive = localStorage.getItem('sparring_clean_feed') === 'true';
-    if (isCleanFeedActive) {
+    // 🔥 [신규] TEST 모드 로직 반전 적용
+    let isTestModeOn = localStorage.getItem('sparring_test_mode') === 'true';
+    if (!isTestModeOn) {
         posts = posts.filter(p => p.isDummy !== true);
     }
     
@@ -6729,19 +6746,19 @@ async function updateGym() {
         location.reload();
     }
 
-// --- [신규] 클린 피드 모드 제어 ---
+// --- [신규] TEST 모드 제어 (논리 반전 및 UI 컬러 개선 반영) ---
 function toggleCleanFeedMode() {
-    let isActive = localStorage.getItem('sparring_clean_feed') === 'true';
+    let isActive = localStorage.getItem('sparring_test_mode') === 'true';
     isActive = !isActive;
-    localStorage.setItem('sparring_clean_feed', isActive);
+    localStorage.setItem('sparring_test_mode', isActive);
     
     const btn = document.getElementById('clean-feed-btn');
     if (btn) {
         if (isActive) {
             btn.innerText = '🤖 TEST모드 ON';
-            btn.style.background = 'var(--gold)';
-            btn.style.color = '#000';
-            btn.style.borderColor = 'var(--gold)';
+            btn.style.background = '#b8860b'; // 어두운 노란색으로 강조
+            btn.style.color = '#fff';
+            btn.style.borderColor = '#b8860b';
         } else {
             btn.innerText = '🤖 TEST모드 OFF';
             btn.style.background = '#333';
@@ -6760,13 +6777,20 @@ function toggleCleanFeedMode() {
 
 // 초기 로드 시 클린 피드 버튼 상태 동기화
 window.addEventListener('DOMContentLoaded', () => {
-    const isActive = localStorage.getItem('sparring_clean_feed') === 'true';
+    const isActive = localStorage.getItem('sparring_test_mode') === 'true';
     const btn = document.getElementById('clean-feed-btn');
-    if (btn && isActive) {
-        btn.innerText = '🤖 TEST모드 ON';
-        btn.style.background = 'var(--gold)';
-        btn.style.color = '#000';
-        btn.style.borderColor = 'var(--gold)';
+    if (btn) {
+        if (isActive) {
+            btn.innerText = '🤖 TEST모드 ON';
+            btn.style.background = '#b8860b'; // 어두운 노란색으로 강조
+            btn.style.color = '#fff';
+            btn.style.borderColor = '#b8860b';
+        } else {
+            btn.innerText = '🤖 TEST모드 OFF';
+            btn.style.background = '#333';
+            btn.style.color = '#ccc';
+            btn.style.borderColor = '#555';
+        }
     }
 });
 
