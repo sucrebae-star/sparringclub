@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     
     <link rel="manifest" href="manifest.json">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
@@ -1207,78 +1208,33 @@ function formatName(p) {
 
 // --- 초기화 ---
 window.onload = async function() {
-    // 1. 데이터 로드 및 삭제된 유저/피드 필터링
+    // 1. [정리] 불필요한 서버 자동 생성 로직 제거 (permission-denied 오류의 주 원인 해결)
     let deletedUsers = JSON.parse(localStorage.getItem('sparring_deleted_users')) || [];
     demoPlayers = demoPlayers.filter(p => !deletedUsers.includes(p.id));
 
-    // [핵심] 기본 계정(admin, test, test1) 서버 자동 생성 및 동기화 (삭제 기능 작동을 위한 필수 작업)
-    try {
-        const defaultAccounts = ['admin', 'test', 'test1'];
-        for (const rawId of defaultAccounts) {
-            const userRef = window.doc(window.db, "users", rawId);
-            const userSnap = await window.getDoc(userRef);
-            if (!userSnap.exists()) {
-                console.log(`${rawId} 계정이 서버에 없어 새로 생성합니다.`);
-                const userData = demoPlayers.find(p => p.rawName === rawId);
-                if (userData) await window.setDoc(userRef, userData);
-            }
-        }
-    } catch(e) { console.error("기본 계정 초기화 실패:", e); }
-
-    // 2. 승인된 유저 데이터를 데모 목록에 동기화 (서버에서 가져온 스토리 데이터 포함)
+    // 2. 초기 로컬 데이터 기반 렌더링 (서버의 최신 데이터는 로그인 후 initFirebaseRealtime에서 가져옴)
     let savedPlayers = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
     savedPlayers.forEach(sp => {
-        // 기존 demoPlayers(test, admin 등)에 서버 데이터 덮어쓰기
         let existing = demoPlayers.find(p => p.rawName === sp.rawName);
         if(existing) {
-            existing.sW = sp.sW !== undefined ? sp.sW : existing.sW;
-            existing.sD = sp.sD !== undefined ? sp.sD : existing.sD;
-            existing.sL = sp.sL !== undefined ? sp.sL : existing.sL;
-            existing.pt = sp.pt !== undefined ? sp.pt : existing.pt;
-            existing.matchingTrust = sp.matchingTrust !== undefined ? sp.matchingTrust : (existing.matchingTrust || 100);
-            existing.decisionTrust = sp.decisionTrust !== undefined ? sp.decisionTrust : (existing.decisionTrust || 100);
-            existing.region = sp.region || existing.region || '지역미상';
-            
-            // [중요 수정] 서버에 저장된 스토리(하이라이트) 정보를 로컬 명단에 유지함
-            if (sp.stories) existing.stories = sp.stories;
-            else if (!existing.stories) existing.stories = [];
-            
-            if (sp.profilePic) existing.profilePic = sp.profilePic;
+            Object.assign(existing, sp);
         } else {
-            // 신규 가입 유저 추가
-            demoPlayers.push({
-                ...sp, 
-                sW: sp.sW || 0, 
-                sD: sp.sD || 0, 
-                sL: sp.sL || 0, 
-                pt: sp.pt || 0, 
-                matchingTrust: sp.matchingTrust !== undefined ? sp.matchingTrust : 100, 
-                decisionTrust: sp.decisionTrust !== undefined ? sp.decisionTrust : 100,
-                pending: 0, 
-                noReply: 0, 
-                acc: 0, 
-                region: sp.region || '지역미상',
-                stories: sp.stories || [] // 스토리 정보 포함
-            });
+            demoPlayers.push({ ...sp, pending: 0, noReply: 0, acc: 0 });
         }
     });
 
-    // 3. 로그인 세션 유지 (🔥 4단계: Firebase Auth가 자동으로 처리하므로 초기 안내 메시지만 출력)
     console.log("보안 인증 서버로부터 세션 정보를 확인 중입니다...");
 
-    // 4. 관리자 설정(자동 승인 등) 로드
-// 4. 관리자 설정(자동 승인 등) 로드
-// 기록 자동 승인 상태 로드
-let autoApprove = localStorage.getItem('sparring_auto_approve') === 'true';
-const toggleRecordEl = document.getElementById('admin-auto-approve-toggle');
-if (toggleRecordEl) toggleRecordEl.checked = autoApprove;
+    // 3. 관리자 설정 로드
+    let autoApprove = localStorage.getItem('sparring_auto_approve') === 'true';
+    const toggleRecordEl = document.getElementById('admin-auto-approve-toggle');
+    if (toggleRecordEl) toggleRecordEl.checked = autoApprove;
 
-// 🔥 가입 자동 승인 상태 로드
-let autoJoin = localStorage.getItem('sparring_auto_join') === 'true';
-const toggleJoinEl = document.getElementById('admin-auto-join-toggle');
-if (toggleJoinEl) toggleJoinEl.checked = autoJoin;
+    let autoJoin = localStorage.getItem('sparring_auto_join') === 'true';
+    const toggleJoinEl = document.getElementById('admin-auto-join-toggle');
+    if (toggleJoinEl) toggleJoinEl.checked = autoJoin;
 
-    // 5. 초기 커뮤니티 데이터 세팅
+    // 4. 초기 커뮤니티 데이터 세팅
     let communityPosts = JSON.parse(localStorage.getItem('sparring_community_posts'));
     if (!communityPosts) {
         communityPosts = [
@@ -1287,56 +1243,23 @@ if (toggleJoinEl) toggleJoinEl.checked = autoJoin;
         localStorage.setItem('sparring_community_posts', JSON.stringify(communityPosts));
     }
 
-    // 6. 메인 UI 렌더링 및 실시간 기능 실행
+    // 5. 메인 UI 렌더링 및 실시간 기능 실행
     renderFeed();
     renderPlayers();
     renderNewMembers();
     renderCommunity();
-    startNoticeSlider(); // 공지 슬라이더 시작
-    setInterval(updateMatchBadge, 2000); // 매칭 배지 업데이트
+    startNoticeSlider(); 
+    setInterval(updateMatchBadge, 2000); 
 
-    // 7. 🔥 대용량 배경화면(IndexedDB) 초기화 실행
+    // 6. 🔥 대용량 배경화면(IndexedDB) 초기화 실행
     initBackground(); 
 };
 
 // 🔥 [실시간 엔진] 체육관 레지스트리 동기화 추가 및 실시간 UI 갱신 로직
 // 🔥 [실시간 엔진] 체육관 레지스트리 동기화 추가 및 실시간 UI 갱신 로직
 function initFirebaseRealtime() {
-    // 0. 🔥 [4단계: 보안 강화] Auth 상태 변화 감지 (자동 로그인 핵심)
-    // 사용자가 로그인하거나 로그아웃할 때, 혹은 페이지를 새로고침할 때 구글 보안 서버가 자동으로 호출해줍니다.
-    window.onAuthStateChanged(window.auth, async (user) => {
-        if (user) {
-            // A. 로그인된 상태라면: 이메일 주소(예: gildong@sparringclub.kr)에서 아이디(gildong)를 추출
-            const inputId = user.email.split('@')[0];
-            console.log("보안 세션 복구 성공:", inputId);
-
-            // B. Firestore에서 해당 사용자의 최신 프로필 정보를 가져옴
-            const userRef = window.doc(window.db, "users", inputId);
-            const userSnap = await window.getDoc(userRef);
-
-            if (userSnap.exists()) {
-                // 전역 currentUser 변수에 최신 정보 할당 및 UI 업데이트
-                currentUser = userSnap.data();
-                localStorage.setItem('sparring_session', JSON.stringify(currentUser));
-                updateLoginStateUI();
-                
-                // 로그인 기반으로 매칭 신청 버튼 등이 바뀌어야 하므로 리스트 재렌더링
-                renderPlayers();
-                updateMatchBadge();
-            } else {
-                console.warn("인증은 성공했으나 사용자 데이터가 없습니다.");
-                currentUser = null;
-                localStorage.removeItem('sparring_session');
-            }
-        } else {
-            // C. 로그아웃 상태라면: 모든 세션 정보 클리어
-            console.log("로그아웃 상태 (세션 없음)");
-            currentUser = null;
-            localStorage.removeItem('sparring_session');
-            // 로그인/가입 버튼이 있는 초기 헤더로 유지되도록 갱신 (이미 초기 HTML에 존재)
-        }
-    });
-
+    // [보안 지침 1단계] 누구나 볼 수 있는 공공 데이터 감시 (allow read: if true)
+    
     // 1. 커뮤니티 게시판 동기화
     window.onSnapshot(window.collection(window.db, "community_posts"), (snapshot) => {
         let posts = [];
@@ -1344,108 +1267,139 @@ function initFirebaseRealtime() {
         posts.sort((a, b) => b.time - a.time);
         localStorage.setItem('sparring_community_posts', JSON.stringify(posts));
         
-        // 피드 및 관련 UI 갱신
         renderFeed(); 
-        renderPopularSparring(); // 🔥 [추가] 인기 스파링 실시간 갱신
-        
-        // 🔥 [신규] 실시간 공지사항 슬라이더 갱신 적용
+        renderPopularSparring();
         startNoticeSlider(); 
 
         if (document.getElementById('board').classList.contains('active')) renderCommunity();
         if (document.getElementById('post-detail').classList.contains('active') && currentPostId) openPostDetail(currentPostId);
-        // 관리자 공지 목록 갱신 추가
-        if (document.getElementById('admin-dashboard').classList.contains('active')) renderAdminNoticeList();
+        if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdminNoticeList();
     });
 
-    // 2. 매칭 현황 동기화
-    window.onSnapshot(window.collection(window.db, "matches"), (snapshot) => {
-        let matches = [];
-        snapshot.forEach((doc) => matches.push(doc.data()));
-        localStorage.setItem('sparring_matches', JSON.stringify(matches));
-        
-        // 피드 및 관련 UI 갱신
-        renderFeed();
-        if (document.getElementById('players').classList.contains('active')) renderPlayers();
-        if (document.getElementById('matchStatusModal').style.display === 'flex') renderMatchList();
-        // 관리자 매치 관리 목록 갱신 추가
-        if (document.getElementById('admin-dashboard').classList.contains('active')) renderAdminMatchManagement();
-    });
-
-    // 3. 승인된 선수 명단 동기화 (프로필 모달 및 세션 실시간 반영)
-    window.onSnapshot(window.collection(window.db, "users"), (snapshot) => {
-        let players = [];
-        snapshot.forEach((doc) => players.push(doc.data()));
-        
-        // 🔥 [수정] 삭제된 회원이 다시 나타나는 현상(부활 버그) 해결: 
-        // 모든 계정이 이제 Firebase 서버에 저장되므로, 더 이상 로컬에서 수동으로 push하지 않고 서버 데이터를 전적으로 신뢰합니다.
-        demoPlayers = players;
-        localStorage.setItem('sparring_approved_users', JSON.stringify(players));
-        
-        // [추가] 현재 로그인한 유저의 최신 정보를 서버 데이터에서 찾아 세션 갱신
-        if (currentUser) {
-            const updatedMe = players.find(p => p.rawName === currentUser.rawName);
-            if (updatedMe) {
-                currentUser = updatedMe;
-                localStorage.setItem('sparring_session', JSON.stringify(currentUser));
-            }
-        }
-        
-        renderFeed();
-        renderPlayers();
-        renderGyms();
-        if (currentUser) updateLoginStateUI();
-        
-        const profileModal = document.getElementById('profileModal');
-        // 🔥 [수정] window.profileOwnerId가 아닌 전역변수 profileOwnerId를 직접 참조하여 스토리 업로드 후 UI 즉시 갱신
-        if (profileModal && profileModal.style.display === 'flex' && typeof profileOwnerId !== 'undefined' && profileOwnerId !== null) {
-            const p = players.find(x => String(x.id) === String(profileOwnerId));
-            if (p) {
-                const isOwner = currentUser && String(p.id) === String(currentUser.id);
-                renderProfileStories(p, isOwner);
-                
-                const recEl = document.getElementById('pm-season-rec');
-                const ptEl = document.getElementById('pm-season-pt');
-                const trustEl = document.getElementById('pm-trust');
-                
-                if(recEl) recEl.innerText = `${p.sW || 0}승 ${p.sD || 0}무 ${p.sL || 0}패`;
-                if(ptEl) ptEl.innerText = `${(p.pt || 0).toLocaleString()} P`;
-                if(trustEl) trustEl.innerText = `${p.trustScore || 0} P`;
-            }
-        }
-
-        if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) {
-            renderAdmin();
-        }
-    });
-
-    // 4. 🔥 [신규] 체육관 레지스트리 동기화 (삭제 시 즉시 반영 핵심)
+    // 2. 체육관 레지스트리 동기화
     window.onSnapshot(window.collection(window.db, "gyms_registry"), (snapshot) => {
         let gyms = [];
         snapshot.forEach((doc) => gyms.push(doc.data()));
         localStorage.setItem('sparring_gyms_registry', JSON.stringify(gyms));
-        renderGyms(); // 일반 페이지 갱신
-        // 관리자 체육관 관리 목록 즉시 갱신 추가
-        if (document.getElementById('admin-dashboard').classList.contains('active')) renderAdminGymManagement();
+        renderGyms();
+        if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdminGymManagement();
     });
 
-    // 5. 경기 결과 기록 요청 동기화
-    window.onSnapshot(window.collection(window.db, "record_requests"), (snapshot) => {
-        let reqs = [];
-        snapshot.forEach((doc) => reqs.push(doc.data()));
-        localStorage.setItem('sparring_record_requests', JSON.stringify(reqs));
-        
-        renderFeed();
-        if (document.getElementById('admin-dashboard').classList.contains('active')) renderAdmin();
-    });
+    // 관리자 전용 리스너 실행 플래그
+    let adminListenersStarted = false;
 
-    // 6. 가입 신청 대기자 동기화
-    window.onSnapshot(window.collection(window.db, "pendingUsers"), (snapshot) => {
-        let pending = [];
-        snapshot.forEach((doc) => {
-            pending.push({ ...doc.data(), firebaseId: doc.id });
-        });
-        localStorage.setItem('sparring_pending_users', JSON.stringify(pending));
-        if (document.getElementById('admin-dashboard').classList.contains('active')) renderAdmin();
+    // [보안 지침 2단계] 로그인 상태 및 권한 감지 후 민감 데이터 접근 (allow read: if request.auth != null)
+    window.onAuthStateChanged(window.auth, async (user) => {
+        if (user) {
+            const inputId = user.email.split('@')[0];
+            
+            // A. 내 프로필 및 권한 상태 감시
+            const userRef = window.doc(window.db, "users", inputId);
+            window.onSnapshot(userRef, (doc) => {
+                if (doc.exists()) {
+                    const freshData = doc.data();
+                    
+                    if (!currentUser || currentUser.isAdmin !== freshData.isAdmin) {
+                        console.log("서버 보안 권한 동기화 완료");
+                    }
+                    
+                    currentUser = freshData;
+                    localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+                    updateLoginStateUI();
+                    renderPlayers();
+                    updateMatchBadge();
+
+                    // 🔥 [핵심 보안] 관리자 권한이 서버로부터 확인된 '직후'에만 관리자 데이터에 접근합니다.
+                    if (currentUser.isAdmin && !adminListenersStarted) {
+                        adminListenersStarted = true;
+                        
+                        // 관리자 1: 가입 신청 대기자 감시 (allow read: if isAdmin())
+                        window.onSnapshot(window.collection(window.db, "pendingUsers"), (snapshot) => {
+                            let pending = [];
+                            snapshot.forEach((doc) => {
+                                pending.push({ ...doc.data(), firebaseId: doc.id });
+                            });
+                            localStorage.setItem('sparring_pending_users', JSON.stringify(pending));
+                            if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdmin();
+                        });
+                    }
+                } else {
+                    currentUser = null;
+                    localStorage.removeItem('sparring_session');
+                }
+            });
+
+            // B. 매칭 현황 동기화
+            window.onSnapshot(window.collection(window.db, "matches"), (snapshot) => {
+                let matches = [];
+                snapshot.forEach((doc) => matches.push(doc.data()));
+                localStorage.setItem('sparring_matches', JSON.stringify(matches));
+                
+                renderFeed();
+                if (document.getElementById('players').classList.contains('active')) renderPlayers();
+                if (document.getElementById('matchStatusModal').style.display === 'flex') renderMatchList();
+                if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdminMatchManagement();
+            });
+
+            // C. 전체 승인된 선수 명단 동기화
+            window.onSnapshot(window.collection(window.db, "users"), (snapshot) => {
+                let players = [];
+                snapshot.forEach((doc) => players.push(doc.data()));
+                
+                demoPlayers = players;
+                localStorage.setItem('sparring_approved_users', JSON.stringify(players));
+                
+                if (currentUser) {
+                    const updatedMe = players.find(p => p.rawName === currentUser.rawName);
+                    if (updatedMe) {
+                        currentUser = updatedMe;
+                        localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+                    }
+                }
+                
+                renderFeed();
+                renderPlayers();
+                renderGyms();
+                if (currentUser) updateLoginStateUI();
+                
+                const profileModal = document.getElementById('profileModal');
+                if (profileModal && profileModal.style.display === 'flex' && typeof profileOwnerId !== 'undefined' && profileOwnerId !== null) {
+                    const p = players.find(x => String(x.id) === String(profileOwnerId));
+                    if (p) {
+                        const isOwner = currentUser && String(p.id) === String(currentUser.id);
+                        renderProfileStories(p, isOwner);
+                        
+                        const recEl = document.getElementById('pm-season-rec');
+                        const ptEl = document.getElementById('pm-season-pt');
+                        const trustEl = document.getElementById('pm-trust');
+                        
+                        if(recEl) recEl.innerText = `${p.sW || 0}승 ${p.sD || 0}무 ${p.sL || 0}패`;
+                        if(ptEl) ptEl.innerText = `${(p.pt || 0).toLocaleString()} P`;
+                        if(trustEl) trustEl.innerText = `${p.trustScore || 0} P`;
+                    }
+                }
+
+                if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) {
+                    renderAdmin();
+                }
+            });
+
+            // D. 경기 결과 기록 요청 동기화
+            window.onSnapshot(window.collection(window.db, "record_requests"), (snapshot) => {
+                let reqs = [];
+                snapshot.forEach((doc) => reqs.push(doc.data()));
+                localStorage.setItem('sparring_record_requests', JSON.stringify(reqs));
+                
+                renderFeed();
+                if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdmin();
+            });
+
+        } else {
+            // 로그아웃 상태일 때
+            currentUser = null;
+            adminListenersStarted = false; // 권한 초기화
+            localStorage.removeItem('sparring_session');
+        }
     });
 }
 
@@ -1938,7 +1892,10 @@ async function addCommunityPost() {
     const prefix = document.getElementById('cb-prefix').value;
     const title = document.getElementById('cb-title').value.trim();
     const editor = document.getElementById('cb-content-editor');
-    const content = editor.innerHTML.trim();
+    
+    // [보안 강화] 저장 전 DOMPurify를 사용하여 악성 스크립트 제거
+    const rawContent = editor.innerHTML.trim();
+    const content = DOMPurify.sanitize(rawContent);
 
     if (!title || content === "" || content === "<br>") { 
         alert("제목과 내용을 모두 입력해주세요."); 
@@ -2053,6 +2010,9 @@ function openPostDetail(postId) {
         
         }
 
+    // [보안 강화] 출력 직전 최종적으로 HTML 내용을 소독하여 렌더링
+    const cleanContent = DOMPurify.sanitize(post.content);
+
     // [신규] 본문 내용 영역 (글과 함께 업로드된 이미지를 100% 비율로 하단 정렬시키는 동적 CSS 주입)
     html += `
     <div class="post-content-view" style="font-size:0.95rem; line-height:1.6; color:#ccc; margin-bottom:30px; word-break: break-all;">
@@ -2065,7 +2025,7 @@ function openPostDetail(postId) {
                 margin: 15px auto;
             }
         </style>
-        ${post.content}
+        ${cleanContent}
     </div>`;
 
     // 🔥 [신규] 좋아요 & 공유하기 버튼 공통 영역 추가
@@ -2801,40 +2761,48 @@ function renderAdmin() {
     searchAdminMembers();
 }
 
-// 🔥 [관리자] 가입 승인 로직 (Firebase 연동형)
+// [보안 강화] 관리자 전용 가입 승인 로직 (서버 보안 규칙 대응)
+// [보안 강화] 관리자 전용 가입 승인 로직 (서버 보안 규칙 대응)
 async function approveUser(firebaseId) {
+    if (!currentUser || !currentUser.isAdmin) {
+        alert("관장님 계정만 사용 가능한 기능입니다.");
+        return;
+    }
+
     if(!confirm('해당 회원의 가입을 승인하시겠습니까?')) return;
     
-    // 1. 서버 동기화 데이터(localStorage)에서 해당 신청 정보 찾기
     let pendingUsers = JSON.parse(localStorage.getItem('sparring_pending_users')) || [];
     let user = pendingUsers.find(u => u.firebaseId === firebaseId);
     
     if(user) {
         try {
-            // 고유 ID가 없다면 생성
             const newUserId = user.id || Date.now();
             
-            // 2. [수정] 'users' 컬렉션에 저장할 때 문서 이름을 사용자의 아이디(user.rawName)로 지정합니다.
-            // 기존에는 newUserId.toString()을 사용하여 숫자로 저장했기 때문에 로그인이 안 되었습니다.
+            // 신규 유저 생성 시 isAdmin: false를 명시하여 보안을 강화합니다.
+            // 관리자만이 이 문서를 users 컬렉션에 쓸 수 있습니다. (Rules에 의해)
             await window.setDoc(window.doc(window.db, "users", user.rawName), {
                 ...user,
                 id: newUserId,
+                isAdmin: false, // 기본적으로 일반 유저로 생성
                 sW: 0, sD: 0, sL: 0, pt: 0, matchingTrust: 100, decisionTrust: 100, 
                 pending: 0, noReply: 0, acc: 0
             });
 
-            // 3. 🔥 'pendingUsers' 컬렉션에서 신청서 삭제 (서버에서 지워야 목록에서 사라집니다)
+            // 신청 대기 목록 삭제 (이 작업 역시 관리자 권한 필수)
             await window.deleteDoc(window.doc(window.db, "pendingUsers", firebaseId));
 
-            alert(user.name + ' 선수가 복싱아카데미 정식 선수로 등록되었습니다!');
-            // 🔥 [수정] 리스트 즉시 갱신
+            alert(`${user.name} 선수가 정식 선수로 승인되었습니다! 🥊`);
             renderAdmin();
         } catch (e) {
-            console.error("승인 오류:", e);
-            alert('승인 처리 중 서버 오류가 발생했습니다.');
+            console.error("승인 거부:", e);
+            if (e.code === 'permission-denied') {
+                alert("서버 보안 정책에 의해 거부되었습니다. 관리자 로그인을 확인하세요.");
+            } else {
+                alert("처리 중 서버 오류가 발생했습니다.");
+            }
         }
     } else {
-        alert("해당 유저 정보를 찾을 수 없습니다.");
+        alert("해당 신청 정보를 찾을 수 없습니다.");
     }
 }
 
@@ -2854,17 +2822,27 @@ async function rejectUser(firebaseId) {
 }
 /* 중복되었던 옛날 방식의 rejectUser 함수는 삭제 완료 */
 
-// 8단계 수정: 비동기 루프 안정성 확보 및 회원 삭제 로직 고도화
+// [보안 강화] 관리자 권한 이중 검증 및 원자적 삭제 로직
+// [보안 강화] 관리자 권한 이중 검증 및 원자적 삭제 로직
 async function adminDeleteMember(id) {
+    // 1. 프론트엔드 1차 방어: 현재 세션의 관리자 플래그 확인
+    if (!currentUser || !currentUser.isAdmin) {
+        alert("관장님 계정만 접근 가능한 기능입니다.");
+        return;
+    }
+
     const targetUser = demoPlayers.find(p => String(p.id) === String(id));
     if(!targetUser) return;
 
     if(!confirm(`'${targetUser.rawName}' 회원의 모든 데이터(게시글, 매칭, 전적)를 영구 삭제하시겠습니까?`)) return;
 
-    window.updateUploadProgress(10, "회원 데이터 분석 중...");
+    window.updateUploadProgress(10, "관리자 권한 인증 및 데이터 분석 중...");
 
     try {
         const docName = targetUser.rawName;
+        
+        // [핵심 보안] 실제 서버에 삭제 요청을 보낼 때, 만약 사용자가 isAdmin을 조작했다면
+        // 위에서 설정한 Security Rules가 작동하여 아래의 모든 deleteDoc 요청이 403 Forbidden으로 거부됩니다.
         
         // 1. 게시글 삭제 (Promise.all 사용하여 속도 및 안정성 향상)
         const postSnap = await window.getDocs(window.collection(window.db, "community_posts"));
@@ -2889,7 +2867,7 @@ async function adminDeleteMember(id) {
         await Promise.all(matchDeletes);
         window.updateUploadProgress(70, "매칭 기록 정리 완료...");
 
-        // 3. 프로필 이미지 및 유저 문서 삭제
+        // 3. 유저 문서 최종 삭제
         await window.deleteDoc(window.doc(window.db, "users", docName));
         
         window.updateUploadProgress(100, "회원 삭제 성공!");
@@ -2900,9 +2878,14 @@ async function adminDeleteMember(id) {
             alert('해당 회원의 모든 정보가 안전하게 파기되었습니다.');
         }
     } catch(e) { 
-        console.error(e);
+        console.error("보안 거부 또는 시스템 오류:", e);
         window.updateUploadProgress(100);
-        alert("일부 데이터를 삭제하지 못했습니다. Firebase 규칙을 확인하세요.");
+        // Security Rules에 의해 거부된 경우 명확한 안내
+        if (e.code === 'permission-denied') {
+            alert("서버 보안 정책에 의해 요청이 거부되었습니다. (관리자 권한 없음)");
+        } else {
+            alert("데이터 삭제 중 오류가 발생했습니다.");
+        }
     }
 }
 
@@ -4864,7 +4847,11 @@ function searchCommunity() {
 async function submitAdminNotice() {
     const title = document.getElementById('admin-notice-title').value.trim();
     const editor = document.getElementById('admin-notice-editor');
-    const content = editor.innerHTML;
+    
+    // [보안 강화] 공지사항 배포 전 HTML 소독 수행
+    const rawContent = editor.innerHTML;
+    const content = DOMPurify.sanitize(rawContent);
+    
     if (!title || content === "" || content === "<br>") { alert("공지 제목과 내용을 입력하세요."); return; }
 
     try {
@@ -6348,6 +6335,153 @@ async function saveNotiSettings() {
         alert("알림 설정 저장 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
 }
+
+function initFirebaseRealtime() {
+    // [보안 지침 1단계] 누구나 볼 수 있는 공공 데이터 감시 (allow read: if true)
+    
+    // 1. 커뮤니티 게시판 동기화
+    window.onSnapshot(window.collection(window.db, "community_posts"), (snapshot) => {
+        let posts = [];
+        snapshot.forEach((doc) => posts.push(doc.data()));
+        posts.sort((a, b) => b.time - a.time);
+        localStorage.setItem('sparring_community_posts', JSON.stringify(posts));
+        
+        renderFeed(); 
+        renderPopularSparring();
+        startNoticeSlider(); 
+
+        if (document.getElementById('board').classList.contains('active')) renderCommunity();
+        if (document.getElementById('post-detail').classList.contains('active') && currentPostId) openPostDetail(currentPostId);
+        if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdminNoticeList();
+    });
+
+    // 2. 체육관 레지스트리 동기화
+    window.onSnapshot(window.collection(window.db, "gyms_registry"), (snapshot) => {
+        let gyms = [];
+        snapshot.forEach((doc) => gyms.push(doc.data()));
+        localStorage.setItem('sparring_gyms_registry', JSON.stringify(gyms));
+        renderGyms();
+        if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdminGymManagement();
+    });
+
+    // 관리자 전용 리스너 실행 플래그
+    let adminListenersStarted = false;
+
+    // [보안 지침 2단계] 로그인 상태 및 권한 감지 후 민감 데이터 접근 (allow read: if request.auth != null)
+    window.onAuthStateChanged(window.auth, async (user) => {
+        if (user) {
+            const inputId = user.email.split('@')[0];
+            
+            // A. 내 프로필 및 권한 상태 감시
+            const userRef = window.doc(window.db, "users", inputId);
+            window.onSnapshot(userRef, (doc) => {
+                if (doc.exists()) {
+                    const freshData = doc.data();
+                    
+                    if (!currentUser || currentUser.isAdmin !== freshData.isAdmin) {
+                        console.log("서버 보안 권한 동기화 완료");
+                    }
+                    
+                    currentUser = freshData;
+                    localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+                    updateLoginStateUI();
+                    renderPlayers();
+                    updateMatchBadge();
+
+                    // 🔥 [핵심 보안] 관리자 권한이 서버로부터 확인된 '직후'에만 관리자 데이터에 접근합니다.
+                    if (currentUser.isAdmin && !adminListenersStarted) {
+                        adminListenersStarted = true;
+                        
+                        // 관리자 1: 가입 신청 대기자 감시 (allow read: if isAdmin())
+                        window.onSnapshot(window.collection(window.db, "pendingUsers"), (snapshot) => {
+                            let pending = [];
+                            snapshot.forEach((doc) => {
+                                pending.push({ ...doc.data(), firebaseId: doc.id });
+                            });
+                            localStorage.setItem('sparring_pending_users', JSON.stringify(pending));
+                            if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdmin();
+                        });
+                    }
+                } else {
+                    currentUser = null;
+                    localStorage.removeItem('sparring_session');
+                }
+            });
+
+            // B. 매칭 현황 동기화
+            window.onSnapshot(window.collection(window.db, "matches"), (snapshot) => {
+                let matches = [];
+                snapshot.forEach((doc) => matches.push(doc.data()));
+                localStorage.setItem('sparring_matches', JSON.stringify(matches));
+                
+                renderFeed();
+                if (document.getElementById('players').classList.contains('active')) renderPlayers();
+                if (document.getElementById('matchStatusModal').style.display === 'flex') renderMatchList();
+                if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdminMatchManagement();
+            });
+
+            // C. 전체 승인된 선수 명단 동기화
+            window.onSnapshot(window.collection(window.db, "users"), (snapshot) => {
+                let players = [];
+                snapshot.forEach((doc) => players.push(doc.data()));
+                
+                demoPlayers = players;
+                localStorage.setItem('sparring_approved_users', JSON.stringify(players));
+                
+                if (currentUser) {
+                    const updatedMe = players.find(p => p.rawName === currentUser.rawName);
+                    if (updatedMe) {
+                        currentUser = updatedMe;
+                        localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+                    }
+                }
+                
+                renderFeed();
+                renderPlayers();
+                renderGyms();
+                if (currentUser) updateLoginStateUI();
+                
+                const profileModal = document.getElementById('profileModal');
+                if (profileModal && profileModal.style.display === 'flex' && typeof profileOwnerId !== 'undefined' && profileOwnerId !== null) {
+                    const p = players.find(x => String(x.id) === String(profileOwnerId));
+                    if (p) {
+                        const isOwner = currentUser && String(p.id) === String(currentUser.id);
+                        renderProfileStories(p, isOwner);
+                        
+                        const recEl = document.getElementById('pm-season-rec');
+                        const ptEl = document.getElementById('pm-season-pt');
+                        const trustEl = document.getElementById('pm-trust');
+                        
+                        if(recEl) recEl.innerText = `${p.sW || 0}승 ${p.sD || 0}무 ${p.sL || 0}패`;
+                        if(ptEl) ptEl.innerText = `${(p.pt || 0).toLocaleString()} P`;
+                        if(trustEl) trustEl.innerText = `${p.trustScore || 0} P`;
+                    }
+                }
+
+                if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) {
+                    renderAdmin();
+                }
+            });
+
+            // D. 경기 결과 기록 요청 동기화
+            window.onSnapshot(window.collection(window.db, "record_requests"), (snapshot) => {
+                let reqs = [];
+                snapshot.forEach((doc) => reqs.push(doc.data()));
+                localStorage.setItem('sparring_record_requests', JSON.stringify(reqs));
+                
+                renderFeed();
+                if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdmin();
+            });
+
+        } else {
+            // 로그아웃 상태일 때
+            currentUser = null;
+            adminListenersStarted = false; // 권한 초기화
+            localStorage.removeItem('sparring_session');
+        }
+    });
+}
+
 </script>
 <div id="storyViewer" class="story-viewer">
     <span class="story-close" onclick="closeStoryViewer()">&times;</span>
