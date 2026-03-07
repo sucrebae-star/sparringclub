@@ -1107,14 +1107,20 @@ let currentSearchQuery = '';
 
 // 브라우저가 설치 가능 상태가 되면 실행됨
 window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault(); // 기본 팝업 방지
-    deferredPrompt = e; // 이벤트를 저장해두었다가 나중에 실행
+    // 기본 브라우저 설치 알림창이 자동으로 뜨는 것을 막고 변수에 저장
+    e.preventDefault();
+    deferredPrompt = e; 
     
-    // 설치 가능한 상태가 되면 숨겨둔 앱 설치 버튼을 다시 보이게 처리
+    // 이미 설치된 상태인지 확인
     let isPWAInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    
+    // 설치 버튼 가시성 제어
     const installBtns = document.querySelectorAll('#install-app-btn');
     if (!isPWAInstalled) {
-        installBtns.forEach(btn => btn.style.display = 'inline-block');
+        installBtns.forEach(btn => {
+            btn.style.setProperty('display', 'inline-block', 'important');
+        });
+        console.log("PWA 설치 가능 상태: 버튼 활성화");
     }
 });
 
@@ -5310,16 +5316,38 @@ function showPWAInstallGuide() {
     }
 }
 
-function installPWA() {
-    // [수정] 에러를 유발할 수 있는 직접적인 prompt() 호출을 피하고 모든 OS에서 안내 팝업/가이드를 노출하는 방식으로 개선
+async function installPWA() {
+    // 1. iOS(아이폰/아이패드)인 경우 수동 설치 안내 모달 노출
     if (isIOS()) {
         openModal('iosInstallModal');
+        return;
+    }
+
+    // 2. 안드로이드 또는 크롬(PC) 환경에서 설치 이벤트가 캡처된 경우
+    if (deferredPrompt) {
+        // 저장해둔 설치 팝업 실행
+        deferredPrompt.prompt();
+        
+        // 사용자의 선택 결과 확인
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`사용자 설치 선택 결과: ${outcome}`);
+        
+        // 사용자가 설치했든 취소했든 이벤트는 1회용이므로 초기화
+        deferredPrompt = null;
+        
+        // 설치 성공 시 버튼 숨기기
+        if (outcome === 'accepted') {
+            const installBtns = document.querySelectorAll('#install-app-btn');
+            installBtns.forEach(btn => btn.style.display = 'none');
+            const banner = document.getElementById('pwa-install-banner');
+            if(banner) banner.style.display = 'none';
+        }
     } else {
-        // PWA 설치 배너(가이드) 강제 노출
+        // 설치 이벤트가 아직 발생하지 않았거나 이미 설치된 경우 가이드 배너 노출
         const banner = document.getElementById('pwa-install-banner');
         if(banner) {
             banner.style.display = 'flex';
-            showToast("브라우저 하단의 팝업 또는 메뉴의 '홈 화면에 추가'를 이용해 주세요.");
+            showToast("이미 설치되어 있거나, 브라우저 메뉴의 '홈 화면에 추가'를 이용해 주세요.");
         } else {
             alert("브라우저 설정 메뉴에서 '홈 화면에 추가' 또는 '앱 설치'를 선택해 주세요.");
         }
@@ -5341,9 +5369,13 @@ window.onload = function() {
 
     // 일정 시간 후 미설치 유저에게 배너 표시 (가입 외 자연스러운 노출)
     setTimeout(() => {
-        if (!isPWAInstalled && !localStorage.getItem('sparring_pwa_dismissed')) {
-            if (!isIOS() && deferredPrompt) {
-                document.getElementById('pwa-install-banner').style.display = 'flex';
+        const isActuallyInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        
+        if (!isActuallyInstalled && !localStorage.getItem('sparring_pwa_dismissed')) {
+            // 안드로이드/PC는 설치 프롬프트가 준비되었을 때, iOS는 항상 노출 가능
+            if (isIOS() || deferredPrompt) {
+                const banner = document.getElementById('pwa-install-banner');
+                if(banner) banner.style.display = 'flex';
             }
         }
     }, 4000);
