@@ -631,6 +631,7 @@
             
             <label>주 활동 지역</label>
             <select id="signup-region">
+                <option value="" disabled selected>지역 선택</option>
                 <optgroup label="특별시/광역시">
                     <option value="서울">서울특별시</option><option value="부산">부산광역시</option>
                     <option value="대구">대구광역시</option><option value="인천">인천광역시</option>
@@ -640,7 +641,7 @@
                 <optgroup label="도 단위">
                     <option value="경기">경기도</option><option value="강원">강원도</option>
                     <option value="충북">충청북도</option><option value="충남">충청남도</option>
-                    <option value="전북" selected>전라북도</option><option value="전남">전라남도</option>
+                    <option value="전북">전라북도</option><option value="전남">전라남도</option>
                     <option value="경북">경상북도</option><option value="경남">경상남도</option>
                     <option value="제주">제주특별자치도</option>
                 </optgroup>
@@ -1267,7 +1268,9 @@ window.onload = async function() {
     const toggleRecordEl = document.getElementById('admin-auto-approve-toggle');
     if (toggleRecordEl) toggleRecordEl.checked = autoApprove;
 
-    let autoJoin = localStorage.getItem('sparring_auto_join') === 'true';
+    // [핵심 변경] 복서 리스트 자동 등록을 위해 기본값을 'true'로 설정
+    let autoJoinStr = localStorage.getItem('sparring_auto_join');
+    let autoJoin = autoJoinStr !== null ? autoJoinStr === 'true' : true; 
     const toggleJoinEl = document.getElementById('admin-auto-join-toggle');
     if (toggleJoinEl) toggleJoinEl.checked = autoJoin;
 
@@ -1397,6 +1400,7 @@ function initFirebaseRealtime() {
                 renderFeed();
                 renderPlayers();
                 renderGyms();
+                renderNewMembers(); // [버그 수정] 다른 기기나 백그라운드에서 신규 유저가 서버에 감지되었을 때 '신규 가입 소식'도 실시간으로 렌더링되도록 누락된 로직 추가
                 if (currentUser) updateLoginStateUI();
                 
                 const profileModal = document.getElementById('profileModal');
@@ -1640,67 +1644,86 @@ function changeMatchingRegion() {
     renderPlayers();
 }
 
-// 🔥 [최종 10단계] 선수 리스트 렌더링 - 랭킹 메달 및 체육관 연동 레이아웃 완성
+// 🔥 [최종 10단계] 선수 리스트 렌더링 - 구형 모바일 브라우저 호환성 완벽 해결 및 안전성 강화
 function renderPlayers() {
     const container = document.getElementById('tier-container');
-    let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-    let isTestModeOn = localStorage.getItem('sparring_test_mode') === 'true';
-    let mergedPlayers = isTestModeOn ? [...demoPlayers, ...testBots] : demoPlayers;
-    
-    // [1] 관리자 제외 및 테스트 데이터 필터링
-    let basePlayers = mergedPlayers.filter(p => !p.isAdmin && p.rawName !== 'admin');
-    if (!isTestModeOn) basePlayers = basePlayers.filter(p => !p.isDummy);
+    if (!container) return;
 
-    // [2] 조건 필터링 (티어 & 지역)
-    let filteredPlayers = basePlayers;
-    if (currentMatchingTier !== 'all') filteredPlayers = filteredPlayers.filter(p => String(p.tier) === String(currentMatchingTier));
-    if (currentMatchingRegion !== 'all') filteredPlayers = filteredPlayers.filter(p => p.region === currentMatchingRegion);
+    try {
+        let allMatches = [];
+        try {
+            allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
+        } catch(e) {}
 
-    // [3] 포인트순 정렬
-    filteredPlayers.sort((a, b) => (b.pt || 0) - (a.pt || 0));
+        let isTestModeOn = localStorage.getItem('sparring_test_mode') === 'true';
+        let mergedPlayers = isTestModeOn ? [...(demoPlayers||[]), ...(testBots||[])] : (demoPlayers||[]);
+        
+        // [1] 관리자 및 체육관 매니저 제외, 테스트 데이터 필터링 (복서 리스트에는 순수 선수만 노출되도록 버그 수정)
+        let basePlayers = mergedPlayers.filter(p => p && p.isAdmin !== true && p.rawName !== 'admin' && p.role !== 'manager');
+        if (!isTestModeOn) basePlayers = basePlayers.filter(p => p && p.isDummy !== true);
 
-    let html = `<div class="tier-list">`;
-    if(filteredPlayers.length > 0) {
-        filteredPlayers.forEach((p, idx) => {
-            const isMe = currentUser && String(currentUser.id) === String(p.id);
-            const activeMatch = allMatches.find(m => m.status !== '종료' && 
-                ((m.senderRawName === currentUser?.rawName && m.receiverRawName === p.rawName) ||
-                 (m.senderRawName === p.rawName && m.receiverRawName === currentUser?.rawName)));
+        // [2] 조건 필터링 (티어 & 지역)
+        let filteredPlayers = basePlayers;
+        if (currentMatchingTier !== 'all') filteredPlayers = filteredPlayers.filter(p => String(p.tier) === String(currentMatchingTier));
+        if (currentMatchingRegion !== 'all') filteredPlayers = filteredPlayers.filter(p => p.region === currentMatchingRegion);
 
-            // 버튼 로직
-            let btnHtml = isMe ? '' : (activeMatch ? 
-                `<button class="btn-match" style="background:#333; color:var(--gold); border:1px solid var(--gold);" onclick="openChat(${activeMatch.id}); openModal('matchStatusModal');">진행중</button>` :
-                `<button class="btn-match" onclick="requestMatch(${p.id})">매칭 신청</button>`);
+        // [3] 포인트순 정렬
+        filteredPlayers.sort((a, b) => (b.pt || 0) - (a.pt || 0));
 
-            const currentTierColor = `var(--tier${p.tier})`;
-            const rankMedal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '🎖️'));
-            const avatarStyle = p.profilePic ? `background-image: url('${p.profilePic}');` : '';
+        let html = `<div class="tier-list">`;
+        if(filteredPlayers.length > 0) {
+            filteredPlayers.forEach((p, idx) => {
+                // 브라우저 호환성을 위해 ?. (Optional Chaining) 문법 제거 및 방어 로직 적용
+                const currentUserName = currentUser ? currentUser.rawName : null;
+                const isMe = currentUserName && String(currentUser.id) === String(p.id);
+                
+                let activeMatch = null;
+                if (currentUserName && p.rawName) {
+                    activeMatch = allMatches.find(m => m.status !== '종료' && 
+                        ((m.senderRawName === currentUserName && m.receiverRawName === p.rawName) ||
+                         (m.senderRawName === p.rawName && m.receiverRawName === currentUserName)));
+                }
 
-            html += `
-            <div class="player-card" style="${idx === 0 ? 'border:1px solid ' + currentTierColor : ''}">
-                <div style="display:flex; align-items:center; gap:12px; flex:1; overflow:hidden;">
-                    <div class="avatar" style="border:2px solid ${currentTierColor}; ${avatarStyle} width:55px; height:55px; flex-shrink:0;"></div>
-                    <div style="flex:1; overflow:hidden;">
-                        <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color:${currentTierColor}; font-weight:bold; font-size:0.8rem;">${rankMedal} ${idx + 1}위</div>
-                        <div style="display:flex; align-items:center; gap:5px; margin:2px 0; overflow:hidden; white-space:nowrap;">
-                            <span class="clickable-name" onclick="openProfile('${p.id}')" style="font-size:1.1rem; font-weight:900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50%;">${p.name}</span>
-                            <span style="color:var(--gold); font-size:0.75rem; overflow:hidden; text-overflow:ellipsis; white-space: nowrap;">
-                                [${(p.weight || '').replace('급','') || '미정'} · ${p.gym || '무소속'}]
-                            </span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem;">
-                            <b style="color:var(--gold); flex-shrink:0;">${(p.pt || 0).toLocaleString()} <small>P</small></b>
-                            <span style="color:#aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left:5px;">시즌 ${p.sW || 0}승 ${p.sD || 0}무 ${p.sL || 0}패</span>
+                // 버튼 로직
+                let btnHtml = isMe ? '' : (activeMatch ? 
+                    `<button class="btn-match" style="background:#333; color:var(--gold); border:1px solid var(--gold);" onclick="openChat(${activeMatch.id}); openModal('matchStatusModal');">진행중</button>` :
+                    `<button class="btn-match" onclick="requestMatch(${p.id})">매칭 신청</button>`);
+
+                const currentTierColor = `var(--tier${p.tier || 1})`;
+                const rankMedal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '🎖️'));
+                const avatarStyle = p.profilePic ? `background-image: url('${p.profilePic}');` : '';
+                const weightText = (p.weight || '').replace('급', '') || '미정';
+                const gymText = p.gym || '무소속';
+
+                html += `
+                <div class="player-card" style="${idx === 0 ? 'border:1px solid ' + currentTierColor : ''}">
+                    <div style="display:flex; align-items:center; gap:12px; flex:1; overflow:hidden;">
+                        <div class="avatar" style="border:2px solid ${currentTierColor}; ${avatarStyle} width:55px; height:55px; flex-shrink:0;"></div>
+                        <div style="flex:1; overflow:hidden;">
+                            <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color:${currentTierColor}; font-weight:bold; font-size:0.8rem;">${rankMedal} ${idx + 1}위</div>
+                            <div style="display:flex; align-items:center; gap:5px; margin:2px 0; overflow:hidden; white-space:nowrap;">
+                                <span class="clickable-name" onclick="openProfile('${p.id}')" style="font-size:1.1rem; font-weight:900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50%;">${p.name || '이름없음'}</span>
+                                <span style="color:var(--gold); font-size:0.75rem; overflow:hidden; text-overflow:ellipsis; white-space: nowrap;">
+                                    [${weightText} · ${gymText}]
+                                </span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem;">
+                                <b style="color:var(--gold); flex-shrink:0;">${(p.pt || 0).toLocaleString()} <small>P</small></b>
+                                <span style="color:#aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left:5px;">시즌 ${p.sW || 0}승 ${p.sD || 0}무 ${p.sL || 0}패</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div style="flex-shrink:0; margin-left:5px;">${btnHtml}</div>
-            </div>`;
-        });
-    } else {
-        html += `<div style="text-align:center; padding:50px; color:#666; font-weight:bold;">선수 없음</div>`;
+                    <div style="flex-shrink:0; margin-left:5px;">${btnHtml}</div>
+                </div>`;
+            });
+        } else {
+            html += `<div style="text-align:center; padding:50px; color:#aaa; font-size: 1.1rem; font-weight:bold; background:#1a1a1a; border-radius:12px; border:1px dashed #444;">선수 없음</div>`;
+        }
+        container.innerHTML = html + `</div>`;
+    } catch (err) {
+        console.error("renderPlayers 렌더링 오류:", err);
+        container.innerHTML = `<div style="text-align:center; padding:50px; color:#ff7675; background:#1a1a1a; border-radius:12px; border:1px dashed #444;">데이터 렌더링 중 오류가 발생했습니다.<br>화면을 새로고침 해주세요.</div>`;
     }
-    container.innerHTML = html + `</div>`;
 }
 
 // --- 전역 상태 변수 추가 ---
@@ -1899,11 +1922,26 @@ function renderCommunity() {
             let commentCount = (post.comments && Array.isArray(post.comments)) ? post.comments.length : 0;
             let likeCount = (post.likes && Array.isArray(post.likes)) ? post.likes.length : 0;
             
+            let titleDisplay = post.title;
+            let matchCodeBadge = '';
+            
+            if (post.prefix === '[경기결과]') {
+                const matchCodeMatch = post.title.match(/\[(Sparring [0-9]+|Test [0-9]+)\]/i) || post.title.match(/\[(.*?)\]/);
+                if (matchCodeMatch && matchCodeMatch[1] && matchCodeMatch[1] !== '경기결과') {
+                    const matchCode = matchCodeMatch[1]; 
+                    matchCodeBadge = `<div style="display:inline-block; background: var(--tier2); color: white; font-size: 0.65rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-bottom: 4px;">${matchCode}</div><br>`;
+                    titleDisplay = post.title.replace(`[${matchCode}]`, '').trim();
+                }
+            }
+            
             html += `
             <div class="post-item" onclick="openPostDetail(${post.id})">
                 <div class="post-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; width: 100%;">
-                    <span class="post-badge" style="margin-right:5px; padding:1px 4px; font-size:0.7rem; flex-shrink: 0; vertical-align: middle;">${post.prefix}</span>
-                    <span style="color:#fff; font-weight:500; vertical-align: middle;">${colorizeTitle(post.title)}${attachIcon}</span>
+                    <div style="display: inline-block; vertical-align: middle; margin-right: 5px; text-align: center;">
+                        ${matchCodeBadge}
+                        <span class="post-badge" style="padding:1px 4px; font-size:0.7rem; display: inline-block;">${post.prefix}</span>
+                    </div>
+                    <span style="color:#fff; font-weight:500; vertical-align: middle;">${colorizeTitle(titleDisplay)}${attachIcon}</span>
                 </div>
                 <div class="post-info-row" style="margin-top:4px; display: flex; justify-content: space-between; overflow: hidden;">
                     <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0;">
@@ -2872,7 +2910,7 @@ async function rejectUser(firebaseId) {
 /* 중복되었던 옛날 방식의 rejectUser 함수는 삭제 완료 */
 
 // [보안 강화] 관리자 권한 이중 검증 및 원자적 삭제 로직
-// [보안 강화] 관리자 권한 이중 검증 및 원자적 삭제 로직
+// [보안 강화] 관리자 권한 이중 검증 및 원자적 삭제 로직 (UI 갱신 및 Firebase Auth 안내 포함)
 async function adminDeleteMember(id) {
     // 1. 프론트엔드 1차 방어: 현재 세션의 관리자 플래그 확인
     if (!currentUser || !currentUser.isAdmin) {
@@ -2890,10 +2928,7 @@ async function adminDeleteMember(id) {
     try {
         const docName = targetUser.rawName;
         
-        // [핵심 보안] 실제 서버에 삭제 요청을 보낼 때, 만약 사용자가 isAdmin을 조작했다면
-        // 위에서 설정한 Security Rules가 작동하여 아래의 모든 deleteDoc 요청이 403 Forbidden으로 거부됩니다.
-        
-        // 1. 게시글 삭제 (Promise.all 사용하여 속도 및 안정성 향상)
+        // 1. 게시글 삭제
         const postSnap = await window.getDocs(window.collection(window.db, "community_posts"));
         const postDeletes = [];
         postSnap.forEach((pDoc) => {
@@ -2916,7 +2951,7 @@ async function adminDeleteMember(id) {
         await Promise.all(matchDeletes);
         window.updateUploadProgress(70, "매칭 기록 정리 완료...");
 
-        // 3. 유저 문서 최종 삭제
+        // 3. 유저 문서(Firestore) 최종 삭제
         await window.deleteDoc(window.doc(window.db, "users", docName));
         
         window.updateUploadProgress(100, "회원 삭제 성공!");
@@ -2924,12 +2959,23 @@ async function adminDeleteMember(id) {
         if (currentUser && currentUser.rawName === docName) {
             logout();
         } else {
-            alert('해당 회원의 모든 정보가 안전하게 파기되었습니다.');
+            alert('해당 회원의 모든 정보가 안전하게 파기되었습니다.\n(참고: 클라이언트 보안 정책상 Firebase Authentication 로그인 계정 완전 파기는 Firebase 콘솔에서 직접 삭제하셔야 합니다.)');
+            
+            // 삭제 후 로컬 배열에서 즉시 제거하여 UI 강제 새로고침
+            demoPlayers = demoPlayers.filter(p => p.rawName !== docName);
+            const localApproved = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
+            localStorage.setItem('sparring_approved_users', JSON.stringify(localApproved.filter(p => p.rawName !== docName)));
+            
+            // 관리자 화면 및 복서 리스트 즉시 리프레시
+            if(document.getElementById('admin-dashboard').classList.contains('active')) {
+                searchAdminMembers();
+            }
+            renderPlayers();
+            renderNewMembers();
         }
     } catch(e) { 
         console.error("보안 거부 또는 시스템 오류:", e);
         window.updateUploadProgress(100);
-        // Security Rules에 의해 거부된 경우 명확한 안내
         if (e.code === 'permission-denied') {
             alert("서버 보안 정책에 의해 요청이 거부되었습니다. (관리자 권한 없음)");
         } else {
@@ -3867,21 +3913,31 @@ function renderNewMembers() {
         approved = [...approved, ...testBots];
     }
 
-    // [핵심 변경] 관리자 계정 완전 배제 (ID가 admin이거나 역할이 관리자인 계정)
+    // 관리자 계정 완전 배제
     let validMembers = approved.filter(p => p.isAdmin !== true && p.rawName !== 'admin' && p.role !== 'admin');
     
-    // 🔥 [신규] TEST 모드 로직 반전 적용: OFF일 때 가상 데이터 완전 숨김
+    // TEST 모드 로직 반전 적용
     if (!isTestModeOn) {
         validMembers = validMembers.filter(p => p.isDummy !== true && (!p.rawName || !p.rawName.includes('[test]')) && !p.rawName.includes('테스트'));
     }
 
-    // 🔥 [수정] 최대 5개 노출로 변경
+    // [신규] rawName을 기준으로 한 완벽한 중복 제거 로직 추가
+    const uniqueMembers = [];
+    const seen = new Set();
+    for (const member of validMembers) {
+        if (!seen.has(member.rawName)) {
+            seen.add(member.rawName);
+            uniqueMembers.push(member);
+        }
+    }
+    validMembers = uniqueMembers;
+
+    // 최대 5개 노출로 변경
     let recent = validMembers.slice(-5).reverse(); 
     if (recent.length === 0) { container.innerHTML = "<div style='text-align:center; color:#666; padding: 10px 0;'>최근 가입한 회원이 없습니다.</div>"; return; }
     
     let html = '';
     recent.forEach(u => {
-        // 🔥 [수정] 한 줄 표기 및 말줄임표 처리 레이아웃 최적화
         html += `<div style="padding: 8px 0; border-bottom: 1px dashed #444; display: flex; align-items: center; width: 100%;">
             <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor:pointer; flex: 0 1 auto; max-width: calc(100% - 120px);" onclick="openProfile(${u.id})">
                 <b style="color:white;">${formatName(u)}</b>
@@ -3894,12 +3950,25 @@ function renderNewMembers() {
 
 // 뒤로가기 제스처/버튼 시 브라우저 종료 방지 및 화면 제어
 window.addEventListener('popstate', function(event) {
-    // 1. 열려있는 모달이 있다면 가장 먼저 모두 닫음
+    // 1. 뒤로가기 시 현재 해시(hash)와 일치하지 않는 모달만 닫도록 처리 (다중 모달 중첩 버그 해결)
     const openModals = Array.from(document.querySelectorAll('.modal')).filter(m => m.style.display === 'flex');
+    
     if (openModals.length > 0) {
-        openModals.forEach(m => m.style.display = 'none');
-        return;
+        const currentHash = location.hash;
+
+        openModals.forEach(m => {
+            // 현재 url의 해시값이 이 모달을 가리키지 않는다면 닫기 (크롭 모달 등 상위 모달만 닫힘)
+            if (currentHash !== "#modal-" + m.id) {
+                m.style.display = 'none';
+            }
+        });
+        
+        // 해시가 특정 모달을 가리키고 있다면(예: 회원가입 폼 유지 중) 페이지 뒤로가기 로직 중단
+        if (currentHash.startsWith("#modal-")) {
+            return;
+        }
     }
+    
     // 2. 히스토리 상태에 페이지 정보가 있다면 해당 페이지로 이동 (히스토리 추가 없이)
     if (event.state && event.state.pageId) {
         showPage(event.state.pageId, false);
@@ -3920,9 +3989,15 @@ function showPage(pageId, pushHistory = true) {
         history.pushState({ pageId: pageId }, "", "#" + pageId);
     }
 
+    // 탭 이동 시 항상 스크롤의 처음 시작위치는 최상단으로 고정
+    window.scrollTo(0, 0);
+
     if(pageId === 'admin-dashboard') renderAdmin();
     if(pageId === 'record') renderRecordMatchSelect();
     if(pageId === 'board') renderCommunity();
+    // [버그 수정] 각 탭 진입 시 실시간 최신 데이터로 화면을 즉시 강제 동기화하여 누락 오류 방지
+    if(pageId === 'players') renderPlayers(); 
+    if(pageId === 'gyms') renderGyms();
 }
 
 function openModal(modalId) { 
@@ -4790,7 +4865,7 @@ function checkSignupAgreements() {
     }
 }
 
-// 8단계 수정: 체육관 연동 최적화 및 가입 프로세스 보안 강화
+// 8단계 수정: 체육관 연동 최적화 및 가입 프로세스 보안 강화 (가입 자동 승인 기본값 true)
 async function submitSignup() {
     if (!isDuplicateChecked) { alert('아이디 중복조회를 먼저 해주세요.'); return; }
 
@@ -4832,7 +4907,7 @@ async function submitSignup() {
 
         const userData = { 
             rawName: inputId, name: inputId, gymId: finalGymId, gym: gymName, 
-            role: role, tier: document.getElementById('signup-tier').value, 
+            role: role, tier: parseInt(document.getElementById('signup-tier').value, 10),
             region: document.getElementById('signup-region').value,
             weight: document.getElementById('signup-weight').value,
             height: document.getElementById('signup-height').value,
@@ -4843,7 +4918,10 @@ async function submitSignup() {
             matchingTrust: 100, decisionTrust: 100, dailyMatchCount: 0
         };
 
-        const isAuto = localStorage.getItem('sparring_auto_join') === 'true';
+        // [핵심 변경] 사용자가 별도로 끄지 않았다면 무조건 가입 자동 등록되게 처리 (기본값 true)
+        const autoJoinStr = localStorage.getItem('sparring_auto_join');
+        const isAuto = autoJoinStr !== null ? autoJoinStr === 'true' : true; 
+
         if (isAuto) {
             const newUserId = Date.now();
             userData.id = newUserId;
@@ -4854,12 +4932,23 @@ async function submitSignup() {
             localStorage.setItem('sparring_session', JSON.stringify(currentUser));
             updateLoginStateUI();
             
-            alert('가입과 동시에 승인되어 자동 로그인되었습니다! 🥊');
+            // 로컬 메모리에 중복 없이 즉시 추가하여 UI 강제 갱신
+            let approved = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
+            approved = approved.filter(p => p.rawName !== userData.rawName); // 중복 방지
+            approved.push(userData);
+            localStorage.setItem('sparring_approved_users', JSON.stringify(approved));
+            demoPlayers = approved;
+            
+            renderNewMembers();
+            renderPlayers();
+            renderGyms();
+            
+            alert('가입과 동시에 승인되어 복서 리스트에 자동 등록 및 로그인되었습니다! 🥊');
             closeModal('loginModal');
             showPage('dashboard');
         } else {
             await window.addDoc(window.collection(window.db, "pendingUsers"), userData);
-            alert('가입 신청 완료! 관장님 승인 후 로그인이 가능합니다.');
+            alert('가입 신청 완료! 관리자 승인 후 로그인이 가능합니다.');
             closeModal('loginModal');
         }
         window.updateUploadProgress(100);
@@ -4907,38 +4996,43 @@ async function applyCrop() {
 
     if (currentCropContext === 'profile') {
         if(currentUser) {
-            try {
-                alert("고화질 사진을 서버 창고(Storage)에 안전하게 전송 중입니다...");
-                
-                // 1. Base64를 파일(Blob)로 변환
-                const blob = await (await fetch(base64Data)).blob();
-                
-                // 2. Storage 업로드 (파일명: 유저ID.jpg)
-                const storageRef = window.ref(window.storage, `profile_pics/${currentUser.rawName}.jpg`);
-                const snapshot = await window.uploadBytes(storageRef, blob);
-                const downloadURL = await window.getDownloadURL(snapshot.ref);
+            closeModal('cropperModal');
+            setTimeout(async () => {
+                try {
+                    alert("고화질 사진을 서버 창고(Storage)에 안전하게 전송 중입니다...");
+                    
+                    // 1. Base64를 파일(Blob)로 변환
+                    const blob = await (await fetch(base64Data)).blob();
+                    
+                    // 2. Storage 업로드 (파일명: 유저ID.jpg)
+                    const storageRef = window.ref(window.storage, `profile_pics/${currentUser.rawName}.jpg`);
+                    const snapshot = await window.uploadBytes(storageRef, blob);
+                    const downloadURL = await window.getDownloadURL(snapshot.ref);
 
-                // 3. 데이터베이스에는 주소값(URL)만 저장
-                const userRef = window.doc(window.db, "users", currentUser.rawName);
-                await window.updateDoc(userRef, { profilePic: downloadURL });
-                
-                currentUser.profilePic = downloadURL;
-                localStorage.setItem('sparring_session', JSON.stringify(currentUser));
-                document.getElementById('pm-avatar').style.backgroundImage = `url('${downloadURL}')`;
-                alert('프로필 사진이 모든 기기에서 동기화되었습니다! 🥊');
-            } catch(e) { 
-                console.error(e);
-                alert("사진 저장 실패: Firebase Storage의 Rules 설정을 다시 확인해주세요."); 
-            }
+                    // 3. 데이터베이스에는 주소값(URL)만 저장
+                    const userRef = window.doc(window.db, "users", currentUser.rawName);
+                    await window.updateDoc(userRef, { profilePic: downloadURL });
+                    
+                    currentUser.profilePic = downloadURL;
+                    localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+                    document.getElementById('pm-avatar').style.backgroundImage = `url('${downloadURL}')`;
+                    alert('프로필 사진이 모든 기기에서 동기화되었습니다! 🥊');
+                } catch(e) { 
+                    console.error(e);
+                    alert("사진 저장 실패: Firebase Storage의 Rules 설정을 다시 확인해주세요."); 
+                }
+            }, 100);
         }
     } else if (currentCropContext === 'signup') {
         pendingSignupPic = base64Data; 
         const preview = document.getElementById('signup-pic-preview');
         preview.style.backgroundImage = `url('${base64Data}')`;
         preview.style.display = 'block';
-        alert('가입용 사진이 지정되었습니다. 신청 완료 버튼을 눌러주세요!');
+        closeModal('cropperModal');
+        setTimeout(() => {
+            alert('가입용 사진이 지정되었습니다. 신청 완료 버튼을 눌러주세요!');
+        }, 100);
     }
-    closeModal('cropperModal');
 }
 
 function renderPagination(totalPages) {
@@ -5248,6 +5342,7 @@ async function resetBackground() {
         tx.oncomplete = () => {
             document.body.classList.remove('custom-bg-active');
             document.body.style.removeProperty('--bg-url');
+            document.body.style.backgroundImage = '';
             document.getElementById('bg-preview-box').style.backgroundImage = '';
             document.getElementById('bg-preview-box').innerText = '배경 미리보기';
             alert("기본 배경으로 복구되었습니다.");
@@ -5262,6 +5357,11 @@ function applyBackground(url) {
     if (!url) return;
     document.body.classList.add('custom-bg-active');
     document.body.style.setProperty('--bg-url', `url('${url}')`);
+    document.body.style.backgroundImage = `url('${url}')`;
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundAttachment = 'fixed';
+    document.body.style.backgroundPosition = 'center center';
+    document.body.style.backgroundRepeat = 'no-repeat';
 }
 
 function renderPopularSparring() {
@@ -5794,12 +5894,8 @@ function viewGymStoryImage(url) {
     viewerImg.style.backgroundColor = "#000"; 
 }
 
-// 3. 페이지 전환 함수 수정 (기존 showPage 함수 내부에 추가 필요)
-const originalShowPage = showPage;
-showPage = function(pageId) {
-    originalShowPage(pageId);
-    if(pageId === 'gyms') renderGyms();
-};
+// 3. 페이지 전환 함수 수정 (showPage 내부로 안정적으로 통합 완료되어 중복 래퍼 삭제)
+// 불필요한 이중 렌더링 메모리 낭비를 방지하기 위해 코드를 비웁니다.
 
 function toggleViewMode() {
     document.body.classList.toggle('pc-mode');
