@@ -31,22 +31,30 @@
   import { getFirestore, collection, getDocs, getDoc, addDoc, updateDoc, doc, deleteDoc, setDoc, onSnapshot, query, orderBy, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
   import { getStorage, ref, uploadBytes, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
   import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
-  // 🔥 [보안 강화] Firebase Authentication 라이브러리 추가
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+// 🔥 [보안 강화] Firebase Authentication 라이브러리 추가
+import { getAuth, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyB_-4dxADvEU1__WrhSYjn0RQ096Hj1fX4",
-    authDomain: "sparringclub-c3676.firebaseapp.com",
-    projectId: "sparringclub-c3676",
-    storageBucket: "sparringclub-c3676.firebasestorage.app",
-    messagingSenderId: "81450971276",
-    appId: "1:81450971276:web:814b7de26564e28c3ccba9"
-  };
+const firebaseConfig = {
+apiKey: "AIzaSyB_-4dxADvEU1__WrhSYjn0RQ096Hj1fX4",
+authDomain: "sparringclub-c3676.firebaseapp.com",
+projectId: "sparringclub-c3676",
+storageBucket: "sparringclub-c3676.firebasestorage.app",
+messagingSenderId: "81450971276",
+appId: "1:81450971276:web:814b7de26564e28c3ccba9"
+};
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const storage = getStorage(app); // 🔥 Storage 초기화
-  const auth = getAuth(app);       // 🔥 [보안 강화] Auth 서비스 활성화
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const storage = getStorage(app); // 🔥 Storage 초기화
+const auth = getAuth(app);       // 🔥 [보안 강화] Auth 서비스 활성화
+
+// 새로고침 시 세션이 끊기지 않도록 브라우저 로컬 저장소에 인증 상태를 강제 고정합니다.
+setPersistence(auth, browserLocalPersistence)
+.then(() => console.log("세션 유지 설정 완료"))
+.catch((error) => console.error("세션 설정 오류:", error));
+
+// 🔥 [수정] Firebase 세션 영구 유지 설정 (새로고침 시 로그아웃되는 현상 완벽 차단)
+setPersistence(auth, browserLocalPersistence).catch((error) => console.error("세션 유지 설정 오류:", error));
   
 // FCM 초기화 (브라우저 지원 여부 확인 필요)
   let messaging = null;
@@ -1201,6 +1209,17 @@ window.onload = async function() {
         }
     });
 
+    // 🔥 [수정] 세션 복원 로직 추가 (새로고침 시 자동 로그아웃/화면 깜빡임 완벽 방지)
+    const savedSession = localStorage.getItem('sparring_session');
+    if (savedSession) {
+        try {
+            currentUser = JSON.parse(savedSession);
+            updateLoginStateUI(); // Firebase 인증이 완료되기 전, 즉시 로컬 세션으로 로그인 상태 UI 유지
+        } catch(e) {
+            console.warn("로컬 세션 파싱 오류:", e);
+        }
+    }
+
     console.log("보안 인증 서버로부터 세션 정보를 확인 중입니다...");
 
     // 3. 관리자 설정 로드
@@ -1303,6 +1322,9 @@ window.onAuthStateChanged(window.auth, async (user) => {
                         if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
                     }, (error) => { console.warn("대기 유저 목록 접근 실패:", error); });
                 }
+            } else {
+                // 🔥 [수정] DB에 문서가 당장 없다고 해서 즉시 로그아웃 시키지 않음 (가입 승인 대기자 등 보호)
+                console.warn("DB에서 사용자 정보를 찾을 수 없습니다. (승인 대기 중일 수 있음)");
             }
         }, (error) => { console.warn("내 정보 접근 실패:", error); });
         authenticatedListeners.push(userUnsub);
@@ -1324,9 +1346,11 @@ window.onAuthStateChanged(window.auth, async (user) => {
         }, (error) => { console.warn("기록 요청 접근 실패:", error); });
         authenticatedListeners.push(recordsUnsub);
     } else {
-        currentUser = null;
-        localStorage.removeItem('sparring_session');
-        updateLoginStateUI();
+        // 🔥 [수정] 명시적인 로그아웃 상태일 때만 초기화 진행
+        if (!localStorage.getItem('sparring_session')) {
+            currentUser = null;
+            updateLoginStateUI();
+        }
     }
 });
 }
@@ -1561,112 +1585,117 @@ function switchMatchingStance(stance) {
     renderPlayers();
 }
 
-// [최종 해결] 모든 일반 회원을 복서 리스트에 노출 (isDummy 필드 무시)
+// [최종 해결] 모든 일반 회원을 복서 리스트에 노출 (오류 방어 로직 완벽 적용)
 function renderPlayers() {
 const container = document.getElementById('tier-container');
 if (!container) return;
 
 try {
+    // 데이터가 비어있으면 로컬 스토리지에서 즉시 복원 시도
     if (!demoPlayers || demoPlayers.length === 0) {
         demoPlayers = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
     }
 
     let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
 
-    // 1. 기본 필터: Admin을 완벽하게 걸러냅니다. (데이터 누락 예방 조치 포함)
+    // 1. 관리자 제외 필터 (ID가 숫자형이든 문자열이든 상관없이 "admin" 키워드 체크)
     let basePlayers = demoPlayers.filter(p => {
         if (!p) return false;
-
-        const adminId = 'admin'; 
         const pIdStr = String(p.id || '');
         const pUserIdStr = String(p.userId || '');
-
-        // 🔥 관리자 계정만 정확히 필터링하고, 나머지 모든 회원은 전적/텍스트 유무 관계없이 무조건 통과!
-        if (pIdStr === adminId || pUserIdStr === adminId || p.isAdmin === true || p.role === 'admin') {
-            return false; 
-        }
-
-        return true; 
+        const pNameStr = String(p.rawName || '');
+        const isAd = pIdStr === 'admin' || pUserIdStr === 'admin' || pNameStr === 'admin' || p.isAdmin === true || p.role === 'admin';
+        return !isAd;
     });
 
-    // 2. 통합 필터링 (티어, 지역, 스탠스)
-    // 이미 가입된 회원 중 정보(키, 스탠스, 체급 등)가 누락된 경우라도 안전한 기본값을 부여하여 리스트에서 제외되지 않도록 보호
-    basePlayers = basePlayers.filter(p => {
-        const pTier = String(p.tier || 1);
-        const pRegion = p.region || '미정';
-        const pStance = p.stance || '미정';
+basePlayers = basePlayers.filter(p => {
+// 모든 필터가 전체보기('all')일 경우 불필요한 연산을 건너뛰고 100% 노출 (최적화)
+if (currentMatchingTier === 'all' && currentMatchingRegion === 'all' && currentMatchingStance === 'all') return true;
 
-        const tierPass = (currentMatchingTier === 'all') || (pTier === String(currentMatchingTier));
-        const regionPass = (currentMatchingRegion === 'all') || (pRegion === currentMatchingRegion);
-        const stancePass = (currentMatchingStance === 'all') || (pStance === currentMatchingStance);
-        
-        return tierPass && regionPass && stancePass;
-    });
+    // DB 데이터에 의도치 않은 공백이 포함되어 필터에서 누락되는 현상(.trim()) 원천 차단
+    const pTier = String(p.tier || 1).trim();
+    const pRegion = String(p.region || '미정').trim();
+    const pStance = String(p.stance || '미정').trim();
 
-    // 3. 점수(PT)순 정렬 (동점일 경우 최신 가입자 우선 노출 방어코드 적용)
-    basePlayers.sort((a, b) => {
-        const aPt = a.pt || 0;
-        const bPt = b.pt || 0;
-        if (bPt !== aPt) {
-            return bPt - aPt;
-        }
-        return (b.createdAt || 0) - (a.createdAt || 0);
-    });
+    // [티어 검증] 숫자/문자 타입 불일치 방지를 위해 엄격하게 문자열 비교
+    const tierPass = (currentMatchingTier === 'all') || (pTier === String(currentMatchingTier).trim());
+    
+    // [지역 검증] '서울' 검색 시 '서울특별시'와 같이 변형된 데이터도 잡히도록 includes 유지
+    const regionPass = (currentMatchingRegion === 'all') || (pRegion.includes(currentMatchingRegion.trim()));
+    
+    // [스탠스 검증] 포함(includes) 연산자 대신 정확한 일치(===)로 버그 원천 차단
+    const stancePass = (currentMatchingStance === 'all') || (pStance === currentMatchingStance.trim());
+    
+    return tierPass && regionPass && stancePass;
+});
+
+    // 3. 점수순 정렬 (Firebase의 숫자형 데이터를 안전하게 처리)
+    basePlayers.sort((a, b) => (Number(b.pt) || 0) - (Number(a.pt) || 0));
 
     let html = `<div class="tier-list">`;
     if (basePlayers.length > 0) {
         basePlayers.forEach((p, idx) => {
-            // 정보가 누락된 회원도 정상 노출되도록 기본값 100% 보장
-            const playerName = p.name || p.rawName || '무명 선수';
-            const playerWeight = p.weight || '체급미정';
-            const playerGym = p.gym || '무소속';
-            const playerTier = p.tier || 1;
-            const playerPt = p.pt || 0;
-            const playerSW = p.sW || 0;
-            const playerSD = p.sD || 0;
-            const playerSL = p.sL || 0;
-            const playerId = p.id;
-            const playerProfilePic = p.profilePic || '';
+            try {
+                const playerName = p.name || p.rawName || '무명 선수';
+                const playerWeight = p.weight || '체급미정';
+                const playerGym = p.gym || '무소속';
+                const playerTier = p.tier || 1;
+                const playerPt = Number(p.pt) || 0;
+                const playerSW = p.sW || 0;
+                const playerSD = p.sD || 0;
+                const playerSL = p.sL || 0;
+                const playerId = String(p.id || ''); 
+                const playerProfilePic = p.profilePic || '';
 
-            const isMe = currentUser && (String(currentUser.id) === String(playerId) || currentUser.rawName === p.rawName);
-            const activeMatch = currentUser && allMatches.find(m => m.status !== '종료' && 
-                ((m.senderRawName === currentUser.rawName && m.receiverRawName === p.rawName) ||
-                 (m.senderRawName === p.rawName && m.receiverRawName === currentUser.rawName)));
+                const isMe = currentUser && (String(currentUser.id) === playerId || String(currentUser.rawName) === String(p.rawName));
+                let activeMatch = null;
 
-            let btnHtml = isMe ? `<span style="color:#666; font-size:0.75rem;">(나)</span>` : 
-                          (activeMatch ? 
-                              `<button class="btn-match" style="background:#333; color:var(--gold); border:1px solid var(--gold);" onclick="openChat(${activeMatch.id}); openModal('matchStatusModal');">진행중</button>` :
-                              `<button class="btn-match" onclick="requestMatch(${playerId})">매칭 신청</button>`);
+                if (currentUser && allMatches.length > 0) {
+                    activeMatch = allMatches.find(m => 
+                        m && m.status !== '종료' && 
+                        ((m.senderRawName === currentUser.rawName && m.receiverRawName === p.rawName) ||
+                         (m.senderRawName === p.rawName && m.receiverRawName === currentUser.rawName))
+                    );
+                }
 
-            const currentTierColor = `var(--tier${playerTier})`;
-            const rankMedal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '🎖️'));
-            const roleBadge = p.role === 'manager' ? `<span style="font-size:0.65rem; background:#555; color:var(--gold); padding:1px 4px; border-radius:4px; margin-left:4px;">관장</span>` : '';
+                let btnHtml = isMe ? `<span style="color:#666; font-size:0.75rem;">(나)</span>` : 
+                              (activeMatch ? 
+                                  `<button class="btn-match" style="background:#333; color:var(--gold); border:1px solid var(--gold);" onclick="openChat('${activeMatch.id}'); openModal('matchStatusModal');">진행중</button>` :
+                                  `<button class="btn-match" onclick="requestMatch('${playerId}')">매칭 신청</button>`);
 
-            html += `
-            <div class="card player-card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0; ${idx === 0 ? 'border:1px solid ' + currentTierColor : ''}">
-                <div style="display:flex; align-items:center; gap:12px; flex:1; overflow:hidden;">
-                    <div class="avatar" style="border:2px solid ${currentTierColor}; background-image: ${playerProfilePic ? `url('${playerProfilePic}')` : 'none'}; width:55px; height:55px; flex-shrink:0;"></div>
-                    <div style="flex:1; overflow:hidden;">
-                        <div style="color:${currentTierColor}; font-weight:bold; font-size:0.8rem;">${rankMedal} ${idx + 1}위 ${roleBadge}</div>
-                        <div style="display:flex; align-items:center; gap:5px; margin:2px 0;">
-                            <span class="clickable-name" onclick="openProfile('${playerId}')" style="font-size:1.1rem; font-weight:900;">${playerName}</span>
-                            <span style="color:var(--gold); font-size:0.75rem;">[${playerWeight} · ${playerGym}]</span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem;">
-                            <b style="color:var(--gold);">${playerPt.toLocaleString()} P</b>
-                            <span style="color:#aaa;">${playerSW}승 ${playerSD}무 ${playerSL}패</span>
+                const currentTierColor = `var(--tier${playerTier})`;
+                const rankMedal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '🎖️'));
+                const roleBadge = p.role === 'manager' ? `<span style="font-size:0.65rem; background:#555; color:var(--gold); padding:1px 4px; border-radius:4px; margin-left:4px;">관장</span>` : '';
+
+                html += `
+                <div class="card player-card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0; ${idx === 0 ? 'border:1px solid ' + currentTierColor : ''}">
+                    <div style="display:flex; align-items:center; gap:12px; flex:1; overflow:hidden;">
+                        <div class="avatar" style="border:2px solid ${currentTierColor}; background-image: ${playerProfilePic ? `url('${playerProfilePic}')` : 'none'}; width:55px; height:55px; flex-shrink:0;"></div>
+                        <div style="flex:1; overflow:hidden;">
+                            <div style="color:${currentTierColor}; font-weight:bold; font-size:0.8rem;">${rankMedal} ${idx + 1}위 ${roleBadge}</div>
+                            <div style="display:flex; align-items:center; gap:5px; margin:2px 0;">
+                                <span class="clickable-name" onclick="openProfile('${playerId}')" style="font-size:1.1rem; font-weight:900;">${playerName}</span>
+                                <span style="color:var(--gold); font-size:0.75rem;">[${playerWeight} · ${playerGym}]</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem;">
+                                <b style="color:var(--gold);">${playerPt.toLocaleString()} P</b>
+                                <span style="color:#aaa;">${playerSW}승 ${playerSD}무 ${playerSL}패</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div style="flex-shrink:0; text-align:right;">${btnHtml}</div>
-            </div>`;
+                    <div style="flex-shrink:0; text-align:right;">${btnHtml}</div>
+                </div>`;
+            } catch (innerErr) {
+                console.warn("선수 데이터 렌더링 우회:", innerErr);
+            }
         });
     } else {
-        html += `<div style="text-align:center; padding:50px; color:#aaa; background:#1a1a1a; border-radius:12px;">조건에 맞는 선수가 없습니다.</div>`;
+        html += `<div style="text-align:center; padding:50px; color:#aaa; background:#1a1a1a; border-radius:12px;">조건에 맞는 선수가 없거나 데이터 로딩 중입니다.</div>`;
     }
     container.innerHTML = html + `</div>`;
-} catch (err) { 
-    container.innerHTML = `<div style="text-align:center; padding:50px; color:#ff7675; background:#1a1a1a; border-radius:12px;">데이터를 불러오는 중 오류가 발생했습니다.</div>`;
+} catch (err) {
+    console.error("복서 리스트 렌더링 에러:", err);
+    container.innerHTML = `<div style="text-align:center; padding:50px; color:#ff7675; background:#1a1a1a; border-radius:12px;">데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 새로고침 해주세요.</div>`;
 }
 }
 
