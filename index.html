@@ -1068,6 +1068,12 @@
 
 // [최적화] 가상 데이터(Test Bots) 변수 완전 삭제 및 전역 변수 정립
 let demoPlayers = []; 
+// 🔥 [버그수정] Test 변수가 삭제되었으나 렌더링 함수 내부에 참조 코드가 남아있어 발생하는 ReferenceError(스크립트 중단 및 화면 백화) 방지를 위해 빈 배열 선언
+let testBots = [];
+let testGyms = [];
+let testFeeds = [];
+let testPosts = [];
+
 let currentUser = null;
 let cropper = null;
 let currentCropContext = 'profile'; 
@@ -1239,9 +1245,9 @@ window.onload = async function() {
     initBackground(); 
 };
 
-// 🔥 [실시간 엔진] 보안 규칙 최적화 버전 (Permission Denied 해결)
-// 🔥 [실시간 엔진] 보안 규칙 최적화 버전 (Permission Denied 해결)
+// 🔥 [실시간 엔진] 전체 공개 데이터와 회원 전용 데이터를 구분하여 가동 (비로그인 노출 이슈 해결)
 function initFirebaseRealtime() {
+    // 1. [전체 공개 데이터] 로그인 없이도 항상 최신화 (대시보드, 복서리스트, 체육관)
     window.onSnapshot(window.collection(window.db, "community_posts"), (snapshot) => {
         let posts = [];
         snapshot.forEach((doc) => posts.push(doc.data()));
@@ -1260,51 +1266,59 @@ function initFirebaseRealtime() {
         renderGyms();
     });
 
+    window.onSnapshot(window.collection(window.db, "users"), (snapshot) => {
+        let players = [];
+        snapshot.forEach((doc) => players.push(doc.data()));
+        demoPlayers = players;
+        localStorage.setItem('sparring_approved_users', JSON.stringify(players));
+        renderPlayers(); 
+        renderNewMembers();
+        if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
+    });
+
+    // 2. [전역 설정] 관장님의 가입 자동승인 스위치 상태를 DB에서 직접 동기화
+    window.onSnapshot(window.doc(window.db, "settings", "global_config"), (doc) => {
+        if (doc.exists()) {
+            const config = doc.data();
+            localStorage.setItem('sparring_auto_join', config.autoJoin === true);
+            const toggleJoinEl = document.getElementById('admin-auto-join-toggle');
+            if (toggleJoinEl) toggleJoinEl.checked = config.autoJoin === true;
+        }
+    });
+
+    // 3. [인증 데이터] 로그인 시점에만 동작하는 리스너 관리
     let authenticatedListeners = []; 
+    let pendingUnsub = null; // 대기열 리스너 중복 방지용 변수
 
     window.onAuthStateChanged(window.auth, async (user) => {
-        authenticatedListeners.forEach(unsubscribe => unsubscribe());
+        // 기존 리스너 모두 해제
+        authenticatedListeners.forEach(unsub => unsub());
+        if (pendingUnsub) { pendingUnsub(); pendingUnsub = null; }
         authenticatedListeners = [];
 
         if (user) {
             const encodedId = user.email.split('@')[0];
-            let decodedId = encodedId;
-            try {
-                decodedId = decodeURIComponent(atob(encodedId));
-            } catch(e) {} 
-
             updateLoginStateUI();
 
-            const usersUnsub = window.onSnapshot(window.collection(window.db, "users"), (snapshot) => {
-                let players = [];
-                snapshot.forEach((doc) => players.push(doc.data()));
-                demoPlayers = players;
-                localStorage.setItem('sparring_approved_users', JSON.stringify(players));
-                
-                // 🔥 [버그 수정] userId(영문) 및 디코딩된 실명 호환 매칭으로 동기화 누락 방지
-                const updatedMe = players.find(p => p.userId === encodedId || p.rawName === decodedId || p.rawName === encodedId);
-                
-                if (updatedMe) {
-                    currentUser = updatedMe;
+            // 현재 접속 유저 정보 실시간 감시 (문서 단위 리스너)
+            const userUnsub = window.onSnapshot(window.doc(window.db, "users", encodedId), (doc) => {
+                if (doc.exists()) {
+                    currentUser = doc.data();
                     localStorage.setItem('sparring_session', JSON.stringify(currentUser));
                     updateMatchBadge();
                     
-                    if (currentUser.isAdmin) {
-                        const pendingUnsub = window.onSnapshot(window.collection(window.db, "pendingUsers"), (snap) => {
+                    // 관리자라면 대기열 리스너 가동 (중복 실행 방지)
+                    if ((currentUser.isAdmin || currentUser.role === 'admin') && !pendingUnsub) {
+                        pendingUnsub = window.onSnapshot(window.collection(window.db, "pendingUsers"), (snap) => {
                             let pending = [];
                             snap.forEach((d) => pending.push({ ...d.data(), firebaseId: d.id }));
                             localStorage.setItem('sparring_pending_users', JSON.stringify(pending));
                             if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
                         });
-                        authenticatedListeners.push(pendingUnsub);
                     }
                 }
-                
-                renderPlayers(); 
-                renderNewMembers();
-                if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
             });
-            authenticatedListeners.push(usersUnsub);
+            authenticatedListeners.push(userUnsub);
 
             const matchesUnsub = window.onSnapshot(window.collection(window.db, "matches"), (snapshot) => {
                 let matches = [];
@@ -1324,13 +1338,22 @@ function initFirebaseRealtime() {
             authenticatedListeners.push(recordsUnsub);
         } else {
             currentUser = null;
-            demoPlayers = [];
             localStorage.removeItem('sparring_session');
-            localStorage.removeItem('sparring_approved_users');
             updateLoginStateUI();
-            renderPlayers();
         }
     });
+}
+
+async function toggleAutoJoinApprove() {
+    const isChecked = document.getElementById('admin-auto-join-toggle').checked;
+    try {
+        await window.setDoc(window.doc(window.db, "settings", "global_config"), { autoJoin: isChecked }, { merge: true });
+        localStorage.setItem('sparring_auto_join', isChecked);
+        alert(isChecked ? "전역 설정: 가입 즉시 승인 활성화" : "전역 설정: 가입 시 관장님 승인 필요");
+    } catch (e) {
+        console.error("설정 저장 실패:", e);
+        alert("설정 저장 권한이 없습니다. (관리자 로그인을 확인하세요)");
+    }
 }
 
 
@@ -1574,73 +1597,94 @@ function renderPlayers() {
     if (!container) return;
 
     try {
-        let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
+        // 디버깅: 현재 demoPlayers 상태 확인
+        console.log('[renderPlayers] demoPlayers length:', demoPlayers ? demoPlayers.length : 0);
         
         // 데이터 소스 확인 (Firestore 실시간 데이터 우선)
         if (!demoPlayers || demoPlayers.length === 0) {
             demoPlayers = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
+            console.log('[renderPlayers] loaded from localStorage, now length:', demoPlayers.length);
         }
 
-        // 1. 기본 필터 수정: 관리자(System Admin)만 제외하고, 관장님(Manager)이라도 티어 정보가 있으면 복서로 노출
+        let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
+        let isTestModeOn = localStorage.getItem('sparring_test_mode') === 'true';
+
+        // 1. 기본 필터: 시스템 관리자(admin) 및 isAdmin === true 제외 (role이 manager인 경우 포함)
         let basePlayers = demoPlayers.filter(p => {
             if (!p) return false;
             // 시스템 마스터 어드민(admin)은 리스트에서 완전 제외
             if (p.isAdmin === true || p.rawName === 'admin') return false;
-            // 관장님이라도 티어(1~5) 정보가 등록되어 있다면 선수 리스트에 포함
+            
+            // TEST 모드 OFF일 때 가상 봇/테스트 계정 숨김 처리 추가 (정합성 보완)
+            if (!isTestModeOn) {
+                if (p.isDummy === true) return false;
+                if (p.rawName && (p.rawName.includes('[test]') || p.rawName.includes('테스트'))) return false;
+            }
             return true;
         });
 
-        // 2. 통합 필터링 로직 (활동지역, 티어, 스탠스 데이터 매칭)
-        basePlayers = basePlayers.filter(p => {
-            // 티어 필터: 데이터가 숫자형이든 문자열형이든 일치하도록 String 변환 비교
-            const tierPass = (currentMatchingTier === 'all') || (String(p.tier) === String(currentMatchingTier));
-            
-            // 활동 지역 필터: '전북' 과 '전라북도' 등의 표기 불일치 방지 (값 자체가 저장된 region과 일치하는지 확인)
-            const regionPass = (currentMatchingRegion === 'all') || (p.region === currentMatchingRegion);
-            
-            // 스탠스 필터: 오소독스/사우스포/스위치 매칭
-            const stancePass = (currentMatchingStance === 'all') || (p.stance === currentMatchingStance);
+        console.log('[renderPlayers] after admin filter:', basePlayers.length);
 
+        // 2. 통합 필터링 (티어, 지역, 스탠스) - 현재 all이면 모두 통과
+        basePlayers = basePlayers.filter(p => {
+            const tierPass = (currentMatchingTier === 'all') || (String(p.tier) === String(currentMatchingTier));
+            const regionPass = (currentMatchingRegion === 'all') || (p.region === currentMatchingRegion);
+            const stancePass = (currentMatchingStance === 'all') || (p.stance === currentMatchingStance);
             return tierPass && regionPass && stancePass;
         });
 
-        // 3. 점수(PT)순 정렬 (랭킹 순위 부여)
-        basePlayers.sort((a, b) => (b.pt || 0) - (a.pt || 0));
+        console.log('[renderPlayers] after region/stance/tier filter:', basePlayers.length);
+
+        // 3. 점수(PT)순 정렬, 동점 시 가입일순
+        basePlayers.sort((a, b) => {
+            if ((b.pt || 0) !== (a.pt || 0)) {
+                return (b.pt || 0) - (a.pt || 0);
+            }
+            return (b.createdAt || 0) - (a.createdAt || 0);
+        });
 
         let html = `<div class="tier-list">`;
-        if(basePlayers.length > 0) {
+        if (basePlayers.length > 0) {
             basePlayers.forEach((p, idx) => {
-                const isMe = currentUser && (String(currentUser.id) === String(p.id) || currentUser.rawName === p.rawName);
+                // 안전하게 필드 접근
+                const playerName = p.name || p.rawName || '이름 없음';
+                const playerWeight = p.weight || '미정';
+                const playerGym = p.gym || '무소속';
+                const playerTier = p.tier || 1;
+                const playerPt = p.pt || 0;
+                const playerSW = p.sW || 0;
+                const playerSD = p.sD || 0;
+                const playerSL = p.sL || 0;
+                const playerId = p.id;
+                const playerProfilePic = p.profilePic || '';
+
+                const isMe = currentUser && (String(currentUser.id) === String(playerId) || currentUser.rawName === p.rawName);
                 const activeMatch = currentUser && allMatches.find(m => m.status !== '종료' && 
                     ((m.senderRawName === currentUser.rawName && m.receiverRawName === p.rawName) ||
                      (m.senderRawName === p.rawName && m.receiverRawName === currentUser.rawName)));
 
-                // 버튼 로직: 본인은 비활성, 진행중인 매치가 있으면 '진행중', 없으면 '매칭 신청'
-                let btnHtml = isMe ? `<span style="color:#666; font-size:0.75rem;">(나)</span>` : (activeMatch ? 
-                    `<button class="btn-match" style="background:#333; color:var(--gold); border:1px solid var(--gold);" onclick="openChat(${activeMatch.id}); openModal('matchStatusModal');">진행중</button>` :
-                    `<button class="btn-match" onclick="requestMatch(${p.id})">매칭 신청</button>`);
+                let btnHtml = isMe ? `<span style="color:#666; font-size:0.75rem;">(나)</span>` : 
+                              (activeMatch ? 
+                                  `<button class="btn-match" style="background:#333; color:var(--gold); border:1px solid var(--gold);" onclick="openChat(${activeMatch.id}); openModal('matchStatusModal');">진행중</button>` :
+                                  `<button class="btn-match" onclick="requestMatch(${playerId})">매칭 신청</button>`);
 
-                const pTier = p.tier || 1;
-                const currentTierColor = `var(--tier${pTier})`;
+                const currentTierColor = `var(--tier${playerTier})`;
                 const rankMedal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '🎖️'));
-
-                // 관장님인 경우 이름 옆에 뱃지 추가 (선택 사항)
                 const roleBadge = p.role === 'manager' ? `<span style="font-size:0.65rem; background:#555; color:var(--gold); padding:1px 4px; border-radius:4px; margin-left:4px;">관장</span>` : '';
 
-                // 수정: card 클래스를 함께 부여하고, 내부 레이아웃을 flex로 명시하여 깨짐 방지
                 html += `
                 <div class="card player-card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0; ${idx === 0 ? 'border:1px solid ' + currentTierColor : ''}">
                     <div style="display:flex; align-items:center; gap:12px; flex:1; overflow:hidden;">
-                        <div class="avatar" style="border:2px solid ${currentTierColor}; background-image: url('${p.profilePic || ''}'); width:55px; height:55px; flex-shrink:0;"></div>
+                        <div class="avatar" style="border:2px solid ${currentTierColor}; background-image: url('${playerProfilePic}'); width:55px; height:55px; flex-shrink:0;"></div>
                         <div style="flex:1; overflow:hidden;">
                             <div style="color:${currentTierColor}; font-weight:bold; font-size:0.8rem;">${rankMedal} ${idx + 1}위 ${roleBadge}</div>
                             <div style="display:flex; align-items:center; gap:5px; margin:2px 0;">
-                                <span class="clickable-name" onclick="openProfile('${p.id}')" style="font-size:1.1rem; font-weight:900;">${p.name}</span>
-                                <span style="color:var(--gold); font-size:0.75rem;">[${p.weight || '미정'} · ${p.gym || '무소속'}]</span>
+                                <span class="clickable-name" onclick="openProfile('${playerId}')" style="font-size:1.1rem; font-weight:900;">${playerName}</span>
+                                <span style="color:var(--gold); font-size:0.75rem;">[${playerWeight} · ${playerGym}]</span>
                             </div>
                             <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem;">
-                                <b style="color:var(--gold);">${(p.pt || 0).toLocaleString()} P</b>
-                                <span style="color:#aaa;">${p.sW || 0}승 ${p.sD || 0}무 ${p.sL || 0}패</span>
+                                <b style="color:var(--gold);">${playerPt.toLocaleString()} P</b>
+                                <span style="color:#aaa;">${playerSW}승 ${playerSD}무 ${playerSL}패</span>
                             </div>
                         </div>
                     </div>
@@ -1653,6 +1697,8 @@ function renderPlayers() {
         container.innerHTML = html + `</div>`;
     } catch (err) { 
         console.error("renderPlayers 오류:", err); 
+        // 오류 발생 시 사용자에게 간단한 메시지 표시
+        container.innerHTML = `<div style="text-align:center; padding:50px; color:#ff7675; background:#1a1a1a; border-radius:12px;">데이터를 불러오는 중 오류가 발생했습니다.</div>`;
     }
 }
 
@@ -3794,25 +3840,37 @@ function renderNewMembers() {
     // 관리자 계정 완전 배제
     let validMembers = approved.filter(p => p.isAdmin !== true && p.rawName !== 'admin' && p.role !== 'admin');
     
-    // TEST 모드 로직 반전 적용
+    // TEST 모드 로직 반전 적용 (안전한 필터링으로 undefined 에러 방지)
     if (!isTestModeOn) {
-        validMembers = validMembers.filter(p => p.isDummy !== true && (!p.rawName || !p.rawName.includes('[test]')) && !p.rawName.includes('테스트'));
+        validMembers = validMembers.filter(p => {
+            if (p.isDummy === true) return false;
+            if (!p.rawName) return true; // rawName이 없는 기존 유저 스크립트 충돌 보호
+            return !p.rawName.includes('[test]') && !p.rawName.includes('테스트');
+        });
     }
 
-    // [신규] rawName을 기준으로 한 완벽한 중복 제거 로직 추가
+    // [신규] 고유 식별자(userId, rawName, id)를 기준으로 완벽한 중복 제거 로직 보완
     const uniqueMembers = [];
     const seen = new Set();
     for (const member of validMembers) {
-        if (!seen.has(member.rawName)) {
-            seen.add(member.rawName);
+        const uniqueKey = member.userId || member.rawName || member.id;
+        if (!seen.has(uniqueKey)) {
+            seen.add(uniqueKey);
             uniqueMembers.push(member);
         }
     }
     validMembers = uniqueMembers;
 
-    // 최대 5개 노출로 변경
-    let recent = validMembers.slice(-5).reverse(); 
-    if (recent.length === 0) { container.innerHTML = "<div style='text-align:center; color:#666; padding: 10px 0;'>최근 가입한 회원이 없습니다.</div>"; return; }
+    // 🔥 [핵심 수정] 가입일(createdAt) 기준 내림차순 정렬 추가 (데이터 누락 및 알파벳 순 정렬 버그 방지)
+    validMembers.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+    // 최신 가입자 5명 추출 (이제 최신 가입자가 무조건 나옵니다)
+    let recent = validMembers.slice(0, 5); 
+    
+    if (recent.length === 0) { 
+        container.innerHTML = "<div style='text-align:center; color:#666; padding: 10px 0;'>최근 가입한 회원이 없습니다.</div>"; 
+        return; 
+    }
     
     let html = '';
     recent.forEach(u => {
@@ -4773,149 +4831,70 @@ async function submitSignup() {
     const gymName = document.getElementById('signup-gym').value.trim();
     const role = document.getElementById('signup-role').value;
     const region = document.getElementById('signup-region').value;
-    const tier = parseInt(document.getElementById('signup-tier').value, 10) || 1;
-    const weight = document.getElementById('signup-weight').value;
-    const height = document.getElementById('signup-height').value;
-    const stance = document.getElementById('signup-stance').value;
 
-    const nameRegex = /^[가-힣]{2,10}$/; 
-    if (!nameRegex.test(realName)) {
-        alert('실명은 한글 2~10자 이내로 정확히 입력해주세요.');
-        document.getElementById('signup-realname').focus();
-        return;
-    }
-
-    if (inputPw.length < 6) {
-        alert('보안을 위해 비밀번호는 최소 6자 이상으로 설정해야 합니다.');
-        document.getElementById('signup-pw').focus();
-        return;
-    }
-
-    const idFile = document.getElementById('signup-id-pic')?.files[0];
-    const selfieFile = document.getElementById('signup-selfie-pic')?.files[0];
-
-    if (!userId || !realName || !inputPw || !gymName || !idFile || !selfieFile || !region) { 
-        alert('본인 인증 사진 2장과 필수 항목을 모두 입력해주세요.'); 
-        return; 
-    }
-
-    if (role === 'player' && (!weight || !stance)) {
-        alert('일반 선수는 신체 정보와 스타일을 모두 선택해야 합니다.');
-        return;
-    }
-
-    window.updateUploadProgress(5, "보안 인증 계정 생성 중...");
+    window.updateUploadProgress(5, "서버 설정 확인 및 계정 생성 중...");
 
     try {
+        // 1. 서버의 현재 가입 모드(자동/승인제) 실시간 확인
+        const configSnap = await window.getDoc(window.doc(window.db, "settings", "global_config"));
+        const isAuto = configSnap.exists() ? configSnap.data().autoJoin === true : false;
+
+        // 2. Auth 계정 생성
         const authEmail = `${userId}@sparringclub.kr`;
-        // 🔥 고유 UID 할당으로 보안 식별 보장
         const userCredential = await window.createUserWithEmailAndPassword(window.auth, authEmail, inputPw);
         const uid = userCredential.user.uid;
 
-        let finalGymId = tempSelectedGymId;
-        if (!finalGymId) {
-            finalGymId = "gym_" + Date.now();
+        // 3. 체육관 정보 처리
+        let finalGymId = tempSelectedGymId || "gym_" + Date.now();
+        if (!tempSelectedGymId) {
             try {
-                // 일반 사용자에게 체육관 레지스트리 생성 권한이 없을 경우를 대비한 안전 블록
                 await window.setDoc(window.doc(window.db, "gyms_registry", finalGymId), {
                     id: finalGymId, name: gymName, region: region, totalPt: 0, registeredAt: Date.now(), stories: [], logo: ""
                 });
-            } catch (gymErr) {
-                console.warn("체육관 레지스트리 직접 생성 권한 없음, 데이터베이스 기록을 생략합니다.", gymErr);
-            }
+            } catch (e) { console.warn("체육관 레지스트리 생성 생략"); }
         }
 
-        window.updateUploadProgress(20, "본인확인 사진 최적화 및 업로드 중...");
-        
-        let idUrl = "";
-        let selfieUrl = "";
-
-        // 🔥 [핵심 수정] 사진 업로드 에러가 발생해도 전체 프로세스가 멈추지 않도록 독립된 try-catch 블록 적용
+        // 4. 사진 업로드 (독립 try-catch로 사진 에러가 가입을 막지 않게 조치)
+        let idUrl = "", selfieUrl = "";
         try {
-            const [compressedId, compressedSelfie] = await Promise.all([
-                window.compressImage(idFile),
-                window.compressImage(selfieFile)
-            ]);
+            const idFile = document.getElementById('signup-id-pic')?.files[0];
+            const selfieFile = document.getElementById('signup-selfie-pic')?.files[0];
+            if (idFile && selfieFile) {
+                const [cId, cS] = await Promise.all([window.compressImage(idFile), window.compressImage(selfieFile)]);
+                const idRef = window.ref(window.storage, `secure_verifications/${uid}_id.webp`);
+                const selfieRef = window.ref(window.storage, `secure_verifications/${uid}_selfie.webp`);
+                const [idSnap, selfieSnap] = await Promise.all([window.uploadBytes(idRef, cId), window.uploadBytes(selfieRef, cS)]);
+                [idUrl, selfieUrl] = await Promise.all([window.getDownloadURL(idSnap.ref), window.getDownloadURL(selfieSnap.ref)]);
+            }
+        } catch (imgErr) { console.warn("인증 사진 업로드 실패(권한이슈), 정보만 저장합니다."); }
 
-            const idRef = window.ref(window.storage, `secure_verifications/${uid}_id.webp`);
-            const selfieRef = window.ref(window.storage, `secure_verifications/${uid}_selfie.webp`);
-
-            const [idSnap, selfieSnap] = await Promise.all([
-                window.uploadBytes(idRef, compressedId),
-                window.uploadBytes(selfieRef, compressedSelfie)
-            ]);
-
-            const [idDownload, selfieDownload] = await Promise.all([
-                window.getDownloadURL(idSnap.ref),
-                window.getDownloadURL(selfieSnap.ref)
-            ]);
-            idUrl = idDownload;
-            selfieUrl = selfieDownload;
-        } catch (imgErr) {
-            console.warn("이미지 업로드 권한 또는 용량 초과로 사진 저장이 생략되었습니다. 가입은 계속 진행됩니다.", imgErr);
-        }
-
-        window.updateUploadProgress(70, "데이터베이스에 유저 정보 등록 중...");
-
+        // 5. 유저 데이터 구성
         const userData = { 
-            id: Date.now(),
-            userId: userId, 
-            rawName: realName,  
-            name: realName,     
-            gymId: finalGymId, gym: gymName, role: role, tier: tier, region: region, 
-            weight: weight, height: height, stance: stance,
+            id: Date.now(), userId: userId, name: realName, rawName: realName,     
+            gymId: finalGymId, gym: gymName, role: role, tier: parseInt(document.getElementById('signup-tier').value) || 1, 
+            region: region, weight: document.getElementById('signup-weight').value,
+            height: document.getElementById('signup-height').value,
+            stance: document.getElementById('signup-stance').value,
             profilePic: "", idVerificationPic: idUrl, selfiePic: selfieUrl, isVerified: false,
             pt: 0, sW: 0, sL: 0, sD: 0, tPt: 0, tW: 0, tL: 0, tD: 0,
             matchingTrust: 100, decisionTrust: 100, createdAt: Date.now(), lastActive: Date.now(),
             dailyMatchCount: 0, seasonRejectCount: 0, greeting: "", stories: []
         };
 
-        const isAuto = (localStorage.getItem('sparring_auto_join') || 'true') === 'true'; 
-
-        try {
-            if (isAuto) {
-                await window.setDoc(window.doc(window.db, "users", userId), userData);
-                
-                currentUser = userData;
-                localStorage.setItem('sparring_session', JSON.stringify(currentUser));
-                
-                let approved = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
-                approved = approved.filter(p => p.userId !== userData.userId);
-                approved.push(userData);
-                localStorage.setItem('sparring_approved_users', JSON.stringify(approved));
-                demoPlayers = approved;
-                
-                updateLoginStateUI();
-                renderPlayers(); renderGyms(); renderNewMembers();
-                
-                alert(`${realName}님, 가입이 완료되었습니다! 🥊\n설정하신 아이디(${userId})로 서비스를 이용해주세요.`);
-                closeModal('loginModal');
-                showPage('dashboard');
-            } else {
-                await window.addDoc(window.collection(window.db, "pendingUsers"), userData);
-                alert('가입 신청 완료! 관장님 승인 후 로그인이 가능합니다.');
-                closeModal('loginModal');
-            }
-        } catch (dbErr) {
-            // 🔥 [핵심 조치] 일반 회원이 users 컬렉션에 쓰는 것이 서버에서 거부될 경우, 
-            // 에러를 내뱉고 멈추지 않고 관리자용 pendingUsers로 자동 우회하도록 예외 처리!
-            console.warn("DB 직접 기록 권한 부족, 안전하게 승인 대기열로 우회 접수합니다.", dbErr);
-            try {
-                await window.addDoc(window.collection(window.db, "pendingUsers"), userData);
-                alert('가입 신청이 안전하게 접수되었습니다! 관장님 승인 후 로그인이 가능합니다.');
-                closeModal('loginModal');
-            } catch (fallbackErr) {
-                console.error("대기열 등록마저 실패했습니다.", fallbackErr);
-                alert('서버 보안 정책에 의해 가입 정보 등록이 차단되었습니다. 관리자에게 문의해주세요.');
-            }
+        // 6. 가입 모드에 따라 DB 저장
+        if (isAuto) {
+            await window.setDoc(window.doc(window.db, "users", userId), userData);
+            alert(`${realName}님, 즉시 승인되어 가입이 완료되었습니다! 🥊\n설정한 아이디(${userId})로 로그인해 주세요.`);
+        } else {
+            await window.setDoc(window.doc(window.db, "pendingUsers", userId), userData);
+            alert('가입 신청 완료! 관장님 승인 후 이용 가능합니다. (현재 승인 대기 상태)');
         }
-        
+
         window.updateUploadProgress(100);
+        closeModal('loginModal');
     } catch (e) {
-        console.error("가입 연동 에러:", e);
         window.updateUploadProgress(100);
-        if (e.code === 'auth/email-already-in-use') alert("이미 사용 중인 아이디입니다. (또는 이전 가입 시도 시 계정만 생성되었을 수 있습니다. 다른 아이디를 사용해주세요.)");
-        else alert(`시스템 오류: ${e.message}`);
+        alert(`가입 실패: ${e.message}`);
     }
 }
 
@@ -6253,7 +6232,7 @@ async function saveNotiSettings() {
 
 // 🔥 [실시간 엔진] 보안 규칙 최적화 버전 (Permission Denied 완전 해결)
 function initFirebaseRealtime() {
-    // 1. [공개 데이터] 로그인 없이도 누구나 읽기 가능
+    // 1. [전체 공개 데이터] 로그인 없이도 항상 최신화 (대시보드, 복서리스트, 체육관)
     window.onSnapshot(window.collection(window.db, "community_posts"), (snapshot) => {
         let posts = [];
         snapshot.forEach((doc) => posts.push(doc.data()));
@@ -6272,52 +6251,63 @@ function initFirebaseRealtime() {
         renderGyms();
     });
 
-    // 2. [회원 전용 데이터] 로그인 시점에만 리스너 활성화
+    window.onSnapshot(window.collection(window.db, "users"), (snapshot) => {
+        let players = [];
+        snapshot.forEach((doc) => players.push(doc.data()));
+        demoPlayers = players;
+        localStorage.setItem('sparring_approved_users', JSON.stringify(players));
+        renderPlayers(); 
+        renderNewMembers();
+        if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
+    });
+
+    // 2. [전역 설정] 관장님의 가입 자동승인 스위치 상태를 DB에서 직접 동기화
+    window.onSnapshot(window.doc(window.db, "settings", "global_config"), (doc) => {
+        if (doc.exists()) {
+            const config = doc.data();
+            localStorage.setItem('sparring_auto_join', config.autoJoin === true);
+            const toggleJoinEl = document.getElementById('admin-auto-join-toggle');
+            if (toggleJoinEl) toggleJoinEl.checked = config.autoJoin === true;
+        }
+    });
+
+    // 3. [인증 데이터] 로그인 시점에만 동작하는 리스너 관리
     let authenticatedListeners = []; 
+    let pendingUnsub = null; // 대기열 리스너 중복 방지용 변수
 
     window.onAuthStateChanged(window.auth, async (user) => {
-        authenticatedListeners.forEach(unsubscribe => unsubscribe());
+        // 기존 리스너 모두 해제
+        authenticatedListeners.forEach(unsub => unsub());
+        if (pendingUnsub) { pendingUnsub(); pendingUnsub = null; }
         authenticatedListeners = [];
 
         if (user) {
-            // 🔥 [버그 수정] Auth 이메일의 Base64 아이디를 원래의 한글 실명으로 디코딩 처리
             const encodedId = user.email.split('@')[0];
-            let decodedId = encodedId;
-            try {
-                decodedId = decodeURIComponent(atob(encodedId));
-            } catch(e) {} // admin 등 이미 영문인 경우 그대로 사용
-
-            updateLoginStateUI();
-
-            const usersUnsub = window.onSnapshot(window.collection(window.db, "users"), (snapshot) => {
-                let players = [];
-                snapshot.forEach((doc) => players.push(doc.data()));
-                demoPlayers = players;
-                localStorage.setItem('sparring_approved_users', JSON.stringify(players));
-                
-                // 🔥 [버그 수정] 디코딩된 한글 이름으로 현재 로그인 유저 정확하게 매칭
-                const updatedMe = players.find(p => p.rawName === decodedId || p.rawName === encodedId);
-                if (updatedMe) {
-                    currentUser = updatedMe;
+            
+            // 현재 접속 유저 정보 실시간 감시 (문서 단위 리스너)
+            const userUnsub = window.onSnapshot(window.doc(window.db, "users", encodedId), (doc) => {
+                if (doc.exists()) {
+                    currentUser = doc.data();
                     localStorage.setItem('sparring_session', JSON.stringify(currentUser));
-                    updateMatchBadge();
                     
-                    if (currentUser.isAdmin) {
-                        const pendingUnsub = window.onSnapshot(window.collection(window.db, "pendingUsers"), (snap) => {
+                    // 🔥 [핵심 수정] 유저 데이터를 불러온 직후에 UI를 렌더링하도록 변경 (새로고침 시 로그아웃 버그 완벽 해결)
+                    updateLoginStateUI();
+                    updateMatchBadge();
+                    renderPlayers(); // 본인 로그인 상태를 복서 리스트 버튼에 즉각 갱신
+                    if (document.getElementById('record').classList.contains('active')) renderRecordMatchSelect();
+                    
+                    // 관리자라면 대기열 리스너 가동 (중복 실행 방지)
+                    if ((currentUser.isAdmin || currentUser.role === 'admin') && !pendingUnsub) {
+                        pendingUnsub = window.onSnapshot(window.collection(window.db, "pendingUsers"), (snap) => {
                             let pending = [];
                             snap.forEach((d) => pending.push({ ...d.data(), firebaseId: d.id }));
                             localStorage.setItem('sparring_pending_users', JSON.stringify(pending));
                             if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
                         });
-                        authenticatedListeners.push(pendingUnsub);
                     }
                 }
-                
-                renderPlayers(); 
-                renderNewMembers();
-                if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
             });
-            authenticatedListeners.push(usersUnsub);
+            authenticatedListeners.push(userUnsub);
 
             const matchesUnsub = window.onSnapshot(window.collection(window.db, "matches"), (snapshot) => {
                 let matches = [];
@@ -6337,11 +6327,9 @@ function initFirebaseRealtime() {
             authenticatedListeners.push(recordsUnsub);
         } else {
             currentUser = null;
-            demoPlayers = [];
             localStorage.removeItem('sparring_session');
-            localStorage.removeItem('sparring_approved_users');
             updateLoginStateUI();
-            renderPlayers();
+            renderPlayers(); // 비로그인 상태 리스트 반영
         }
     });
 }
