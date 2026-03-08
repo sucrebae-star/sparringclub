@@ -4768,141 +4768,155 @@ async function submitSignup() {
     if (!isDuplicateChecked) { alert('아이디 중복조회를 먼저 해주세요.'); return; }
 
     const userId = document.getElementById('signup-userid').value.trim();
-const realName = document.getElementById('signup-realname').value.trim();
-const inputPw = document.getElementById('signup-pw').value.trim();
-const gymName = document.getElementById('signup-gym').value.trim();
-const role = document.getElementById('signup-role').value;
-const region = document.getElementById('signup-region').value;
-const tier = parseInt(document.getElementById('signup-tier').value, 10) || 1;
-const weight = document.getElementById('signup-weight').value;
-const height = document.getElementById('signup-height').value;
-const stance = document.getElementById('signup-stance').value;
+    const realName = document.getElementById('signup-realname').value.trim();
+    const inputPw = document.getElementById('signup-pw').value.trim();
+    const gymName = document.getElementById('signup-gym').value.trim();
+    const role = document.getElementById('signup-role').value;
+    const region = document.getElementById('signup-region').value;
+    const tier = parseInt(document.getElementById('signup-tier').value, 10) || 1;
+    const weight = document.getElementById('signup-weight').value;
+    const height = document.getElementById('signup-height').value;
+    const stance = document.getElementById('signup-stance').value;
 
-const nameRegex = /^[가-힣]{2,10}$/; 
-if (!nameRegex.test(realName)) {
-    alert('실명은 한글 2~10자 이내로 정확히 입력해주세요.');
-    document.getElementById('signup-realname').focus();
-    return;
-}
-
-if (inputPw.length < 6) {
-    alert('보안을 위해 비밀번호는 최소 6자 이상으로 설정해야 합니다.');
-    document.getElementById('signup-pw').focus();
-    return;
-}
-
-const idFile = document.getElementById('signup-id-pic')?.files[0];
-const selfieFile = document.getElementById('signup-selfie-pic')?.files[0];
-
-if (!userId || !realName || !inputPw || !gymName || !idFile || !selfieFile || !region) { 
-    alert('본인 인증 사진 2장과 필수 항목을 모두 입력해주세요.'); 
-    return; 
-}
-
-if (role === 'player' && (!weight || !stance)) {
-    alert('일반 선수는 신체 정보와 스타일을 모두 선택해야 합니다.');
-    return;
-}
-
-window.updateUploadProgress(5, "보안 인증 계정 생성 중...");
-
-try {
-    const authEmail = `${userId}@sparringclub.kr`;
-    // 🔥 고유 UID 할당으로 보안 식별 보장
-    const userCredential = await window.createUserWithEmailAndPassword(window.auth, authEmail, inputPw);
-    const uid = userCredential.user.uid;
-
-    let finalGymId = tempSelectedGymId;
-    if (!finalGymId) {
-        finalGymId = "gym_" + Date.now();
-        try {
-            // 일반 사용자에게 체육관 레지스트리 생성 권한이 없을 경우를 대비한 안전 블록
-            await window.setDoc(window.doc(window.db, "gyms_registry", finalGymId), {
-                id: finalGymId, name: gymName, region: region, totalPt: 0, registeredAt: Date.now(), stories: [], logo: ""
-            });
-        } catch (gymErr) {
-            console.warn("체육관 레지스트리 직접 생성 권한 없음, 데이터베이스 기록을 생략합니다.", gymErr);
-        }
+    const nameRegex = /^[가-힣]{2,10}$/; 
+    if (!nameRegex.test(realName)) {
+        alert('실명은 한글 2~10자 이내로 정확히 입력해주세요.');
+        document.getElementById('signup-realname').focus();
+        return;
     }
 
-    window.updateUploadProgress(20, "본인확인 사진 최적화 및 업로드 중...");
-    
-    const [compressedId, compressedSelfie] = await Promise.all([
-        window.compressImage(idFile),
-        window.compressImage(selfieFile)
-    ]);
+    if (inputPw.length < 6) {
+        alert('보안을 위해 비밀번호는 최소 6자 이상으로 설정해야 합니다.');
+        document.getElementById('signup-pw').focus();
+        return;
+    }
 
-    // 🔥 Storage 규칙에서 UID 검증을 요구할 가능성을 대비하여 파일명을 uid 기반으로 저장
-    const idRef = window.ref(window.storage, `secure_verifications/${uid}_id.webp`);
-    const selfieRef = window.ref(window.storage, `secure_verifications/${uid}_selfie.webp`);
+    const idFile = document.getElementById('signup-id-pic')?.files[0];
+    const selfieFile = document.getElementById('signup-selfie-pic')?.files[0];
 
-    const [idSnap, selfieSnap] = await Promise.all([
-        window.uploadBytes(idRef, compressedId),
-        window.uploadBytes(selfieRef, compressedSelfie)
-    ]);
+    if (!userId || !realName || !inputPw || !gymName || !idFile || !selfieFile || !region) { 
+        alert('본인 인증 사진 2장과 필수 항목을 모두 입력해주세요.'); 
+        return; 
+    }
 
-    const [idUrl, selfieUrl] = await Promise.all([
-        window.getDownloadURL(idSnap.ref),
-        window.getDownloadURL(selfieSnap.ref)
-    ]);
+    if (role === 'player' && (!weight || !stance)) {
+        alert('일반 선수는 신체 정보와 스타일을 모두 선택해야 합니다.');
+        return;
+    }
 
-    window.updateUploadProgress(70, "데이터베이스에 유저 정보 등록 중...");
-
-    const userData = { 
-        id: Date.now(),
-        userId: userId, 
-        rawName: realName,  
-        name: realName,     
-        gymId: finalGymId, gym: gymName, role: role, tier: tier, region: region, 
-        weight: weight, height: height, stance: stance,
-        profilePic: "", idVerificationPic: idUrl, selfiePic: selfieUrl, isVerified: false,
-        pt: 0, sW: 0, sL: 0, sD: 0, tPt: 0, tW: 0, tL: 0, tD: 0,
-        matchingTrust: 100, decisionTrust: 100, createdAt: Date.now(), lastActive: Date.now(),
-        dailyMatchCount: 0, seasonRejectCount: 0, greeting: "", stories: []
-    };
-
-    const isAuto = (localStorage.getItem('sparring_auto_join') || 'true') === 'true'; 
+    window.updateUploadProgress(5, "보안 인증 계정 생성 중...");
 
     try {
-        if (isAuto) {
-            await window.setDoc(window.doc(window.db, "users", userId), userData);
-            
-            currentUser = userData;
-            localStorage.setItem('sparring_session', JSON.stringify(currentUser));
-            
-            let approved = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
-            approved = approved.filter(p => p.userId !== userData.userId);
-            approved.push(userData);
-            localStorage.setItem('sparring_approved_users', JSON.stringify(approved));
-            demoPlayers = approved;
-            
-            updateLoginStateUI();
-            renderPlayers(); renderGyms(); renderNewMembers();
-            
-            alert(`${realName}님, 가입이 완료되었습니다! 🥊\n설정하신 아이디(${userId})로 서비스를 이용해주세요.`);
-            closeModal('loginModal');
-            showPage('dashboard');
-        } else {
-            await window.addDoc(window.collection(window.db, "pendingUsers"), userData);
-            alert('가입 신청 완료! 관장님 승인 후 로그인이 가능합니다.');
-            closeModal('loginModal');
+        const authEmail = `${userId}@sparringclub.kr`;
+        // 🔥 고유 UID 할당으로 보안 식별 보장
+        const userCredential = await window.createUserWithEmailAndPassword(window.auth, authEmail, inputPw);
+        const uid = userCredential.user.uid;
+
+        let finalGymId = tempSelectedGymId;
+        if (!finalGymId) {
+            finalGymId = "gym_" + Date.now();
+            try {
+                // 일반 사용자에게 체육관 레지스트리 생성 권한이 없을 경우를 대비한 안전 블록
+                await window.setDoc(window.doc(window.db, "gyms_registry", finalGymId), {
+                    id: finalGymId, name: gymName, region: region, totalPt: 0, registeredAt: Date.now(), stories: [], logo: ""
+                });
+            } catch (gymErr) {
+                console.warn("체육관 레지스트리 직접 생성 권한 없음, 데이터베이스 기록을 생략합니다.", gymErr);
+            }
         }
-    } catch (dbErr) {
-        // 🔥 [핵심 조치] 일반 회원이 users 컬렉션에 쓰는 것이 서버에서 거부될 경우, 
-        // 에러를 내뱉고 멈추지 않고 관리자용 pendingUsers로 자동 우회하도록 예외 처리!
-        console.warn("DB 직접 기록 권한 부족, 안전하게 승인 대기열로 우회 접수합니다.", dbErr);
-        await window.addDoc(window.collection(window.db, "pendingUsers"), userData);
-        alert('가입 신청이 안전하게 접수되었습니다! 관장님 승인 후 로그인이 가능합니다.');
-        closeModal('loginModal');
+
+        window.updateUploadProgress(20, "본인확인 사진 최적화 및 업로드 중...");
+        
+        let idUrl = "";
+        let selfieUrl = "";
+
+        // 🔥 [핵심 수정] 사진 업로드 에러가 발생해도 전체 프로세스가 멈추지 않도록 독립된 try-catch 블록 적용
+        try {
+            const [compressedId, compressedSelfie] = await Promise.all([
+                window.compressImage(idFile),
+                window.compressImage(selfieFile)
+            ]);
+
+            const idRef = window.ref(window.storage, `secure_verifications/${uid}_id.webp`);
+            const selfieRef = window.ref(window.storage, `secure_verifications/${uid}_selfie.webp`);
+
+            const [idSnap, selfieSnap] = await Promise.all([
+                window.uploadBytes(idRef, compressedId),
+                window.uploadBytes(selfieRef, compressedSelfie)
+            ]);
+
+            const [idDownload, selfieDownload] = await Promise.all([
+                window.getDownloadURL(idSnap.ref),
+                window.getDownloadURL(selfieSnap.ref)
+            ]);
+            idUrl = idDownload;
+            selfieUrl = selfieDownload;
+        } catch (imgErr) {
+            console.warn("이미지 업로드 권한 또는 용량 초과로 사진 저장이 생략되었습니다. 가입은 계속 진행됩니다.", imgErr);
+        }
+
+        window.updateUploadProgress(70, "데이터베이스에 유저 정보 등록 중...");
+
+        const userData = { 
+            id: Date.now(),
+            userId: userId, 
+            rawName: realName,  
+            name: realName,     
+            gymId: finalGymId, gym: gymName, role: role, tier: tier, region: region, 
+            weight: weight, height: height, stance: stance,
+            profilePic: "", idVerificationPic: idUrl, selfiePic: selfieUrl, isVerified: false,
+            pt: 0, sW: 0, sL: 0, sD: 0, tPt: 0, tW: 0, tL: 0, tD: 0,
+            matchingTrust: 100, decisionTrust: 100, createdAt: Date.now(), lastActive: Date.now(),
+            dailyMatchCount: 0, seasonRejectCount: 0, greeting: "", stories: []
+        };
+
+        const isAuto = (localStorage.getItem('sparring_auto_join') || 'true') === 'true'; 
+
+        try {
+            if (isAuto) {
+                await window.setDoc(window.doc(window.db, "users", userId), userData);
+                
+                currentUser = userData;
+                localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+                
+                let approved = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
+                approved = approved.filter(p => p.userId !== userData.userId);
+                approved.push(userData);
+                localStorage.setItem('sparring_approved_users', JSON.stringify(approved));
+                demoPlayers = approved;
+                
+                updateLoginStateUI();
+                renderPlayers(); renderGyms(); renderNewMembers();
+                
+                alert(`${realName}님, 가입이 완료되었습니다! 🥊\n설정하신 아이디(${userId})로 서비스를 이용해주세요.`);
+                closeModal('loginModal');
+                showPage('dashboard');
+            } else {
+                await window.addDoc(window.collection(window.db, "pendingUsers"), userData);
+                alert('가입 신청 완료! 관장님 승인 후 로그인이 가능합니다.');
+                closeModal('loginModal');
+            }
+        } catch (dbErr) {
+            // 🔥 [핵심 조치] 일반 회원이 users 컬렉션에 쓰는 것이 서버에서 거부될 경우, 
+            // 에러를 내뱉고 멈추지 않고 관리자용 pendingUsers로 자동 우회하도록 예외 처리!
+            console.warn("DB 직접 기록 권한 부족, 안전하게 승인 대기열로 우회 접수합니다.", dbErr);
+            try {
+                await window.addDoc(window.collection(window.db, "pendingUsers"), userData);
+                alert('가입 신청이 안전하게 접수되었습니다! 관장님 승인 후 로그인이 가능합니다.');
+                closeModal('loginModal');
+            } catch (fallbackErr) {
+                console.error("대기열 등록마저 실패했습니다.", fallbackErr);
+                alert('서버 보안 정책에 의해 가입 정보 등록이 차단되었습니다. 관리자에게 문의해주세요.');
+            }
+        }
+        
+        window.updateUploadProgress(100);
+    } catch (e) {
+        console.error("가입 연동 에러:", e);
+        window.updateUploadProgress(100);
+        if (e.code === 'auth/email-already-in-use') alert("이미 사용 중인 아이디입니다. (또는 이전 가입 시도 시 계정만 생성되었을 수 있습니다. 다른 아이디를 사용해주세요.)");
+        else alert(`시스템 오류: ${e.message}`);
     }
-    
-    window.updateUploadProgress(100);
-} catch (e) {
-    console.error("가입 연동 에러:", e);
-    window.updateUploadProgress(100);
-    if (e.code === 'auth/email-already-in-use') alert("이미 사용 중인 아이디입니다.");
-    else alert(`시스템 오류: ${e.message}`);
-}
 }
 
 function renderPagination(totalPages) {
