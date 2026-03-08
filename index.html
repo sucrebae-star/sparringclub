@@ -205,10 +205,9 @@
 
         <div style="margin-bottom: 12px;">
             <h2 style="margin: 0 0 10px 0; font-size: 1.1rem; letter-spacing: -0.5px; width: 100%;">실시간 활동 피드</h2>
-            <div style="display: flex; gap: 5px; align-items: center;">
-                <button id="clean-feed-btn" onclick="toggleCleanFeedMode()" style="background: #333; color: #ccc; border: 1px solid #555; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; flex: 1;">🤖 TEST모드 OFF</button>
-                <button id="feed-tab-upcoming" onclick="switchFeedTab('upcoming')" style="background: var(--primary-red); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s; flex: 1;">다가올 일정</button>
-                <button id="feed-tab-result" onclick="switchFeedTab('result')" style="background: transparent; color: #888; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s; flex: 1;">경기 결과</button>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <button id="feed-tab-upcoming" onclick="switchFeedTab('upcoming')" style="background: var(--primary-red); color: white; border: none; padding: 10px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; cursor: pointer; transition: all 0.2s; flex: 1;">📅 다가올 일정</button>
+                <button id="feed-tab-result" onclick="switchFeedTab('result')" style="background: #222; color: #888; border: 1px solid #333; padding: 10px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; cursor: pointer; transition: all 0.2s; flex: 1;">🏆 경기 결과</button>
             </div>
         </div>
 
@@ -230,6 +229,7 @@
             <h2 style="margin: 0;">복서 리스트(BOXER LIST)</h2>
             <button onclick="openModal('tierGuideModal')" style="background: #333; color: var(--gold); border: 1px solid var(--gold); padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; font-weight: bold;">📖 상세 안내</button>
         </div>
+
         <div class="tier-info-box" style="padding: 10px 15px;">
             <b style="color: white; display:block; margin-bottom:5px;">[티어 배정 기준 요약]</b>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.8rem;">
@@ -241,31 +241,41 @@
             </div>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
             <div style="display: flex; justify-content: space-between; gap: 6px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; -ms-overflow-style: none;" id="matching-tier-tabs">
-                <button id="tier-btn-all" onclick="switchMatchingTier('all')" style="flex:1; padding: 10px 0; background: rgba(253, 203, 110, 0.1); color: var(--gold); border: 1px solid var(--gold); border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85rem;">전체</button>
+                <button id="tier-btn-all" onclick="switchMatchingTier('all')" style="flex:1; padding: 10px 0; background: rgba(253, 203, 110, 0.1); color: var(--gold); border: 1px solid var(--gold); border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85rem;">티어 전체</button>
                 <button id="tier-btn-5" onclick="switchMatchingTier(5)" style="flex:1; padding: 10px 0; background: #222; color: #aaa; border: 1px solid #444; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85rem;">Tier 5</button>
                 <button id="tier-btn-4" onclick="switchMatchingTier(4)" style="flex:1; padding: 10px 0; background: #222; color: #aaa; border: 1px solid #444; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85rem;">Tier 4</button>
                 <button id="tier-btn-3" onclick="switchMatchingTier(3)" style="flex:1; padding: 10px 0; background: #222; color: #aaa; border: 1px solid #444; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85rem;">Tier 3</button>
                 <button id="tier-btn-2" onclick="switchMatchingTier(2)" style="flex:1; padding: 10px 0; background: #222; color: #aaa; border: 1px solid #444; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85rem;">Tier 2</button>
                 <button id="tier-btn-1" onclick="switchMatchingTier(1)" style="flex:1; padding: 10px 0; background: #222; color: #aaa; border: 1px solid #444; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85rem;">Tier 1</button>
             </div>
-            <select id="matching-region-filter" onchange="changeMatchingRegion()" style="width: 100%; background: #1a1a1a; color: white; border: 1px solid var(--primary-red); padding: 12px; border-radius: 8px; font-size: 0.95rem; outline: none; box-shadow: 0 0 10px rgba(214, 48, 49, 0.2);">
-                <option value="all">🌍 전국 지역 전체보기</option>
-                <optgroup label="특별시/광역시">
-                    <option value="서울">서울</option><option value="부산">부산</option>
-                    <option value="대구">대구</option><option value="인천">인천</option>
-                    <option value="광주">광주</option><option value="대전">대전</option>
-                    <option value="울산">울산</option><option value="세종">세종</option>
-                </optgroup>
-                <optgroup label="도 단위">
-                    <option value="경기">경기</option><option value="강원">강원</option>
-                    <option value="충북">충북</option><option value="충남">충남</option>
-                    <option value="전북">전북</option><option value="전남">전남</option>
-                    <option value="경북">경북</option><option value="경남">경남</option>
-                    <option value="제주">제주</option>
-                </optgroup>
-            </select>
+
+            <div style="display: flex; gap: 8px;" id="matching-stance-tabs">
+                <button id="stance-btn-all" onclick="switchMatchingStance('all')" style="flex:1; padding: 10px 0; background: rgba(253, 203, 110, 0.1); color: var(--gold); border: 1px solid var(--gold); border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.85rem;">전체</button>
+                <button id="stance-btn-ortho" onclick="switchMatchingStance('오소독스')" style="flex:1; padding: 10px 0; background: #222; color: #aaa; border: 1px solid #444; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.85rem;">오소독스</button>
+                <button id="stance-btn-south" onclick="switchMatchingStance('사우스포')" style="flex:1; padding: 10px 0; background: #222; color: #aaa; border: 1px solid #444; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.85rem;">사우스포</button>
+                <button id="stance-btn-switch" onclick="switchMatchingStance('스위치')" style="flex:1; padding: 10px 0; background: #222; color: #aaa; border: 1px solid #444; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.85rem;">스위치</button>
+            </div>
+
+            <div style="display: flex; align-items: center;">
+                <select id="matching-region-filter" onchange="changeMatchingRegion()" style="width: 100%; background: #1a1a1a; color: white; border: 1px solid var(--primary-red); padding: 12px; border-radius: 8px; font-size: 0.95rem; outline: none; box-shadow: 0 0 10px rgba(214, 48, 49, 0.2);">
+                    <option value="all">🌍 전국 활동 지역 필터 (전체보기)</option>
+                    <optgroup label="특별시/광역시">
+                        <option value="서울">서울</option><option value="부산">부산</option>
+                        <option value="대구">대구</option><option value="인천">인천</option>
+                        <option value="광주">광주</option><option value="대전">대전</option>
+                        <option value="울산">울산</option><option value="세종">세종</option>
+                    </optgroup>
+                    <optgroup label="도 단위">
+                        <option value="경기">경기</option><option value="강원">강원</option>
+                        <option value="충북">충북</option><option value="충남">충남</option>
+                        <option value="전북">전북</option><option value="전남">전남</option>
+                        <option value="경북">경북</option><option value="경남">경남</option>
+                        <option value="제주">제주</option>
+                    </optgroup>
+                </select>
+            </div>
         </div>
 
         <div id="tier-container"></div>
@@ -613,14 +623,18 @@
         </div>
         
         <div id="form-signup" class="login-form">
-            <label style="color:#ff7675; font-size: 0.8rem; margin-top:0;">* 아이디는 반드시 실명(소문자)으로 가입해야 합니다.</label>
+            <label style="color:#ff7675; font-size: 0.8rem; margin-top:0;">* 사용할 아이디(영문+숫자)를 입력하세요.</label>
             <div style="display: flex; gap: 5px;">
-            <input type="text" id="signup-id" placeholder="실명 영문 소문자 입력 (예: gildong)" 
-                oninput="this.value = this.value.toLowerCase(); isDuplicateChecked = false;" 
-                style="flex: 1; margin: 0;">
-            <button type="button" class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555;" onclick="checkDuplicateId()">중복조회</button>
+                <input type="text" id="signup-userid" placeholder="아이디 입력 (예: boxer123)" 
+                    oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9]/g, ''); isDuplicateChecked = false;" 
+                    style="flex: 1; margin: 0;">
+                <button type="button" class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555;" onclick="checkDuplicateId()">중복조회</button>
             </div>
             
+            <label style="margin-top: 10px; display:block;">실명 (실제 이름)</label>
+            <input type="text" id="signup-realname" placeholder="실명을 입력하세요 (예: 홍길동)" style="margin-top: 5px;">
+            
+            <label style="margin-top: 10px; display:block;">비밀번호</label>
             <input type="password" id="signup-pw" placeholder="비밀번호 (숫자+영대소문자+특수기호)">
 
             <label style="color:var(--gold);">가입 역할 (직급)</label>
@@ -650,10 +664,10 @@
             <label>소속 체육관 (반드시 검색하여 선택하세요)</label>
             <div style="display: flex; flex-direction: column; gap: 5px;">
                 <div style="display: flex; gap: 5px;">
-                    <input type="text" id="signup-gym-keyword" placeholder="체육관명 검색 (예: 복싱아카데미)" style="flex: 1; margin: 0;" onkeydown="if(event.key === 'Enter') searchGym()">
+                    <input type="text" id="signup-gym-keyword" placeholder="체육관명 검색 (예: 전주 복싱아카데미)" style="flex: 1; margin: 0;" onkeydown="if(event.key === 'Enter') searchGym()">
                     <button type="button" class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555;" onclick="searchGym()">조회</button>
                 </div>
-                <div id="gym-search-results" style="display: none; background: #222; border: 1px solid #444; border-radius: 4px; padding: 8px; font-size: 0.85rem;"></div>
+                <div id="gym-search-results" style="display: none; background: #222; border: 1px solid #444; border-radius: 4px; padding: 8px; font-size: 0.85rem; max-height: 150px; overflow-y: auto;"></div>
                 
                 <input type="text" id="signup-gym-display" placeholder="선택된 체육관 없음" style="flex: 1; margin: 0; margin-top: 5px; background: #1a1a1a; color: var(--gold); border: 1px solid var(--gold);" readonly>
                 <input type="hidden" id="signup-gym">
@@ -689,11 +703,19 @@
             </div>
             
             <div style="margin-top: 15px; padding: 12px; border: 2px solid #FF007F; border-radius: 8px; background: rgba(255, 0, 127, 0.05);">
-                <label style="color: #FF007F; font-size: 0.95rem; font-weight: bold; margin-top: 0; text-shadow: 0 0 5px rgba(255,0,127,0.3);">🚨 본인확인은 신분증이 함께 나온 셀프사진 업로드 필수!</label>
-                <p style="font-size: 0.75rem; color: #ddd; margin-top: 6px; margin-bottom: 12px; line-height: 1.5;">신분증의 <b style="color: #FF007F;">주민등록번호 뒷자리와 주소는 반드시 가린 뒤</b> 촬영해 주세요. 단, 신분증 내의 <b>사진</b>과 <b>사용자의 얼굴</b>은 대조 가능하도록 명확히 노출되어야 합니다.</p>
+                <label style="color: #FF007F; font-size: 0.95rem; font-weight: bold; margin-top: 0; text-shadow: 0 0 5px rgba(255,0,127,0.3);">🚨 본인 인증 (신분증 & 셀카)</label>
+                <p style="font-size: 0.75rem; color: #ddd; margin-top: 6px; margin-bottom: 12px; line-height: 1.5;">신분증의 <b style="color: #FF007F;">주민번호 뒷자리와 주소는 가리고</b> 촬영해 주세요. 대조를 위해 얼굴 정면 사진(셀카)도 함께 첨부해야 합니다.</p>
+                
+                <label style="font-size: 0.8rem; color: #aaa;">1. 신분증 사본</label>
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom: 10px;">
+                    <input type="file" accept="image/*" id="signup-id-pic" onchange="previewImage(event, 'preview-id')" style="flex:1; border: 1px solid #FF007F;">
+                    <div id="preview-id" style="width: 40px; height: 40px; border-radius: 4px; background: #555; background-size: cover; background-position: center; display: none; border: 1px solid #FF007F;"></div>
+                </div>
+
+                <label style="font-size: 0.8rem; color: #aaa;">2. 본인 셀카</label>
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <input type="file" accept="image/*" id="signup-pic-input" onchange="openCropperForSignup(event)" style="flex:1; border: 1px solid #FF007F;">
-                    <div id="signup-pic-preview" style="width: 40px; height: 40px; border-radius: 50%; background: #555; background-size: cover; background-position: center; display: none; border: 2px solid #FF007F;"></div>
+                    <input type="file" accept="image/*" id="signup-selfie-pic" onchange="previewImage(event, 'preview-selfie')" style="flex:1; border: 1px solid #FF007F;">
+                    <div id="preview-selfie" style="width: 40px; height: 40px; border-radius: 50%; background: #555; background-size: cover; background-position: center; display: none; border: 1px solid #FF007F;"></div>
                 </div>
             </div>
 
@@ -710,9 +732,9 @@
                 <div id="privacy-scroll-box" onscroll="handlePrivacyScroll()" style="height: 120px; overflow-y: auto; background: #222; border: 1px solid #444; border-radius: 8px; padding: 12px; font-size: 0.75rem; color: #aaa; line-height: 1.6; margin-bottom: 10px;">
                     <b>개인정보 수집 및 이용안내</b><br><br>
                     1. 수집 목적: 본인 확인, 티어 배정 및 스파링클럽 회원 관리<br>
-                    2. 수집 항목: 이름, 비밀번호, 소속 체육관, 체급, 지역, 신분증 및 안면 사진<br>
+                    2. 수집 항목: 아이디, 이름, 비밀번호, 소속 체육관, 체급, 지역, 신분증 및 안면 사진<br>
                     3. 보유 및 이용 기간: 회원 탈퇴 시까지<br><br>
-                    <span style="color: #FF007F; font-weight: bold;">[핵심 보안 사항]<br>제출된 신분증 및 얼굴 사진은 가입 승인 직후 즉시 파기됨을 명시합니다.</span><br><br>
+                    <span style="color: #FF007F; font-weight: bold;">[핵심 보안 사항]<br>제출된 신분증 및 얼굴 사진은 가입 승인 직후 자동 파기 프로세스에 의해 안전하게 삭제됩니다.</span><br><br>
                     아래까지 모두 읽으셔야 동의 체크가 가능합니다.<br>
                     안전하고 건강한 스파링 문화를 위해 협조해 주셔서 감사합니다.<br>
                     .<br>.<br>.<br>.<br>
@@ -724,7 +746,7 @@
                 </label>
             </div>
 
-            <button type="button" id="btn-signup-submit" class="btn-submit" onclick="submitSignup()" disabled style="background: #555; cursor: not-allowed; transition: all 0.3s; margin-top: 20px;">가입 신청 (서약서 및 약관 동의 필요)</button>
+            <button type="button" id="btn-signup-submit" class="btn-submit" onclick="submitSignup()" disabled style="background: #555; cursor: not-allowed; transition: all 0.3s; margin-top: 20px;">가입 신청 (관장 승인제)</button>
         </div>
     </div>
 </div>
@@ -830,7 +852,7 @@
                 <input type="text" id="edit-gym-input" placeholder="체육관 검색 또는 직접 입력" style="flex: 2; margin: 0; font-size: 0.9rem;">
                 <button type="button" class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555; flex: 1;" onclick="searchEditGym()">조회</button>
             </div>
-            <div id="edit-gym-results" style="display: none; background: #111; border: 1px solid #444; border-radius: 4px; padding: 8px; margin-top: 5px; font-size: 0.8rem;"></div>
+            <div id="edit-gym-results" style="display: none; background: #111; border: 1px solid #444; border-radius: 4px; padding: 8px; margin-top: 5px; font-size: 0.8rem; max-height: 150px; overflow-y: auto;"></div>
             <button class="btn-submit" style="margin-top: 10px; width: 100%;" onclick="updateGym()">소속 확정 및 변경</button>
             
             <label style="font-size: 0.8rem; color: #aaa; margin-top:15px;">프로필 사진 변경</label>
@@ -1040,90 +1062,8 @@
 <script>
 
 
-
-// --- 전역 데이터 및 상태 ---
-
-// 🔥 [새로운 테스트 봇 세팅] 세계챔피언 30명 기반 가상 데이터
-const testBots = [
-    { id: 'tbot_1', rawName: '무함마드 알리[test]', name: '무함마드 알리[test]', pw: '0694', tier: 5, gym: '효천 메인관', weight: '+90kg', region: '전북', sW: 80, sD: 0, sL: 0, pt: 8500000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot1/200/200' },
-    { id: 'tbot_2', rawName: '마이크 타이슨[test]', name: '마이크 타이슨[test]', pw: '0694', tier: 5, gym: '효천 메인관', weight: '+90kg', region: '전북', sW: 75, sD: 0, sL: 0, pt: 8400000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot2/200/200' },
-    { id: 'tbot_3', rawName: '플로이드 메이웨더[test]', name: '플로이드 메이웨더[test]', pw: '0694', tier: 5, gym: '팀 파이터', weight: '-65kg', region: '서울', sW: 50, sD: 0, sL: 0, pt: 9999999, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot3/200/200' },
-    { id: 'tbot_4', rawName: '매니 파퀴아오[test]', name: '매니 파퀴아오[test]', pw: '0694', tier: 5, gym: 'MP 짐', weight: '-65kg', region: '부산', sW: 62, sD: 2, sL: 8, pt: 9500000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot4/200/200' },
-    { id: 'tbot_5', rawName: '카넬로 알바레즈[test]', name: '카넬로 알바레즈[test]', pw: '0694', tier: 5, gym: '강철 복싱', weight: '-75kg', region: '경기', sW: 60, sD: 2, sL: 2, pt: 9200000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot5/200/200' },
-    { id: 'tbot_6', rawName: '슈가 레이 레너드[test]', name: '슈가 레이 레너드[test]', pw: '0694', tier: 5, gym: '대전 챔프', weight: '-65kg', region: '대전', sW: 36, sD: 1, sL: 3, pt: 8800000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot6/200/200' },
-    { id: 'tbot_7', rawName: '로이 존스 주니어[test]', name: '로이 존스 주니어[test]', pw: '0694', tier: 5, gym: '빛고을 복싱', weight: '-80kg', region: '광주', sW: 66, sD: 0, sL: 10, pt: 8700000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot7/200/200' },
-    { id: 'tbot_8', rawName: '게나디 골로프킨[test]', name: '게나디 골로프킨[test]', pw: '0694', tier: 5, gym: '대구 불주먹', weight: '-75kg', region: '대구', sW: 42, sD: 1, sL: 2, pt: 8600000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot8/200/200' },
-    { id: 'tbot_9', rawName: '타이슨 퓨리[test]', name: '타이슨 퓨리[test]', pw: '0694', tier: 5, gym: '울산 히어로', weight: '+90kg', region: '울산', sW: 34, sD: 1, sL: 1, pt: 8500000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot9/200/200' },
-    { id: 'tbot_10', rawName: '올렉산드르 우식[test]', name: '올렉산드르 우식[test]', pw: '0694', tier: 5, gym: '키예프 짐', weight: '+90kg', region: '경북', sW: 22, sD: 0, sL: 0, pt: 8400000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot10/200/200' },
-    { id: 'tbot_11', rawName: '나오야 이노우에[test]', name: '나오야 이노우에[test]', pw: '0694', tier: 5, gym: '몬스터 짐', weight: '-55kg', region: '경남', sW: 27, sD: 0, sL: 0, pt: 8900000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot11/200/200' },
-    { id: 'tbot_12', rawName: '로베르토 듀란[test]', name: '로베르토 듀란[test]', pw: '0694', tier: 5, gym: '돌주먹 짐', weight: '-65kg', region: '강원', sW: 103, sD: 0, sL: 16, pt: 8200000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot12/200/200' },
-    { id: 'tbot_13', rawName: '토마스 헌즈[test]', name: '토마스 헌즈[test]', pw: '0694', tier: 5, gym: '히트맨 아카데미', weight: '-65kg', region: '충북', sW: 61, sD: 1, sL: 5, pt: 8100000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot13/200/200' },
-    { id: 'tbot_14', rawName: '마빈 헤글러[test]', name: '마빈 헤글러[test]', pw: '0694', tier: 5, gym: '마블러스 짐', weight: '-75kg', region: '충남', sW: 62, sD: 2, sL: 3, pt: 8000000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot14/200/200' },
-    { id: 'tbot_15', rawName: '조지 포먼[test]', name: '조지 포먼[test]', pw: '0694', tier: 5, gym: '제주 그릴', weight: '+90kg', region: '제주', sW: 76, sD: 0, sL: 5, pt: 8300000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot15/200/200' },
-    { id: 'tbot_16', rawName: '바실 로마첸코[test]', name: '바실 로마첸코[test]', pw: '0694', tier: 5, gym: '매트릭스 짐', weight: '-60kg', region: '전남', sW: 18, sD: 0, sL: 3, pt: 8600000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot16/200/200' },
-    { id: 'tbot_17', rawName: '테렌스 크로포드[test]', name: '테렌스 크로포드[test]', pw: '0694', tier: 5, gym: '세종 버드', weight: '-65kg', region: '세종', sW: 40, sD: 0, sL: 0, pt: 8750000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot17/200/200' },
-    { id: 'tbot_18', rawName: '오스카 델 라 호야[test]', name: '오스카 델 라 호야[test]', pw: '0694', tier: 4, gym: '골든보이 짐', weight: '-65kg', region: '인천', sW: 39, sD: 0, sL: 6, pt: 5200000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot18/200/200' },
-    { id: 'tbot_19', rawName: '안소니 조슈아[test]', name: '안소니 조슈아[test]', pw: '0694', tier: 4, gym: '팀 파이터', weight: '+90kg', region: '서울', sW: 28, sD: 0, sL: 3, pt: 5100000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot19/200/200' },
-    { id: 'tbot_20', rawName: '드온테이 와일더[test]', name: '드온테이 와일더[test]', pw: '0694', tier: 4, gym: 'MP 짐', weight: '+90kg', region: '부산', sW: 43, sD: 1, sL: 3, pt: 5000000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot20/200/200' },
-    { id: 'tbot_21', rawName: '에롤 스펜스 Jr[test]', name: '에롤 스펜스 Jr[test]', pw: '0694', tier: 4, gym: '대구 불주먹', weight: '-65kg', region: '대구', sW: 28, sD: 0, sL: 1, pt: 4900000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot21/200/200' },
-    { id: 'tbot_22', rawName: '라이언 가르시아[test]', name: '라이언 가르시아[test]', pw: '0694', tier: 4, gym: '효천 메인관', weight: '-60kg', region: '전북', sW: 25, sD: 0, sL: 1, pt: 4800000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot22/200/200' },
-    { id: 'tbot_23', rawName: '거본타 데이비스[test]', name: '거본타 데이비스[test]', pw: '0694', tier: 4, gym: '강철 복싱', weight: '-60kg', region: '경기', sW: 29, sD: 0, sL: 0, pt: 4700000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot23/200/200' },
-    { id: 'tbot_24', rawName: '아르투르 베테르비에프[test]', name: '아르투르 베테르비에프[test]', pw: '0694', tier: 4, gym: '돌주먹 짐', weight: '-80kg', region: '강원', sW: 20, sD: 0, sL: 0, pt: 4600000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot24/200/200' },
-    { id: 'tbot_25', rawName: '드미트리 비볼[test]', name: '드미트리 비볼[test]', pw: '0694', tier: 4, gym: '마블러스 짐', weight: '-80kg', region: '충남', sW: 22, sD: 0, sL: 0, pt: 4500000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot25/200/200' },
-    { id: 'tbot_26', rawName: '샤커 스티븐슨[test]', name: '샤커 스티븐슨[test]', pw: '0694', tier: 4, gym: '매트릭스 짐', weight: '-60kg', region: '전남', sW: 21, sD: 0, sL: 0, pt: 4400000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot26/200/200' },
-    { id: 'tbot_27', rawName: '훌리오 세자르 차베스[test]', name: '훌리오 세자르 차베스[test]', pw: '0694', tier: 4, gym: '제주 그릴', weight: '-60kg', region: '제주', sW: 107, sD: 2, sL: 6, pt: 4300000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot27/200/200' },
-    { id: 'tbot_28', rawName: '블라디미르 클리츠코[test]', name: '블라디미르 클리츠코[test]', pw: '0694', tier: 4, gym: '키예프 짐', weight: '+90kg', region: '경북', sW: 64, sD: 0, sL: 5, pt: 4200000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot28/200/200' },
-    { id: 'tbot_29', rawName: '레녹스 루이스[test]', name: '레녹스 루이스[test]', pw: '0694', tier: 4, gym: '울산 히어로', weight: '+90kg', region: '울산', sW: 41, sD: 1, sL: 2, pt: 4100000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot29/200/200' },
-    { id: 'tbot_30', rawName: '에반더 홀리필드[test]', name: '에반더 홀리필드[test]', pw: '0694', tier: 4, gym: '빛고을 복싱', weight: '+90kg', region: '광주', sW: 44, sD: 2, sL: 10, pt: 4000000, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100, isDummy: true, profilePic: 'https://picsum.photos/seed/bot30/200/200' }
-];
-
-const testGyms = [
-    { id: 'dummy_gym_효천메인관', name: '효천 메인관', region: '전북', totalPt: 16900000, registeredAt: 1710000000000, isDummy: true, stories: [] },
-    { id: 'dummy_gym_팀파이터', name: '팀 파이터', region: '서울', totalPt: 15099999, registeredAt: 1710000000000, isDummy: true, stories: [] },
-    { id: 'dummy_gym_MP짐', name: 'MP 짐', region: '부산', totalPt: 14500000, registeredAt: 1710000000000, isDummy: true, stories: [] },
-    { id: 'dummy_gym_강철복싱', name: '강철 복싱', region: '경기', totalPt: 13900000, registeredAt: 1710000000000, isDummy: true, stories: [] },
-    { id: 'dummy_gym_대전챔프', name: '대전 챔프', region: '대전', totalPt: 8800000, registeredAt: 1710000000000, isDummy: true, stories: [] },
-    { id: 'dummy_gym_빛고을복싱', name: '빛고을 복싱', region: '광주', totalPt: 12700000, registeredAt: 1710000000000, isDummy: true, stories: [] },
-    { id: 'dummy_gym_대구불주먹', name: '대구 불주먹', region: '대구', totalPt: 13500000, registeredAt: 1710000000000, isDummy: true, stories: [] },
-    { id: 'dummy_gym_울산히어로', name: '울산 히어로', region: '울산', totalPt: 12600000, registeredAt: 1710000000000, isDummy: true, stories: [] },
-    { id: 'dummy_gym_키예프짐', name: '키예프 짐', region: '경북', totalPt: 12600000, registeredAt: 1710000000000, isDummy: true, stories: [] },
-    { id: 'dummy_gym_몬스터짐', name: '몬스터 짐', region: '경남', totalPt: 8900000, registeredAt: 1710000000000, isDummy: true, stories: [] },
-    { id: 'dummy_gym_돌주먹짐', name: '돌주먹 짐', region: '강원', totalPt: 12800000, registeredAt: 1710000000000, isDummy: true, stories: [] },
-    { id: 'dummy_gym_히트맨아카데미', name: '히트맨 아카데미', region: '충북', totalPt: 8100000, registeredAt: 1710000000000, isDummy: true, stories: [] },
-    { id: 'dummy_gym_마블러스짐', name: '마블러스 짐', region: '충남', totalPt: 12500000, registeredAt: 1710000000000, isDummy: true, stories: [] },
-    { id: 'dummy_gym_제주그릴', name: '제주 그릴', region: '제주', totalPt: 12600000, registeredAt: 1710000000000, isDummy: true, stories: [] },
-    { id: 'dummy_gym_매트릭스짐', name: '매트릭스 짐', region: '전남', totalPt: 13000000, registeredAt: 1710000000000, isDummy: true, stories: [] },
-    { id: 'dummy_gym_세종버드', name: '세종 버드', region: '세종', totalPt: 8750000, registeredAt: 1710000000000, isDummy: true, stories: [] },
-    { id: 'dummy_gym_골든보이짐', name: '골든보이 짐', region: '인천', totalPt: 5200000, registeredAt: 1710000000000, isDummy: true, stories: [] }
-];
-
-const testFeeds = [
-    { id: 90001, matchSeq: 1001, matchType: 'rank', senderRawName: '마이크 타이슨[test]', senderName: '마이크 타이슨[test]', receiverRawName: '무함마드 알리[test]', receiverName: '무함마드 알리[test]', status: '종료', date: '2026-03-20 20:00', matchGymName: '효천 메인관', matchGymId: 'dummy_gym_효천메인관', resultValue: 'draw', approvedAt: Date.now() - 3600000, isDummy: true },
-    { id: 90002, matchSeq: 1002, matchType: 'open', senderRawName: '플로이드 메이웨더[test]', senderName: '플로이드 메이웨더[test]', receiverRawName: '매니 파퀴아오[test]', receiverName: '매니 파퀴아오[test]', status: '대기중', date: '2026-03-25 15:00', matchGymName: '팀 파이터', matchGymId: 'dummy_gym_팀파이터', createdAt: Date.now() - 7200000, isDummy: true },
-    { id: 90003, matchSeq: 1003, matchType: 'rank', senderRawName: '카넬로 알바레즈[test]', senderName: '카넬로 알바레즈[test]', receiverRawName: '게나디 골로프킨[test]', receiverName: '게나디 골로프킨[test]', status: '매칭 성사', date: '2026-03-22 18:00', matchGymName: '강철 복싱', matchGymId: 'dummy_gym_강철복싱', acceptedAt: Date.now() - 86400000, isDummy: true }
-];
-
-const testPosts = [
-    { id: 80001, prefix: '[자유게시]', title: '부산 밀면 먹고 쳤더니 잽이 더 날카로워졌네요', content: '역시 MP 짐 시설 최고입니다. 부산 분들 매너 좋으시네요!', authorId: 'tbot_2', authorName: '마이크 타이슨[test]', time: Date.now() - 3600000, comments: [], likes: ['tbot_1','tbot_3'], type: 'normal', isDummy: true },
-    { id: 80002, prefix: '[경기결과]', title: '[Sparring 1001] 🏆마이크 타이슨[test](무) vs 무함마드 알리[test](무)', content: '전주 효천 메인관 스파링 후기입니다. 엄청난 접전이었습니다!', authorId: 0, authorName: '시스템 봇', time: Date.now() - 7200000, comments: [], likes: ['tbot_4','tbot_5'], type: 'normal', isDummy: true, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
-    { id: 80003, prefix: '[복싱노하우]', title: '체력 안배를 위한 라운드별 호흡법 공유', content: '1라운드는 잽 위주로 끊어치면서 숨을 고르는게 중요합니다.', authorId: 'tbot_11', authorName: '나오야 이노우에[test]', time: Date.now() - 25000000, comments: [{authorName: '카넬로 알바레즈[test]', text: '좋은 팁 감사합니다!', time: Date.now() - 5000000}], likes: ['tbot_6','tbot_7'], type: 'normal', isDummy: true },
-    { id: 80004, prefix: '[복싱질문]', title: '사우스포 상대할 때 앞손 싸움 어떻게 하시나요?', content: '앞발을 먹으라는데 스텝이 잘 안따라주네요. 팁 부탁드립니다.', authorId: 'tbot_8', authorName: '게나디 골로프킨[test]', time: Date.now() - 50000000, comments: [], type: 'normal', isDummy: true },
-    { id: 80005, prefix: '[건의]', title: '지역별 필터링 기능에 구 단위도 추가해주세요!', content: '서울은 너무 넓어서 구 단위로 볼 수 있으면 좋겠습니다.', authorId: 'tbot_3', authorName: '플로이드 메이웨더[test]', time: Date.now() - 86400000, comments: [], type: 'normal', isDummy: true }
-];
-
-// [최종 수정] 관리자 및 테스트 계정 정보 설정 (비밀번호 0694 고정)
-let demoPlayers = [
-    { id: 1, name: 'test', rawName: 'test', pw: '0694', tier: 5, gym: '복싱아카데미', weight: '-75kg', region: '전북', sW: 3, sD: 0, sL: 0, pt: 150, matchingTrust: 100, decisionTrust: 100, pending: 2, noReply: 0, acc: 95 },
-    { id: 2, name: 'test1', rawName: 'test1', pw: '0694', tier: 5, gym: '서울팀파이터', weight: '-65kg', region: '서울', sW: 2, sD: 1, sL: 1, pt: 140, matchingTrust: 100, decisionTrust: 100, pending: 5, noReply: 1, acc: 80 },
-    // admin 계정은 isAdmin: true 속성을 통해 모든 관리 권한을 가집니다.
-    { id: 999, name: '관리자', rawName: 'admin', pw: '0694', isAdmin: true, tier: 10, gym: '본부', weight: 'N/A', region: '전국', sW: 0, sD: 0, sL: 0, pt: 999, matchingTrust: 100, decisionTrust: 100, pending: 0, noReply: 0, acc: 100 }
-];
-
-let demoFeeds = [
-    { type: 'rank', p1: 1, p2: 2, time: '10분 전', text: '랭크전 승리를 인증했습니다. (승리 50P 획득)', media: 'video' },
-    { type: 'practice', p1: 3, p2: 1, time: '2시간 전', text: '연습 게임을 무사히 마쳤습니다.', media: 'none' }
-];
-
+// [최적화] 가상 데이터(Test Bots) 변수 완전 삭제 및 전역 변수 정립
+let demoPlayers = []; 
 let currentUser = null;
 let cropper = null;
 let currentCropContext = 'profile'; 
@@ -1295,151 +1235,96 @@ window.onload = async function() {
     initBackground(); 
 };
 
-// 🔥 [실시간 엔진] 체육관 레지스트리 동기화 추가 및 실시간 UI 갱신 로직
-// 🔥 [실시간 엔진] 체육관 레지스트리 동기화 추가 및 실시간 UI 갱신 로직
+// 🔥 [실시간 엔진] 보안 규칙 최적화 버전 (Permission Denied 해결)
+// 🔥 [실시간 엔진] 보안 규칙 최적화 버전 (Permission Denied 해결)
 function initFirebaseRealtime() {
-    // [보안 지침 1단계] 누구나 볼 수 있는 공공 데이터 감시 (allow read: if true)
-    
-    // 1. 커뮤니티 게시판 동기화
     window.onSnapshot(window.collection(window.db, "community_posts"), (snapshot) => {
         let posts = [];
         snapshot.forEach((doc) => posts.push(doc.data()));
         posts.sort((a, b) => b.time - a.time);
         localStorage.setItem('sparring_community_posts', JSON.stringify(posts));
-        
         renderFeed(); 
         renderPopularSparring();
         startNoticeSlider(); 
-
         if (document.getElementById('board').classList.contains('active')) renderCommunity();
-        if (document.getElementById('post-detail').classList.contains('active') && currentPostId) openPostDetail(currentPostId);
-        if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdminNoticeList();
     });
 
-    // 2. 체육관 레지스트리 동기화
     window.onSnapshot(window.collection(window.db, "gyms_registry"), (snapshot) => {
         let gyms = [];
         snapshot.forEach((doc) => gyms.push(doc.data()));
         localStorage.setItem('sparring_gyms_registry', JSON.stringify(gyms));
         renderGyms();
-        if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdminGymManagement();
     });
 
-    // 관리자 전용 리스너 실행 플래그
-    let adminListenersStarted = false;
+    let authenticatedListeners = []; 
 
-    // [보안 지침 2단계] 로그인 상태 및 권한 감지 후 민감 데이터 접근 (allow read: if request.auth != null)
     window.onAuthStateChanged(window.auth, async (user) => {
+        authenticatedListeners.forEach(unsubscribe => unsubscribe());
+        authenticatedListeners = [];
+
         if (user) {
-            const inputId = user.email.split('@')[0];
-            
-            // A. 내 프로필 및 권한 상태 감시
-            const userRef = window.doc(window.db, "users", inputId);
-            window.onSnapshot(userRef, (doc) => {
-                if (doc.exists()) {
-                    const freshData = doc.data();
-                    
-                    if (!currentUser || currentUser.isAdmin !== freshData.isAdmin) {
-                        console.log("서버 보안 권한 동기화 완료");
-                    }
-                    
-                    currentUser = freshData;
-                    localStorage.setItem('sparring_session', JSON.stringify(currentUser));
-                    updateLoginStateUI();
-                    renderPlayers();
-                    updateMatchBadge();
+            const encodedId = user.email.split('@')[0];
+            let decodedId = encodedId;
+            try {
+                decodedId = decodeURIComponent(atob(encodedId));
+            } catch(e) {} 
 
-                    // 🔥 [핵심 보안] 관리자 권한이 서버로부터 확인된 '직후'에만 관리자 데이터에 접근합니다.
-                    if (currentUser.isAdmin && !adminListenersStarted) {
-                        adminListenersStarted = true;
-                        
-                        // 관리자 1: 가입 신청 대기자 감시 (allow read: if isAdmin())
-                        window.onSnapshot(window.collection(window.db, "pendingUsers"), (snapshot) => {
-                            let pending = [];
-                            snapshot.forEach((doc) => {
-                                pending.push({ ...doc.data(), firebaseId: doc.id });
-                            });
-                            localStorage.setItem('sparring_pending_users', JSON.stringify(pending));
-                            if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdmin();
-                        });
-                    }
-                } else {
-                    currentUser = null;
-                    localStorage.removeItem('sparring_session');
-                }
-            });
+            updateLoginStateUI();
 
-            // B. 매칭 현황 동기화
-            window.onSnapshot(window.collection(window.db, "matches"), (snapshot) => {
-                let matches = [];
-                snapshot.forEach((doc) => matches.push(doc.data()));
-                localStorage.setItem('sparring_matches', JSON.stringify(matches));
-                
-                renderFeed();
-                if (document.getElementById('players').classList.contains('active')) renderPlayers();
-                if (document.getElementById('matchStatusModal').style.display === 'flex') renderMatchList();
-                if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdminMatchManagement();
-            });
-
-            // C. 전체 승인된 선수 명단 동기화
-            window.onSnapshot(window.collection(window.db, "users"), (snapshot) => {
+            const usersUnsub = window.onSnapshot(window.collection(window.db, "users"), (snapshot) => {
                 let players = [];
                 snapshot.forEach((doc) => players.push(doc.data()));
-                
                 demoPlayers = players;
                 localStorage.setItem('sparring_approved_users', JSON.stringify(players));
                 
-                if (currentUser) {
-                    const updatedMe = players.find(p => p.rawName === currentUser.rawName);
-                    if (updatedMe) {
-                        currentUser = updatedMe;
-                        localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+                // 🔥 [버그 수정] userId(영문) 및 디코딩된 실명 호환 매칭으로 동기화 누락 방지
+                const updatedMe = players.find(p => p.userId === encodedId || p.rawName === decodedId || p.rawName === encodedId);
+                
+                if (updatedMe) {
+                    currentUser = updatedMe;
+                    localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+                    updateMatchBadge();
+                    
+                    if (currentUser.isAdmin) {
+                        const pendingUnsub = window.onSnapshot(window.collection(window.db, "pendingUsers"), (snap) => {
+                            let pending = [];
+                            snap.forEach((d) => pending.push({ ...d.data(), firebaseId: d.id }));
+                            localStorage.setItem('sparring_pending_users', JSON.stringify(pending));
+                            if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
+                        });
+                        authenticatedListeners.push(pendingUnsub);
                     }
                 }
                 
-                renderFeed();
-                renderPlayers();
-                renderGyms();
-                renderNewMembers(); // [버그 수정] 다른 기기나 백그라운드에서 신규 유저가 서버에 감지되었을 때 '신규 가입 소식'도 실시간으로 렌더링되도록 누락된 로직 추가
-                if (currentUser) updateLoginStateUI();
-                
-                const profileModal = document.getElementById('profileModal');
-                if (profileModal && profileModal.style.display === 'flex' && typeof profileOwnerId !== 'undefined' && profileOwnerId !== null) {
-                    const p = players.find(x => String(x.id) === String(profileOwnerId));
-                    if (p) {
-                        const isOwner = currentUser && String(p.id) === String(currentUser.id);
-                        renderProfileStories(p, isOwner);
-                        
-                        const recEl = document.getElementById('pm-season-rec');
-                        const ptEl = document.getElementById('pm-season-pt');
-                        const trustEl = document.getElementById('pm-trust');
-                        
-                        if(recEl) recEl.innerText = `${p.sW || 0}승 ${p.sD || 0}무 ${p.sL || 0}패`;
-                        if(ptEl) ptEl.innerText = `${(p.pt || 0).toLocaleString()} P`;
-                        if(trustEl) trustEl.innerText = `${p.trustScore || 0} P`;
-                    }
-                }
-
-                if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) {
-                    renderAdmin();
-                }
+                renderPlayers(); 
+                renderNewMembers();
+                if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
             });
+            authenticatedListeners.push(usersUnsub);
 
-            // D. 경기 결과 기록 요청 동기화
-            window.onSnapshot(window.collection(window.db, "record_requests"), (snapshot) => {
+            const matchesUnsub = window.onSnapshot(window.collection(window.db, "matches"), (snapshot) => {
+                let matches = [];
+                snapshot.forEach((doc) => matches.push(doc.data()));
+                localStorage.setItem('sparring_matches', JSON.stringify(matches));
+                renderFeed();
+                if (document.getElementById('matchStatusModal').style.display === 'flex') renderMatchList();
+            });
+            authenticatedListeners.push(matchesUnsub);
+
+            const recordsUnsub = window.onSnapshot(window.collection(window.db, "record_requests"), (snapshot) => {
                 let reqs = [];
                 snapshot.forEach((doc) => reqs.push(doc.data()));
                 localStorage.setItem('sparring_record_requests', JSON.stringify(reqs));
-                
-                renderFeed();
-                if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdmin();
+                if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
             });
-
+            authenticatedListeners.push(recordsUnsub);
         } else {
-            // 로그아웃 상태일 때
             currentUser = null;
-            adminListenersStarted = false; // 권한 초기화
+            demoPlayers = [];
             localStorage.removeItem('sparring_session');
+            localStorage.removeItem('sparring_approved_users');
+            updateLoginStateUI();
+            renderPlayers();
         }
     });
 }
@@ -1611,21 +1496,25 @@ function showFeedMatchDetail(matchId) {
     alert(`[🥊 스파링 확정 안내]\n\n상대선수: ${m.senderName} vs ${m.receiverName}\n확정일시: ${m.date}\n남은기간: ${dDayStr}\n\n* 상세 조율은 '매칭 확인' 메뉴의 채팅창을 이용해주세요.`);
 }
 
-// 🔥 [선수 매칭] 복합 필터링(티어/지역) 및 UI 전면 개편
+// 🔥 [복서 리스트] 필터 시스템 UI 일관성 최적화 버전
 let currentMatchingTier = 'all';
 let currentMatchingRegion = 'all';
+let currentMatchingStance = 'all'; 
 
+// 1. 티어 필터링 전환 로직 (하이라이트 강화)
 function switchMatchingTier(tier) {
     currentMatchingTier = tier;
-    const colorMap = {1: 'var(--tier1)', 2: 'var(--tier2)', 3: 'var(--tier3)', 4: 'var(--tier4)', 5: 'var(--tier5)', 'all': 'var(--gold)'};
+    const colorMap = {
+        1: 'var(--tier1)', 2: 'var(--tier2)', 3: 'var(--tier3)', 
+        4: 'var(--tier4)', 5: 'var(--tier5)', 'all': 'var(--gold)'
+    };
     
-    // 탭 UI 하이라이팅 변경
     const allTiers = ['all', 5, 4, 3, 2, 1];
     allTiers.forEach(i => {
         const btn = document.getElementById(`tier-btn-${i}`);
         if(btn) {
             if(i === tier) {
-                btn.style.background = 'rgba(255, 255, 255, 0.1)';
+                btn.style.background = 'rgba(253, 203, 110, 0.1)';
                 btn.style.color = colorMap[i];
                 btn.style.borderColor = colorMap[i];
             } else {
@@ -1638,91 +1527,128 @@ function switchMatchingTier(tier) {
     renderPlayers();
 }
 
+// 2. 지역 필터링 변경 로직
 function changeMatchingRegion() {
     const select = document.getElementById('matching-region-filter');
-    currentMatchingRegion = select.value;
+    if (select) {
+        currentMatchingRegion = select.value;
+        renderPlayers();
+    }
+}
+
+function switchMatchingStance(stance) {
+    currentMatchingStance = stance;
+    
+    // 버튼 ID 맵핑 (전체, 오소독스, 사우스포, 스위치)
+    const stanceBtns = {
+        'all': 'stance-btn-all',
+        '오소독스': 'stance-btn-ortho',
+        '사우스포': 'stance-btn-south',
+        '스위치': 'stance-btn-switch' // 스위치 버튼 매핑 추가
+    };
+    
+    Object.keys(stanceBtns).forEach(key => {
+        const btn = document.getElementById(stanceBtns[key]);
+        if(btn) {
+            if(key === stance) {
+                btn.style.background = 'rgba(253, 203, 110, 0.1)';
+                btn.style.color = 'var(--gold)';
+                btn.style.borderColor = 'var(--gold)';
+            } else {
+                btn.style.background = '#222';
+                btn.style.color = '#aaa';
+                btn.style.borderColor = '#444';
+            }
+        }
+    });
     renderPlayers();
 }
 
-// 🔥 [최종 10단계] 선수 리스트 렌더링 - 구형 모바일 브라우저 호환성 완벽 해결 및 안전성 강화
+// [배현태 관장님 노출 수정 버전] 역할(Role) 필터를 완화하고 데이터 정합성을 강화한 렌더링 함수
 function renderPlayers() {
     const container = document.getElementById('tier-container');
     if (!container) return;
 
     try {
-        let allMatches = [];
-        try {
-            allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-        } catch(e) {}
-
-        let isTestModeOn = localStorage.getItem('sparring_test_mode') === 'true';
-        let mergedPlayers = isTestModeOn ? [...(demoPlayers||[]), ...(testBots||[])] : (demoPlayers||[]);
+        let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
         
-        // [1] 관리자 및 체육관 매니저 제외, 테스트 데이터 필터링 (복서 리스트에는 순수 선수만 노출되도록 버그 수정)
-        let basePlayers = mergedPlayers.filter(p => p && p.isAdmin !== true && p.rawName !== 'admin' && p.role !== 'manager');
-        if (!isTestModeOn) basePlayers = basePlayers.filter(p => p && p.isDummy !== true);
+        // 데이터 소스 확인 (Firestore 실시간 데이터 우선)
+        if (!demoPlayers || demoPlayers.length === 0) {
+            demoPlayers = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
+        }
 
-        // [2] 조건 필터링 (티어 & 지역)
-        let filteredPlayers = basePlayers;
-        if (currentMatchingTier !== 'all') filteredPlayers = filteredPlayers.filter(p => String(p.tier) === String(currentMatchingTier));
-        if (currentMatchingRegion !== 'all') filteredPlayers = filteredPlayers.filter(p => p.region === currentMatchingRegion);
+        // 1. 기본 필터 수정: 관리자(System Admin)만 제외하고, 관장님(Manager)이라도 티어 정보가 있으면 복서로 노출
+        let basePlayers = demoPlayers.filter(p => {
+            if (!p) return false;
+            // 시스템 마스터 어드민(admin)은 리스트에서 완전 제외
+            if (p.isAdmin === true || p.rawName === 'admin') return false;
+            // 관장님이라도 티어(1~5) 정보가 등록되어 있다면 선수 리스트에 포함
+            return true;
+        });
 
-        // [3] 포인트순 정렬
-        filteredPlayers.sort((a, b) => (b.pt || 0) - (a.pt || 0));
+        // 2. 통합 필터링 로직 (활동지역, 티어, 스탠스 데이터 매칭)
+        basePlayers = basePlayers.filter(p => {
+            // 티어 필터: 데이터가 숫자형이든 문자열형이든 일치하도록 String 변환 비교
+            const tierPass = (currentMatchingTier === 'all') || (String(p.tier) === String(currentMatchingTier));
+            
+            // 활동 지역 필터: '전북' 과 '전라북도' 등의 표기 불일치 방지 (값 자체가 저장된 region과 일치하는지 확인)
+            const regionPass = (currentMatchingRegion === 'all') || (p.region === currentMatchingRegion);
+            
+            // 스탠스 필터: 오소독스/사우스포/스위치 매칭
+            const stancePass = (currentMatchingStance === 'all') || (p.stance === currentMatchingStance);
+
+            return tierPass && regionPass && stancePass;
+        });
+
+        // 3. 점수(PT)순 정렬 (랭킹 순위 부여)
+        basePlayers.sort((a, b) => (b.pt || 0) - (a.pt || 0));
 
         let html = `<div class="tier-list">`;
-        if(filteredPlayers.length > 0) {
-            filteredPlayers.forEach((p, idx) => {
-                // 브라우저 호환성을 위해 ?. (Optional Chaining) 문법 제거 및 방어 로직 적용
-                const currentUserName = currentUser ? currentUser.rawName : null;
-                const isMe = currentUserName && String(currentUser.id) === String(p.id);
-                
-                let activeMatch = null;
-                if (currentUserName && p.rawName) {
-                    activeMatch = allMatches.find(m => m.status !== '종료' && 
-                        ((m.senderRawName === currentUserName && m.receiverRawName === p.rawName) ||
-                         (m.senderRawName === p.rawName && m.receiverRawName === currentUserName)));
-                }
+        if(basePlayers.length > 0) {
+            basePlayers.forEach((p, idx) => {
+                const isMe = currentUser && (String(currentUser.id) === String(p.id) || currentUser.rawName === p.rawName);
+                const activeMatch = currentUser && allMatches.find(m => m.status !== '종료' && 
+                    ((m.senderRawName === currentUser.rawName && m.receiverRawName === p.rawName) ||
+                     (m.senderRawName === p.rawName && m.receiverRawName === currentUser.rawName)));
 
-                // 버튼 로직
-                let btnHtml = isMe ? '' : (activeMatch ? 
+                // 버튼 로직: 본인은 비활성, 진행중인 매치가 있으면 '진행중', 없으면 '매칭 신청'
+                let btnHtml = isMe ? `<span style="color:#666; font-size:0.75rem;">(나)</span>` : (activeMatch ? 
                     `<button class="btn-match" style="background:#333; color:var(--gold); border:1px solid var(--gold);" onclick="openChat(${activeMatch.id}); openModal('matchStatusModal');">진행중</button>` :
                     `<button class="btn-match" onclick="requestMatch(${p.id})">매칭 신청</button>`);
 
-                const currentTierColor = `var(--tier${p.tier || 1})`;
+                const pTier = p.tier || 1;
+                const currentTierColor = `var(--tier${pTier})`;
                 const rankMedal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '🎖️'));
-                const avatarStyle = p.profilePic ? `background-image: url('${p.profilePic}');` : '';
-                const weightText = (p.weight || '').replace('급', '') || '미정';
-                const gymText = p.gym || '무소속';
 
+                // 관장님인 경우 이름 옆에 뱃지 추가 (선택 사항)
+                const roleBadge = p.role === 'manager' ? `<span style="font-size:0.65rem; background:#555; color:var(--gold); padding:1px 4px; border-radius:4px; margin-left:4px;">관장</span>` : '';
+
+                // 수정: card 클래스를 함께 부여하고, 내부 레이아웃을 flex로 명시하여 깨짐 방지
                 html += `
-                <div class="player-card" style="${idx === 0 ? 'border:1px solid ' + currentTierColor : ''}">
+                <div class="card player-card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0; ${idx === 0 ? 'border:1px solid ' + currentTierColor : ''}">
                     <div style="display:flex; align-items:center; gap:12px; flex:1; overflow:hidden;">
-                        <div class="avatar" style="border:2px solid ${currentTierColor}; ${avatarStyle} width:55px; height:55px; flex-shrink:0;"></div>
+                        <div class="avatar" style="border:2px solid ${currentTierColor}; background-image: url('${p.profilePic || ''}'); width:55px; height:55px; flex-shrink:0;"></div>
                         <div style="flex:1; overflow:hidden;">
-                            <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color:${currentTierColor}; font-weight:bold; font-size:0.8rem;">${rankMedal} ${idx + 1}위</div>
-                            <div style="display:flex; align-items:center; gap:5px; margin:2px 0; overflow:hidden; white-space:nowrap;">
-                                <span class="clickable-name" onclick="openProfile('${p.id}')" style="font-size:1.1rem; font-weight:900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50%;">${p.name || '이름없음'}</span>
-                                <span style="color:var(--gold); font-size:0.75rem; overflow:hidden; text-overflow:ellipsis; white-space: nowrap;">
-                                    [${weightText} · ${gymText}]
-                                </span>
+                            <div style="color:${currentTierColor}; font-weight:bold; font-size:0.8rem;">${rankMedal} ${idx + 1}위 ${roleBadge}</div>
+                            <div style="display:flex; align-items:center; gap:5px; margin:2px 0;">
+                                <span class="clickable-name" onclick="openProfile('${p.id}')" style="font-size:1.1rem; font-weight:900;">${p.name}</span>
+                                <span style="color:var(--gold); font-size:0.75rem;">[${p.weight || '미정'} · ${p.gym || '무소속'}]</span>
                             </div>
                             <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem;">
-                                <b style="color:var(--gold); flex-shrink:0;">${(p.pt || 0).toLocaleString()} <small>P</small></b>
-                                <span style="color:#aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left:5px;">시즌 ${p.sW || 0}승 ${p.sD || 0}무 ${p.sL || 0}패</span>
+                                <b style="color:var(--gold);">${(p.pt || 0).toLocaleString()} P</b>
+                                <span style="color:#aaa;">${p.sW || 0}승 ${p.sD || 0}무 ${p.sL || 0}패</span>
                             </div>
                         </div>
                     </div>
-                    <div style="flex-shrink:0; margin-left:5px;">${btnHtml}</div>
+                    <div style="flex-shrink:0; text-align:right;">${btnHtml}</div>
                 </div>`;
             });
         } else {
-            html += `<div style="text-align:center; padding:50px; color:#aaa; font-size: 1.1rem; font-weight:bold; background:#1a1a1a; border-radius:12px; border:1px dashed #444;">선수 없음</div>`;
+            html += `<div style="text-align:center; padding:50px; color:#aaa; background:#1a1a1a; border-radius:12px;">조건에 맞는 선수가 없습니다.</div>`;
         }
         container.innerHTML = html + `</div>`;
-    } catch (err) {
-        console.error("renderPlayers 렌더링 오류:", err);
-        container.innerHTML = `<div style="text-align:center; padding:50px; color:#ff7675; background:#1a1a1a; border-radius:12px; border:1px dashed #444;">데이터 렌더링 중 오류가 발생했습니다.<br>화면을 새로고침 해주세요.</div>`;
+    } catch (err) { 
+        console.error("renderPlayers 오류:", err); 
     }
 }
 
@@ -2419,7 +2345,6 @@ async function submitSparringRecord() {
 
 // 🔥 [최종 10단계] 포인트 트랜잭션 정밀화 - 데이터베이스 무결성 보장 및 통산점수 반영
 async function applyRecordToStats(record) {
-    // 🔥 [테스트 봇 보안 격리] 테스트 봇이나 가상 데이터의 전적 반영은 실제 서버의 랭킹 트랜잭션에 절대 쓰이지 않도록 최상단에서 완벽 차단합니다.
     if (record.isDummy || (record.requester && record.requester.includes('[test]')) || (record.opponentRawName && record.opponentRawName.includes('[test]'))) {
         console.log("테스트 봇의 활동입니다. 실제 서버 기록에 반영되지 않고 우회합니다.");
         return;
@@ -2431,54 +2356,55 @@ async function applyRecordToStats(record) {
 
     const matchCode = generateMatchCode(mData.matchSeq || 0, mData.isDummy);
 
-    // [1] 랭킹전일 경우 선수 및 체육관 데이터 업데이트 (원자적 트랜잭션)
     if (record.matchType === 'rank') {
-        const p1Ref = window.doc(window.db, "users", record.requesterRawName);
-        const p2Ref = window.doc(window.db, "users", record.opponentRawName);
+        let p1 = demoPlayers.find(p => p.rawName === record.requesterRawName || p.name === record.requesterRawName);
+        let p2 = demoPlayers.find(p => p.rawName === record.opponentRawName || p.name === record.opponentRawName);
+        
+        const p1DocName = p1 ? (p1.userId || p1.rawName) : record.requesterRawName;
+        const p2DocName = p2 ? (p2.userId || p2.rawName) : record.opponentRawName;
+        
+        const p1Ref = window.doc(window.db, "users", p1DocName);
+        const p2Ref = window.doc(window.db, "users", p2DocName);
         
         await window.runTransaction(window.db, async (transaction) => {
             const p1Snap = await transaction.get(p1Ref);
             const p2Snap = await transaction.get(p2Ref);
             if (!p1Snap.exists() || !p2Snap.exists()) throw new Error("회원 정보를 찾을 수 없습니다.");
 
-            const p1 = p1Snap.data(); const p2 = p2Snap.data();
+            const p1Data = p1Snap.data(); const p2Data = p2Snap.data();
             let p1Gain = 0, p2Gain = 0;
             let p1Updates = {}, p2Updates = {};
 
-            // 승패 결과에 따른 포인트 분배 (승리 +100 / 무승부 +10 / 패배 -50)
             if (record.resultValue === 'win') {
                 p1Gain = 100; p2Gain = -50;
-                p1Updates = { sW: (p1.sW || 0) + 1, tW: (p1.tW || 0) + 1 };
-                p2Updates = { sL: (p1.sL || 0) + 1, tL: (p1.tL || 0) + 1 };
+                p1Updates = { sW: (p1Data.sW || 0) + 1, tW: (p1Data.tW || 0) + 1 };
+                p2Updates = { sL: (p2Data.sL || 0) + 1, tL: (p2Data.tL || 0) + 1 };
             } else if (record.resultValue === 'loss') {
                 p1Gain = -50; p2Gain = 100;
-                p1Updates = { sL: (p1.sL || 0) + 1, tL: (p1.tL || 0) + 1 };
-                p2Updates = { sW: (p1.sW || 0) + 1, tW: (p1.tW || 0) + 1 };
+                p1Updates = { sL: (p1Data.sL || 0) + 1, tL: (p1Data.tL || 0) + 1 };
+                p2Updates = { sW: (p2Data.sW || 0) + 1, tW: (p2Data.tW || 0) + 1 };
             } else {
                 p1Gain = 10; p2Gain = 10;
-                p1Updates = { sD: (p1.sD || 0) + 1, tD: (p1.tD || 0) + 1 };
-                p2Updates = { sD: (p1.sD || 0) + 1, tD: (p1.tD || 0) + 1 };
+                p1Updates = { sD: (p1Data.sD || 0) + 1, tD: (p1Data.tD || 0) + 1 };
+                p2Updates = { sD: (p2Data.sD || 0) + 1, tD: (p2Data.tD || 0) + 1 };
             }
 
-            // 최종 수치 계산 및 업데이트 (시즌 점수는 0점 하한선 적용)
             transaction.update(p1Ref, {
                 ...p1Updates,
-                pt: Math.max(0, (p1.pt || 0) + p1Gain),
-                tPt: Math.max(0, (p1.tPt || 0) + p1Gain)
+                pt: Math.max(0, (p1Data.pt || 0) + p1Gain),
+                tPt: Math.max(0, (p1Data.tPt || 0) + p1Gain)
             });
             transaction.update(p2Ref, {
                 ...p2Updates,
-                pt: Math.max(0, (p2.pt || 0) + p2Gain),
-                tPt: Math.max(0, (p2.tPt || 0) + p2Gain)
+                pt: Math.max(0, (p2Data.pt || 0) + p2Gain),
+                tPt: Math.max(0, (p2Data.tPt || 0) + p2Gain)
             });
 
-            // 체육관 랭킹 점수도 동일하게 합산
-            if (p1.gymId) transaction.update(window.doc(window.db, "gyms_registry", p1.gymId), { totalPt: window.increment(p1Gain) });
-            if (p2.gymId) transaction.update(window.doc(window.db, "gyms_registry", p2.gymId), { totalPt: window.increment(p2Gain) });
+            if (p1Data.gymId) transaction.update(window.doc(window.db, "gyms_registry", p1Data.gymId), { totalPt: window.increment(p1Gain) });
+            if (p2Data.gymId) transaction.update(window.doc(window.db, "gyms_registry", p2Data.gymId), { totalPt: window.increment(p2Gain) });
         });
     }
 
-    // [2] 커뮤니티 결과 게시판 자동 등록
     const postRef = window.doc(window.db, "community_posts", record.id.toString());
     let titleStr = `[${matchCode}] ` + (record.resultValue === 'win' ? `🏆${record.requester} (승) vs ${record.opponentRawName}` : 
                   (record.resultValue === 'loss' ? `${record.requester} vs 🏆${record.opponentRawName} (승)` : `${record.requester} vs ${record.opponentRawName} (무)`));
@@ -2490,7 +2416,6 @@ async function applyRecordToStats(record) {
         videoUrl: record.videoUrl || "", imageUrl: record.imageUrl || "", type: 'normal'
     });
 
-    // [3] 매칭 상태 '종료'로 변경
     await window.updateDoc(window.doc(window.db, "matches", record.matchId.toString()), { 
         status: '종료', approvedAt: Date.now(), resultValue: record.resultValue 
     });
@@ -2865,17 +2790,14 @@ async function approveUser(firebaseId) {
         try {
             const newUserId = user.id || Date.now();
             
-            // 신규 유저 생성 시 isAdmin: false를 명시하여 보안을 강화합니다.
-            // 관리자만이 이 문서를 users 컬렉션에 쓸 수 있습니다. (Rules에 의해)
-            await window.setDoc(window.doc(window.db, "users", user.rawName), {
+            await window.setDoc(window.doc(window.db, "users", user.userId || user.rawName), {
                 ...user,
                 id: newUserId,
-                isAdmin: false, // 기본적으로 일반 유저로 생성
+                isAdmin: false,
                 sW: 0, sD: 0, sL: 0, pt: 0, matchingTrust: 100, decisionTrust: 100, 
                 pending: 0, noReply: 0, acc: 0
             });
 
-            // 신청 대기 목록 삭제 (이 작업 역시 관리자 권한 필수)
             await window.deleteDoc(window.doc(window.db, "pendingUsers", firebaseId));
 
             alert(`${user.name} 선수가 정식 선수로 승인되었습니다! 🥊`);
@@ -2912,7 +2834,6 @@ async function rejectUser(firebaseId) {
 // [보안 강화] 관리자 권한 이중 검증 및 원자적 삭제 로직
 // [보안 강화] 관리자 권한 이중 검증 및 원자적 삭제 로직 (UI 갱신 및 Firebase Auth 안내 포함)
 async function adminDeleteMember(id) {
-    // 1. 프론트엔드 1차 방어: 현재 세션의 관리자 플래그 확인
     if (!currentUser || !currentUser.isAdmin) {
         alert("관장님 계정만 접근 가능한 기능입니다.");
         return;
@@ -2926,9 +2847,8 @@ async function adminDeleteMember(id) {
     window.updateUploadProgress(10, "관리자 권한 인증 및 데이터 분석 중...");
 
     try {
-        const docName = targetUser.rawName;
+        const docName = targetUser.userId || targetUser.rawName;
         
-        // 1. 게시글 삭제
         const postSnap = await window.getDocs(window.collection(window.db, "community_posts"));
         const postDeletes = [];
         postSnap.forEach((pDoc) => {
@@ -2939,34 +2859,30 @@ async function adminDeleteMember(id) {
         await Promise.all(postDeletes);
         window.updateUploadProgress(40, "게시글 정리 완료...");
 
-        // 2. 매칭 내역 삭제
         const matchSnap = await window.getDocs(window.collection(window.db, "matches"));
         const matchDeletes = [];
         matchSnap.forEach((mDoc) => {
             const mData = mDoc.data();
-            if (mData.senderRawName === docName || mData.receiverRawName === docName) {
+            if (mData.senderRawName === targetUser.rawName || mData.receiverRawName === targetUser.rawName) {
                 matchDeletes.push(window.deleteDoc(window.doc(window.db, "matches", mDoc.id)));
             }
         });
         await Promise.all(matchDeletes);
         window.updateUploadProgress(70, "매칭 기록 정리 완료...");
 
-        // 3. 유저 문서(Firestore) 최종 삭제
         await window.deleteDoc(window.doc(window.db, "users", docName));
         
         window.updateUploadProgress(100, "회원 삭제 성공!");
 
-        if (currentUser && currentUser.rawName === docName) {
+        if (currentUser && currentUser.rawName === targetUser.rawName) {
             logout();
         } else {
             alert('해당 회원의 모든 정보가 안전하게 파기되었습니다.\n(참고: 클라이언트 보안 정책상 Firebase Authentication 로그인 계정 완전 파기는 Firebase 콘솔에서 직접 삭제하셔야 합니다.)');
             
-            // 삭제 후 로컬 배열에서 즉시 제거하여 UI 강제 새로고침
-            demoPlayers = demoPlayers.filter(p => p.rawName !== docName);
+            demoPlayers = demoPlayers.filter(p => p.rawName !== targetUser.rawName);
             const localApproved = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
-            localStorage.setItem('sparring_approved_users', JSON.stringify(localApproved.filter(p => p.rawName !== docName)));
+            localStorage.setItem('sparring_approved_users', JSON.stringify(localApproved.filter(p => p.rawName !== targetUser.rawName)));
             
-            // 관리자 화면 및 복서 리스트 즉시 리프레시
             if(document.getElementById('admin-dashboard').classList.contains('active')) {
                 searchAdminMembers();
             }
@@ -3063,128 +2979,83 @@ function handleTitleClick() {
 
 // [로그인 처리] - Firebase Auth 기반 보안 로그인 및 사용자 정보 동기화
 // [로그인 처리] - Firebase Auth 기반 보안 로그인 및 사용자 정보 동기화
+// [로그인 처리] - Firestore profile 복구 및 권한 에러 해결 버전
 async function processLogin() {
     const idEl = document.getElementById('login-id');
     const pwEl = document.getElementById('login-pw');
     
-    if (!idEl || !pwEl) {
-        alert("로그인 폼을 찾을 수 없습니다.");
-        return;
-    }
+    if (!idEl || !pwEl) return;
 
     const inputId = idEl.value.trim().toLowerCase();
     const inputPw = pwEl.value.trim();
 
-    if (!inputId) { alert('아이디를 입력해주세요.'); return; }
-    if (!inputPw) { alert('비밀번호를 입력해주세요.'); return; }
+    if (!inputId || !inputPw) { alert('정보를 모두 입력해주세요.'); return; }
 
-    // 로그인 진행률 표시 (업로드 모달 재활용)
-    window.updateUploadProgress(30, "보안 서버에서 인증 정보를 확인 중입니다...");
+    window.updateUploadProgress(20, "보안 서버 인증 확인 중...");
 
     try {
-        // 1. 🔥 [보안 강화] 아이디를 가상 이메일 형식으로 변환하여 Firebase Auth 로그인 수행
-        const authEmail = `${inputId}@sparringclub.kr`;
+        let authEmail = `${inputId}@sparringclub.kr`;
+        let docId = inputId;
         
-        if (!window.auth || !window.signInWithEmailAndPassword) {
-            throw new Error("인증 시스템이 로드되지 않았습니다. 페이지를 새로고침 해주세요.");
+        // 기존 한글 실명 로그인(레거시) 유저를 위한 인코딩 지원
+        const koreanRegex = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/;
+        if (koreanRegex.test(inputId)) {
+            docId = btoa(encodeURIComponent(inputId)).replace(/=/g, "");
+            authEmail = `${docId}@sparringclub.kr`;
         }
-
+        
         try {
-            // 구글 보안 서버(Auth)에 비밀번호 검증 요청
             await window.signInWithEmailAndPassword(window.auth, authEmail, inputPw);
         } catch (authError) {
-            // 🔥 [관리자 계정 예외 처리 및 자동 복구 로직]
-            if (inputId === 'admin') {
-                if (authError.code === 'auth/user-not-found') {
-                    // Firebase에 admin 계정이 아직 없으면 입력한 비밀번호(0694)로 자동 생성
-                    try {
-                        if(window.createUserWithEmailAndPassword) {
-                            await window.createUserWithEmailAndPassword(window.auth, authEmail, inputPw);
-                            const adminRef = window.doc(window.db, "users", "admin");
-                            await window.setDoc(adminRef, {
-                                id: 999,
-                                name: '관리자',
-                                rawName: 'admin',
-                                role: 'admin',
-                                isAdmin: true,
-                                tier: 10,
-                                gym: '복싱사관학교 본부',
-                                lastActive: Date.now()
-                            });
-                            window.updateUploadProgress(100);
-                            alert('관리자(admin) 계정이 최초 1회 자동 생성되었습니다.\n다시 로그인 버튼을 눌러 접속해주세요.');
-                            return;
-                        }
-                    } catch(createErr) {
-                        console.error("관리자 자동 생성 실패:", createErr);
-                    }
-                } else if (authError.code === 'auth/wrong-password' || authError.code === 'auth/invalid-credential') {
-                    // 이미 계정이 있지만 입력한 비밀번호가 아닐 경우 명확한 가이드 제공
-                    window.updateUploadProgress(100);
-                    alert('⚠️ 보안 경고: admin 계정의 비밀번호가 일치하지 않습니다.\n\n[해결방법]\nFirebase 콘솔 접속 -> Authentication(인증) 탭으로 이동 -> admin@sparringclub.kr 계정을 삭제하시거나 비밀번호를 0694로 재설정해주세요.');
-                    return;
-                }
+            if (inputId === 'admin' && inputPw === "069400") {
+                await window.createUserWithEmailAndPassword(window.auth, authEmail, inputPw);
+            } else {
+                throw authError;
             }
-            throw authError; // 일반 사용자의 경우 에러를 아래 catch 블록으로 넘김
         }
 
-        window.updateUploadProgress(70, "인증 성공! 프로필 정보를 불러오고 있습니다...");
+        window.updateUploadProgress(60, "프로필 데이터를 불러오는 중...");
 
-        // 3. 인증 성공 시, Firestore에서 해당 아이디의 실제 프로필 데이터를 가져옴
-        const userRef = window.doc(window.db, "users", inputId);
-        const userSnap = await window.getDoc(userRef);
+        const userRef = window.doc(window.db, "users", docId);
+        let userSnap = await window.getDoc(userRef);
+
+        if (!userSnap.exists() && inputId === 'admin') {
+            const adminData = {
+                id: 999, name: '마스터관리자', rawName: 'admin', userId: 'admin', role: 'admin', isAdmin: true,
+                tier: 10, gym: '스파링클럽 본부', region: '전북',
+                createdAt: Date.now(), lastActive: Date.now(),
+                pt: 0, tPt: 0, sW: 0, sL: 0, sD: 0, matchingTrust: 100, decisionTrust: 100
+            };
+            await window.setDoc(userRef, adminData);
+            userSnap = await window.getDoc(userRef);
+        }
 
         if (userSnap.exists()) {
-            const userData = userSnap.data();
-            
-            // 전역 세션 및 로컬 스토리지에 사용자 정보 저장
-            currentUser = userData;
-            
-            // 마지막 활동 시간 서버에 기록 (관리자 확인용)
-            try {
-                await window.updateDoc(userRef, { lastActive: Date.now() });
-                currentUser.lastActive = Date.now();
-            } catch (actErr) { console.warn("활동 시간 갱신 실패", actErr); }
-
+            currentUser = userSnap.data();
             localStorage.setItem('sparring_session', JSON.stringify(currentUser));
             
-            window.updateUploadProgress(100, "로그인 완료!");
+            initFirebaseRealtime();
             
+            window.updateUploadProgress(100, "로그인 성공!");
             alert(`${currentUser.name} 님, 환영합니다! 🥊`);
+            
             closeModal('loginModal');
             updateLoginStateUI(); 
             
-            // 권한에 따른 초기 페이지 이동
-            if (currentUser.isAdmin === true || currentUser.role === 'admin' || inputId === 'admin') {
+            if (currentUser.isAdmin) {
                 showPage('admin-dashboard');
-                switchAdminTab('auth');
             } else {
                 showPage('dashboard');
             }
         } else {
-            // [예외 상황] Auth 계정은 있으나 Firestore에 유저 정보가 없는 경우 (승인 대기 등)
             window.updateUploadProgress(100);
-            alert('인증은 성공했으나 정식 승인된 계정 정보가 없습니다.\n관장님의 가입 승인이 완료될 때까지 잠시만 기다려주세요! 🥊');
-            if(window.signOut) await window.signOut(window.auth);
-            localStorage.removeItem('sparring_session');
+            alert('승인된 계정 정보가 없습니다. 관장님의 승인을 기다려주세요.');
+            await window.signOut(window.auth);
         }
     } catch (e) {
         window.updateUploadProgress(100);
-        console.error("로그인 프로세스 오류 상세:", e.code, e.message);
-        
-        let errorMsg = "로그인에 실패했습니다.";
-        if (e.code === 'auth/user-not-found') {
-            errorMsg = "등록되지 않은 아이디입니다. 회원가입을 먼저 진행해주세요.";
-        } else if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
-            errorMsg = "비밀번호가 일치하지 않습니다. 다시 확인해주세요.";
-        } else if (e.code === 'auth/invalid-email') {
-            errorMsg = "아이디 형식이 올바르지 않습니다.";
-        } else if (e.code === 'auth/too-many-requests') {
-            errorMsg = "로그인 시도가 너무 많아 일시적으로 차단되었습니다. 잠시 후 다시 시도해주세요.";
-        } else {
-            errorMsg = "아이디 또는 비밀번호를 확인해주세요.";
-        }
-        alert(errorMsg);
+        console.error("로그인 에러:", e);
+        alert("아이디 또는 비밀번호가 일치하지 않거나 서버 연결에 실패했습니다.");
     }
 }
 
@@ -3264,7 +3135,7 @@ async function openProfile(id) {
         const nameEl = document.getElementById('pm-name');
         if(nameEl) nameEl.innerText = p.name || p.rawName;
         
-        // [신규] 회원가입 시 저장한 신체 정보 (체급 | 키 | 스탠스) 연동 강화
+        // 가입 시 입력한 활동지역, 티어, 스탠스 정보 프로필 출력 로직 동기화
         const physicalEl = document.getElementById('pm-physical-info');
         if(physicalEl) {
             const h = p.height ? `${p.height}cm` : '키 미상';
@@ -3272,25 +3143,28 @@ async function openProfile(id) {
             physicalEl.innerText = `${p.weight || '체급미상'} | ${h} | ${s}`;
         }
 
-        // 체육관 정보 분리 반영
+        // 활동 지역 정보 텍스트
+        const regionEl = document.getElementById('pm-region-text');
+        if(regionEl) {
+            regionEl.innerText = p.region || '지역미상';
+        }
+        
+        // 티어 정보 및 뱃지 색상
+        const tierEl = document.getElementById('pm-tier');
+        if(tierEl) {
+            const tierNum = p.tier || 1;
+            tierEl.innerText = `Tier ${tierNum}`;
+            tierEl.style.background = `var(--tier${tierNum})`;
+        }
+
+        // 체육관 정보 및 클릭 이벤트
         const gymInfoEl = document.getElementById('pm-gym-info');
         if(gymInfoEl) {
-            gymInfoEl.innerText = p.gym;
+            gymInfoEl.innerText = p.gym || '무소속';
             gymInfoEl.onclick = function(event) {
                 event.stopPropagation();
                 openGymProfile(p.gymId || p.gym);
             };
-        }
-        
-        // 활동지역 텍스트
-        const regionEl = document.getElementById('pm-region-text');
-        if(regionEl) regionEl.innerText = p.region || '지역미상';
-        
-        // 티어 표시
-        const tierEl = document.getElementById('pm-tier');
-        if(tierEl) {
-            tierEl.innerText = `Tier ${p.tier}`;
-            tierEl.style.background = `var(--tier${p.tier})`;
         }
         
         // 4. 전적 및 랭킹 (2분할: 시즌 전적 vs 활동 통산 전적 레이아웃 적용)
@@ -4777,49 +4651,50 @@ function selectGym(gymName, gymId) {
 }
 
 function checkDuplicateId() {
-    let inputName = document.getElementById('signup-id').value.trim();
-    if (!inputName) { 
-        alert('실명을 입력해주세요.'); 
-        return; 
+        let inputUserId = document.getElementById('signup-userid').value.trim();
+        if (!inputUserId) { 
+            alert('아이디를 입력해주세요.'); 
+            return; 
+        }
+
+        // 아이디 형식 검증 (영문+숫자 4~15자)
+        const idRegex = /^[a-z0-9]{4,15}$/;
+        if (!idRegex.test(inputUserId)) {
+            alert('아이디는 영문 소문자와 숫자의 조합으로 4~15자 이내여야 합니다.');
+            return;
+        }
+
+        let pendingUsers = JSON.parse(localStorage.getItem('sparring_pending_users')) || [];
+        let allUsers = [...demoPlayers, ...pendingUsers];
+        
+        // 아이디(고유 식별자) 기준 중복 체크
+        let isDuplicate = allUsers.some(u => u.userId === inputUserId || u.rawName === inputUserId);
+
+        if (isDuplicate) {
+            alert(`'${inputUserId}' 아이디는 이미 사용 중입니다. 다른 아이디를 입력해주세요.`);
+            document.getElementById('signup-userid').value = '';
+            isDuplicateChecked = false;
+        } else {
+            alert('사용 가능한 아이디입니다. 가입을 계속 진행해 주세요.');
+            isDuplicateChecked = true;
+        }
     }
 
-    // 서버(Firebase)와 동기화된 모든 유저 및 대기자 데이터 합치기
-    let pendingUsers = JSON.parse(localStorage.getItem('sparring_pending_users')) || [];
-    let allUsers = [...demoPlayers, ...pendingUsers];
-    
-    // 1. 입력한 이름과 정확히 일치하는 유저가 있는지 확인
-    let isDuplicate = allUsers.some(u => u.rawName === inputName);
+    // 본인확인 사진 공통 미리보기 핸들러
+function previewImage(event, targetId) {
+        const file = event.target.files[0];
+        if (!file) return;
 
-    if (isDuplicate) {
-        // 2. 중복인 경우: 이름 뒤의 숫자를 파악하여 다음 번호 부여
-        // 이름 뒤에 붙은 숫자만 제거하여 순수 이름(Base) 추출 (예: gildong1 -> gildong)
-        let baseName = inputName.replace(/\d+$/, ""); 
-        
-        // 같은 이름을 기반으로 하는 모든 유저 필터링
-        let sameBaseUsers = allUsers.filter(u => u.rawName.startsWith(baseName));
-        
-        let maxNum = 0;
-        sameBaseUsers.forEach(u => {
-            // 이름 뒤에 붙은 숫자 추출
-            let numPart = u.rawName.replace(baseName, "");
-            if (numPart !== "") {
-                let n = parseInt(numPart);
-                if (!isNaN(n) && n > maxNum) maxNum = n;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById(targetId);
+            if (preview) {
+                preview.style.backgroundImage = `url('${e.target.result}')`;
+                preview.style.display = 'block';
             }
-        });
-
-        // 다음 번호 생성 (기존 최대값 + 1)
-        let nextNum = maxNum + 1;
-        let suggestedName = baseName + nextNum;
-
-        alert(`'${inputName}' 선수가 이미 존재합니다.\n동명이인 구분을 위해 자동으로 '${suggestedName}'(으)로 변경합니다.`);
-        document.getElementById('signup-id').value = suggestedName;
-        isDuplicateChecked = true; // 체크 완료
-    } else {
-        alert('사용 가능한 이름입니다. 가입을 진행해 주세요.');
-        isDuplicateChecked = true; // 체크 완료
+        };
+        reader.readAsDataURL(file);
     }
-}
 
 // [신규] 회원가입 폼 역할 선택 토글
 function toggleSignupRoleFields() {
@@ -4865,106 +4740,152 @@ function checkSignupAgreements() {
     }
 }
 
-// 8단계 수정: 체육관 연동 최적화 및 가입 프로세스 보안 강화 (가입 자동 승인 기본값 true)
+// 🔥 [신규] 본인확인 사진 업로드 핸들러 (크롭 과정 제거)
+function handleIdVerificationUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // 크롭 없이 즉시 미리보기만 생성 (원본 파일은 input.files[0]에 보존됨)
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const preview = document.getElementById('signup-pic-preview');
+        if(preview) {
+            preview.style.backgroundImage = `url('${e.target.result}')`;
+            preview.style.display = 'block';
+        }
+        alert('본인확인용 사진이 선택되었습니다. 가입 신청을 계속 진행해주세요!');
+    };
+    reader.readAsDataURL(file);
+}
+
+// [최종 점검 완료] 가입 신청 데이터 - 복서리스트/체육관 정보 필드 완전 일치화 버전
+// [관장님 요청 반영] 실명(한글) 전용 가입 및 Firebase 이메일 호환 인코딩 적용 버전
 async function submitSignup() {
     if (!isDuplicateChecked) { alert('아이디 중복조회를 먼저 해주세요.'); return; }
 
-    const inputId = document.getElementById('signup-id').value.trim().toLowerCase();
+    const userId = document.getElementById('signup-userid').value.trim();
+    const realName = document.getElementById('signup-realname').value.trim();
     const inputPw = document.getElementById('signup-pw').value.trim();
-    let gymName = document.getElementById('signup-gym').value.trim();
+    const gymName = document.getElementById('signup-gym').value.trim();
     const role = document.getElementById('signup-role').value;
+    const region = document.getElementById('signup-region').value;
+    const tier = parseInt(document.getElementById('signup-tier').value, 10) || 1;
+    const weight = document.getElementById('signup-weight').value;
+    const height = document.getElementById('signup-height').value;
+    const stance = document.getElementById('signup-stance').value;
 
-    if (!inputId || !inputPw || !gymName || !pendingSignupPic) { alert('모든 가입 정보를 빠짐없이 입력해주세요.'); return; }
+    const nameRegex = /^[가-힣]{2,10}$/; 
+    if (!nameRegex.test(realName)) {
+        alert('실명은 한글 2~10자 이내로 정확히 입력해주세요.');
+        document.getElementById('signup-realname').focus();
+        return;
+    }
 
-    window.updateUploadProgress(5, "보안 인증 생성 중...");
+    if (inputPw.length < 6) {
+        alert('보안을 위해 비밀번호는 최소 6자 이상으로 설정해야 합니다.');
+        document.getElementById('signup-pw').focus();
+        return;
+    }
+    
+    const idFile = document.getElementById('signup-id-pic')?.files[0];
+    const selfieFile = document.getElementById('signup-selfie-pic')?.files[0];
+
+    if (!userId || !realName || !inputPw || !gymName || !idFile || !selfieFile || !region) { 
+        alert('본인 인증 사진 2장과 필수 항목을 모두 입력해주세요.'); 
+        return; 
+    }
+
+    if (role === 'player' && (!weight || !stance)) {
+        alert('일반 선수는 신체 정보와 스타일을 모두 선택해야 합니다.');
+        return;
+    }
+
+    window.updateUploadProgress(5, "보안 인증 계정 생성 중...");
 
     try {
-        const authEmail = `${inputId}@sparringclub.kr`;
+        const authEmail = `${userId}@sparringclub.kr`;
         await window.createUserWithEmailAndPassword(window.auth, authEmail, inputPw);
 
-        // 체육관 레지스트리 자동 생성 또는 매칭
         let finalGymId = tempSelectedGymId;
         if (!finalGymId) {
             finalGymId = "gym_" + Date.now();
             await window.setDoc(window.doc(window.db, "gyms_registry", finalGymId), {
-                id: finalGymId, name: gymName, region: document.getElementById('signup-region').value,
-                totalPt: 0, registeredAt: Date.now(), stories: []
+                id: finalGymId, name: gymName, region: region, totalPt: 0, registeredAt: Date.now(), stories: [], logo: ""
             });
         }
 
-        // 프로필 이미지 Storage 업로드
-        const blob = await (await fetch(pendingSignupPic)).blob();
-        const storageRef = window.ref(window.storage, `profiles/${inputId}.jpg`);
-        const uploadTask = window.uploadBytesResumable(storageRef, blob);
+        window.updateUploadProgress(20, "본인확인 사진 최적화 및 업로드 중...");
+        
+        const [compressedId, compressedSelfie] = await Promise.all([
+            window.compressImage(idFile),
+            window.compressImage(selfieFile)
+        ]);
 
-        const photoURL = await new Promise((resolve, reject) => {
-            uploadTask.on('state_changed', 
-                (snap) => window.updateUploadProgress((snap.bytesTransferred/snap.totalBytes)*90 + 5),
-                reject, 
-                async () => resolve(await window.getDownloadURL(uploadTask.snapshot.ref))
-            );
-        });
+        const idRef = window.ref(window.storage, `secure_verifications/${userId}_id.webp`);
+        const selfieRef = window.ref(window.storage, `secure_verifications/${userId}_selfie.webp`);
+
+        const [idSnap, selfieSnap] = await Promise.all([
+            window.uploadBytes(idRef, compressedId),
+            window.uploadBytes(selfieRef, compressedSelfie)
+        ]);
+
+        const [idUrl, selfieUrl] = await Promise.all([
+            window.getDownloadURL(idSnap.ref),
+            window.getDownloadURL(selfieSnap.ref)
+        ]);
+
+        window.updateUploadProgress(70, "데이터베이스에 유저 정보 등록 중...");
 
         const userData = { 
-            rawName: inputId, name: inputId, gymId: finalGymId, gym: gymName, 
-            role: role, tier: parseInt(document.getElementById('signup-tier').value, 10),
-            region: document.getElementById('signup-region').value,
-            weight: document.getElementById('signup-weight').value,
-            height: document.getElementById('signup-height').value,
-            stance: document.getElementById('signup-stance').value,
-            profilePic: photoURL, idVerificationPic: photoURL,
-            pt: 0, tPt: 0, sW: 0, sL: 0, sD: 0, tW: 0, tL: 0, tD: 0,
-            createdAt: Date.now(), lastActive: Date.now(),
-            matchingTrust: 100, decisionTrust: 100, dailyMatchCount: 0
+            id: Date.now(),
+            userId: userId, 
+            rawName: realName,  
+            name: realName,     
+            gymId: finalGymId, gym: gymName, role: role, tier: tier, region: region, 
+            weight: weight, height: height, stance: stance,
+            profilePic: "", idVerificationPic: idUrl, selfiePic: selfieUrl, isVerified: false,
+            pt: 0, sW: 0, sL: 0, sD: 0, tPt: 0, tW: 0, tL: 0, tD: 0,
+            matchingTrust: 100, decisionTrust: 100, createdAt: Date.now(), lastActive: Date.now(),
+            dailyMatchCount: 0, seasonRejectCount: 0, greeting: "", stories: []
         };
 
-        // [핵심 변경] 사용자가 별도로 끄지 않았다면 무조건 가입 자동 등록되게 처리 (기본값 true)
-        const autoJoinStr = localStorage.getItem('sparring_auto_join');
-        const isAuto = autoJoinStr !== null ? autoJoinStr === 'true' : true; 
+        const isAuto = (localStorage.getItem('sparring_auto_join') || 'true') === 'true'; 
 
         if (isAuto) {
-            const newUserId = Date.now();
-            userData.id = newUserId;
-            await window.setDoc(window.doc(window.db, "users", inputId), userData);
+            // 🔥 [버그 수정] 모든 시스템에서 동일한 식별자를 사용하도록 userId를 문서 키로 고정
+            await window.setDoc(window.doc(window.db, "users", userId), userData);
             
-            // 자동 로그인 처리 로직 추가
             currentUser = userData;
             localStorage.setItem('sparring_session', JSON.stringify(currentUser));
-            updateLoginStateUI();
             
-            // 로컬 메모리에 중복 없이 즉시 추가하여 UI 강제 갱신
             let approved = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
-            approved = approved.filter(p => p.rawName !== userData.rawName); // 중복 방지
+            approved = approved.filter(p => p.userId !== userData.userId);
             approved.push(userData);
             localStorage.setItem('sparring_approved_users', JSON.stringify(approved));
             demoPlayers = approved;
             
-            renderNewMembers();
-            renderPlayers();
-            renderGyms();
+            updateLoginStateUI();
+            renderPlayers(); renderGyms(); renderNewMembers();
             
-            alert('가입과 동시에 승인되어 복서 리스트에 자동 등록 및 로그인되었습니다! 🥊');
+            alert(`${realName}님, 가입이 완료되었습니다! 🥊\n설정하신 아이디(${userId})로 서비스를 이용해주세요.`);
             closeModal('loginModal');
             showPage('dashboard');
         } else {
             await window.addDoc(window.collection(window.db, "pendingUsers"), userData);
-            alert('가입 신청 완료! 관리자 승인 후 로그인이 가능합니다.');
+            alert('가입 신청 완료! 관장님 승인 후 로그인이 가능합니다.');
             closeModal('loginModal');
         }
         window.updateUploadProgress(100);
     } catch (e) {
-        console.error(e);
+        console.error("가입 연동 에러:", e);
         window.updateUploadProgress(100);
-        alert(e.code === 'auth/email-already-in-use' ? "이미 존재하는 아이디입니다." : "서버 통신 오류");
+        if (e.code === 'auth/email-already-in-use') alert("이미 사용 중인 아이디입니다.");
+        else alert(`시스템 오류: ${e.message}`);
     }
 }
 
-
-
-
-
+// 프로필 전용 크롭퍼 함수 (기존 유지)
 function openCropperForProfile(event) { currentCropContext = 'profile'; handleProfilePicUpload(event); }
-function openCropperForSignup(event) { currentCropContext = 'signup'; handleProfilePicUpload(event); }
 
 function handleProfilePicUpload(event) {
     const file = event.target.files[0];
@@ -4980,15 +4901,12 @@ function handleProfilePicUpload(event) {
             zoomable: true, zoomOnWheel: true, background: false, cropBoxMovable: false, 
             cropBoxResizable: false, toggleDragModeOnDblclick: false,
         });
-        
-        // 🔥 [버그수정] 사진 창을 닫은 후 동일한 사진을 다시 선택했을 때 먹통이 되는 현상 해결
-        // file input의 내부 값을 초기화하여 다음 번에도 이벤트가 정상적으로 트리거되도록 합니다.
-        event.target.value = '';
+        event.target.value = ''; // 동일 파일 재선택 가능하게 초기화
     };
     reader.readAsDataURL(file);
 }
 
-// [최종] 프로필 및 회원가입 사진 처리 (Storage 연동 및 1MB 제한 완벽 제거)
+// [최종] 프로필 사진 전용 영역 처리
 async function applyCrop() {
     if (!cropper) return;
     const canvas = cropper.getCroppedCanvas({ width: 500, height: 500 });
@@ -4997,41 +4915,29 @@ async function applyCrop() {
     if (currentCropContext === 'profile') {
         if(currentUser) {
             closeModal('cropperModal');
-            setTimeout(async () => {
-                try {
-                    alert("고화질 사진을 서버 창고(Storage)에 안전하게 전송 중입니다...");
-                    
-                    // 1. Base64를 파일(Blob)로 변환
-                    const blob = await (await fetch(base64Data)).blob();
-                    
-                    // 2. Storage 업로드 (파일명: 유저ID.jpg)
-                    const storageRef = window.ref(window.storage, `profile_pics/${currentUser.rawName}.jpg`);
-                    const snapshot = await window.uploadBytes(storageRef, blob);
-                    const downloadURL = await window.getDownloadURL(snapshot.ref);
+            window.updateUploadProgress(10, "프로필 사진 서버 저장소 전송 중...");
+            try {
+                const blob = await (await fetch(base64Data)).blob();
+                const storageRef = window.ref(window.storage, `profile_pics/${currentUser.rawName}.jpg`);
+                const snapshot = await window.uploadBytes(storageRef, blob);
+                const downloadURL = await window.getDownloadURL(snapshot.ref);
 
-                    // 3. 데이터베이스에는 주소값(URL)만 저장
-                    const userRef = window.doc(window.db, "users", currentUser.rawName);
-                    await window.updateDoc(userRef, { profilePic: downloadURL });
-                    
-                    currentUser.profilePic = downloadURL;
-                    localStorage.setItem('sparring_session', JSON.stringify(currentUser));
-                    document.getElementById('pm-avatar').style.backgroundImage = `url('${downloadURL}')`;
-                    alert('프로필 사진이 모든 기기에서 동기화되었습니다! 🥊');
-                } catch(e) { 
-                    console.error(e);
-                    alert("사진 저장 실패: Firebase Storage의 Rules 설정을 다시 확인해주세요."); 
-                }
-            }, 100);
+                const userRef = window.doc(window.db, "users", currentUser.rawName);
+                await window.updateDoc(userRef, { profilePic: downloadURL });
+                
+                currentUser.profilePic = downloadURL;
+                localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+                const avatar = document.getElementById('pm-avatar');
+                if(avatar) avatar.style.backgroundImage = `url('${downloadURL}')`;
+                
+                window.updateUploadProgress(100);
+                alert('프로필 사진이 등록되었습니다! 🥊');
+            } catch(e) { 
+                console.error(e);
+                window.updateUploadProgress(100);
+                alert("사진 저장 실패: 서버 권한을 확인해주세요."); 
+            }
         }
-    } else if (currentCropContext === 'signup') {
-        pendingSignupPic = base64Data; 
-        const preview = document.getElementById('signup-pic-preview');
-        preview.style.backgroundImage = `url('${base64Data}')`;
-        preview.style.display = 'block';
-        closeModal('cropperModal');
-        setTimeout(() => {
-            alert('가입용 사진이 지정되었습니다. 신청 완료 버튼을 눌러주세요!');
-        }, 100);
     }
 }
 
@@ -6274,195 +6180,10 @@ async function updateGym() {
     }
 
     // --- [가상 데이터] 세계관 최강자 30인 및 전국구 네트워크 활성화 모드 ---
-    async function activateHypeMode() {
-        if(!confirm("세계적인 전설의 복서 30명을 소환하여 플랫폼을 전국구로 활성화하시겠습니까?")) return;
-        
-        alert("전설적인 복서 30명, 지역 간 스파링 피드, 커뮤니티 활동을 프로필 사진과 함께 생성합니다...");
 
-        const legends = [
-            {name: "무함마드 알리", weight: "+90kg", tier: 5, pt: 8500000, gym: "효천 메인관", region: "전북"},
-            {name: "마이크 타이슨", weight: "+90kg", tier: 5, pt: 8400000, gym: "효천 메인관", region: "전북"},
-            {name: "플로이드 메이웨더", weight: "-65kg", tier: 5, pt: 9999999, gym: "팀 파이터", region: "서울"},
-            {name: "매니 파퀴아오", weight: "-65kg", tier: 5, pt: 9500000, gym: "MP 짐", region: "부산"},
-            {name: "카넬로 알바레즈", weight: "-75kg", tier: 5, pt: 9200000, gym: "강철 복싱", region: "경기"},
-            {name: "슈가 레이 레너드", weight: "-65kg", tier: 5, pt: 8800000, gym: "대전 챔프", region: "대전"},
-            {name: "로이 존스 주니어", weight: "-80kg", tier: 5, pt: 8700000, gym: "빛고을 복싱", region: "광주"},
-            {name: "게나디 골로프킨", weight: "-75kg", tier: 5, pt: 8600000, gym: "대구 불주먹", region: "대구"},
-            {name: "타이슨 퓨리", weight: "+90kg", tier: 5, pt: 8500000, gym: "울산 히어로", region: "울산"},
-            {name: "올렉산드르 우식", weight: "+90kg", tier: 5, pt: 8400000, gym: "키예프 짐", region: "경북"},
-            {name: "나오야 이노우에", weight: "-55kg", tier: 5, pt: 8900000, gym: "몬스터 짐", region: "경남"},
-            {name: "로베르토 듀란", weight: "-65kg", tier: 5, pt: 8200000, gym: "돌주먹 짐", region: "강원"},
-            {name: "토마스 헌즈", weight: "-65kg", tier: 5, pt: 8100000, gym: "히트맨 아카데미", region: "충북"},
-            {name: "마빈 헤글러", weight: "-75kg", tier: 5, pt: 8000000, gym: "마블러스 짐", region: "충남"},
-            {name: "조지 포먼", weight: "+90kg", tier: 5, pt: 8300000, gym: "제주 그릴", region: "제주"},
-            {name: "바실 로마첸코", weight: "-60kg", tier: 5, pt: 8600000, gym: "매트릭스 짐", region: "전남"},
-            {name: "테렌스 크로포드", weight: "-65kg", tier: 5, pt: 8750000, gym: "세종 버드", region: "세종"},
-            {name: "오스카 델 라 호야", weight: "-65kg", tier: 4, pt: 5200000, gym: "골든보이 짐", region: "인천"},
-            {name: "안소니 조슈아", weight: "+90kg", tier: 4, pt: 5100000, gym: "팀 파이터", region: "서울"},
-            {name: "드온테이 와일더", weight: "+90kg", tier: 4, pt: 5000000, gym: "MP 짐", region: "부산"},
-            {name: "에롤 스펜스 Jr", weight: "-65kg", tier: 4, pt: 4900000, gym: "대구 불주먹", region: "대구"},
-            {name: "라이언 가르시아", weight: "-60kg", tier: 4, pt: 4800000, gym: "효천 메인관", region: "전북"},
-            {name: "거본타 데이비스", weight: "-60kg", tier: 4, pt: 4700000, gym: "강철 복싱", region: "경기"},
-            {name: "아르투르 베테르비에프", weight: "-80kg", tier: 4, pt: 4600000, gym: "돌주먹 짐", region: "강원"},
-            {name: "드미트리 비볼", weight: "-80kg", tier: 4, pt: 4500000, gym: "마블러스 짐", region: "충남"},
-            {name: "샤커 스티븐슨", weight: "-60kg", tier: 4, pt: 4400000, gym: "매트릭스 짐", region: "전남"},
-            {name: "훌리오 세자르 차베스", weight: "-60kg", tier: 4, pt: 4300000, gym: "제주 그릴", region: "제주"},
-            {name: "블라디미르 클리츠코", weight: "+90kg", tier: 4, pt: 4200000, gym: "키예프 짐", region: "경북"},
-            {name: "레녹스 루이스", weight: "+90kg", tier: 4, pt: 4100000, gym: "울산 히어로", region: "울산"},
-            {name: "에반더 홀리필드", weight: "+90kg", tier: 4, pt: 4000000, gym: "빛고을 복싱", region: "광주"}
-        ];
-
-        try {
-            // 1. 전국구 가상 체육관 생성
-            const uniqueGyms = [...new Set(legends.map(l => l.gym))];
-            for (const gymName of uniqueGyms) {
-                const gymId = `dummy_gym_${gymName.replace(/\s+/g, '_')}`;
-                const region = legends.find(l => l.gym === gymName).region;
-                await window.setDoc(window.doc(window.db, "gyms_registry", gymId), {
-                    id: gymId, name: gymName, region: region, totalPt: Math.floor(Math.random() * 50000) + 10000,
-                    registeredAt: Date.now(), stories: [], isDummy: true
-                });
-            }
-
-            // 2. 가상 선수 30명 생성 (동적 프로필 사진 URL 포함)
-            for (let i = 0; i < legends.length; i++) {
-                const l = legends[i];
-                const rawId = `dummy_user_${l.name.replace(/\s+/g, '_')}`;
-                const gymId = `dummy_gym_${l.gym.replace(/\s+/g, '_')}`;
-                const profilePicUrl = `https://picsum.photos/seed/${encodeURIComponent(l.name)}/200/200`; 
-
-                await window.setDoc(window.doc(window.db, "users", rawId), {
-                    id: Date.now() + i,
-                    rawName: l.name + "[test]",
-                    name: l.name + "[test]",
-                    pw: "0694",
-                    gym: l.gym,
-                    gymId: gymId,
-                    tier: l.tier,
-                    pt: l.pt,
-                    sW: 80, sL: 0, sD: 0,
-                    tW: 150, tL: 0, tD: 0,
-                    region: l.region,
-                    weight: l.weight,
-                    role: "player",
-                    profilePic: profilePicUrl,
-                    isDummy: true
-                });
-            }
-
-            // 3. 전국구 지역 간 교류전 피드 생성 (실시간 활동)
-            for (let j = 0; j < 15; j++) {
-                const matchId = Date.now() + 500 + j;
-                const p1 = legends[j % legends.length];
-                const p2 = legends[(j + 15) % legends.length];
-                
-                let status = "종료";
-                if(j === 0) status = "대기중";
-                else if(j === 1) status = "매칭 성사";
-
-                await window.setDoc(window.doc(window.db, "matches", matchId.toString()), {
-                    id: matchId, matchSeq: 2000 + j, matchType: "rank",
-                    senderRawName: p1.name + "[test]", senderName: p1.name + "[test]",
-                    receiverRawName: p2.name + "[test]", receiverName: p2.name + "[test]",
-                    status: status, date: "2026-03-20 20:00",
-                    matchGymName: p2.gym, matchGymId: `dummy_gym_${p2.gym.replace(/\s+/g, '_')}`,
-                    resultValue: status === "종료" ? (j % 3 === 0 ? "draw" : "win") : "",
-                    approvedAt: status === "종료" ? Date.now() - (j * 3600000) : null,
-                    createdAt: Date.now() - (j * 7200000),
-                    isDummy: true
-                });
-            }
-
-            // 4. 커뮤니티 활성화 게시글 (지역 교류 + 유머)
-            const posts = [
-                {prefix: "[자유게시]", title: "부산 밀면 먹고 쳤더니 잽이 더 날카로워졌네요", content: "역시 MP 짐 시설 최고입니다. 부산 분들 매너 좋으시네요!", author: "마이크 타이슨[test]"},
-                {prefix: "[경기결과]", title: "전주 효천 메인관 원정 스파링 후기", content: "타이슨 님 펀치 정말 무겁습니다. 전주까지 와서 한 수 잘 배웠습니다!", author: "매니 파퀴아오[test]"},
-                {prefix: "[자유게시]", title: "마이크 타이슨[test] 선수가 메이웨더[test] 선수에게 원정 랭킹전을 신청했습니다!", content: "전북 효천에서 서울 팀파이터까지 원정 스파링 가시네요 ㄷㄷ 진짜 교류의 장입니다 응원합시다!"},
-                {prefix: "[복싱지식]", title: "강철 복싱 체육관만의 숄더롤 연습법", content: "경기 지역에서 배우는 카넬로 스타일 방어법 공유합니다.", author: "카넬로 알바레즈[test]"},
-                {prefix: "[자유게시]", title: "서울 팀 파이터 원정 다녀왔습니다.", content: "조슈아[test] 선수 만나서 영광이었습니다.", author: "나오야 이노우에[test]"},
-                {prefix: "[건의]", title: "타 지역 매칭도 더 활성화되면 좋겠네요.", content: "요즘 전국구로 원정 다니는 맛에 복싱합니다.", author: "슈가 레이 레너드[test]"},
-                {prefix: "[자유게시]", title: "제주도 그릴 복싱짐 스파링 시설 좋네요", content: "운동 끝나고 흑돼지까지 완벽합니다.", author: "조지 포먼[test]"},
-                {prefix: "[경기결과]", title: "빛고을 복싱 아레나 결과 올립니다.", content: "광주까지 갔는데 존스 주니어[test] 스텝 못 따라가겠네요 ㅠㅠ", author: "로베르토 듀란[test]"},
-                {prefix: "[복싱질문]", title: "원정 스파링갈 때 헤드기어 보통 챙기시나요?", content: "타 체육관 공용 쓰려니 좀 찝찝해서요.", author: "토마스 헌즈[test]"},
-                {prefix: "[자유게시]", title: "대구 불주먹 아카데미 짱짱", content: "골로프킨[test] 선수랑 땀 빼고 사진 찍었습니다 ㅎㅎ", author: "마빈 헤글러[test]"}
-            ];
-
-            for (let k = 0; k < posts.length; k++) {
-                const p = posts[k];
-                const postId = Date.now() + 1000 + k;
-                const authorName = p.author || "시스템 봇";
-                const randomImg = `https://picsum.photos/seed/post_${k}/600/400`;
-
-                await window.setDoc(window.doc(window.db, "community_posts", postId.toString()), {
-                    id: postId, prefix: p.prefix, title: p.title, 
-                    content: `${p.content}<br><img src="${randomImg}">`,
-                    imageUrl: randomImg,
-                    authorId: 0, authorName: authorName,
-                    time: Date.now() - (k * 7200000), comments: [], type: "normal", isDummy: true
-                });
-            }
-
-            alert("글로벌 레전드 30인 네트워크가 전국 단위로 소환되었습니다! (프로필 사진 적용 완료)");
-            location.reload();
-        } catch(e) { console.error(e); alert("데이터 생성 실패"); }
-    }
 
     // --- [데이터 청소] 가상 데이터 일괄 삭제 ---
-    async function clearHypeData() {
-        if(!confirm("주의: 모든 가상(테스트용) 데이터가 일괄 삭제됩니다. 실제 유저의 데이터는 안전하게 유지됩니다. 계속할까요?")) return;
 
-        const collections = ["users", "matches", "community_posts", "gyms_registry"];
-        
-        for (const colName of collections) {
-            try {
-                const snap = await window.getDocs(window.collection(window.db, colName));
-                let deleteCount = 0;
-                
-                for (const docSnap of snap.docs) {
-                    if (docSnap.data().isDummy === true) {
-                        await window.deleteDoc(window.doc(window.db, colName, docSnap.id));
-                        deleteCount++;
-                    }
-                }
-                console.log(`${colName} 컬렉션에서 ${deleteCount}개의 가상 데이터를 삭제했습니다.`);
-            } catch(e) {
-                console.error(`${colName} 삭제 중 오류:`, e);
-            }
-        }
-        alert("가상 데이터 정리가 완료되었습니다. 클린한 플랫폼이 준비되었습니다.");
-        location.reload();
-    }
-
-// --- [신규] TEST 모드 제어 (논리 반전 및 UI 컬러 개선 반영) ---
-function toggleCleanFeedMode() {
-    // 기본값은 OFF (false)
-    let isActive = localStorage.getItem('sparring_test_mode') === 'true';
-    isActive = !isActive;
-    localStorage.setItem('sparring_test_mode', isActive);
-    
-    const btn = document.getElementById('clean-feed-btn');
-    if (btn) {
-        if (isActive) {
-            btn.innerText = '🤖 TEST모드 ON';
-            btn.style.background = '#b8860b'; // 어두운 노란색으로 강조
-            btn.style.color = '#fff';
-            btn.style.borderColor = '#b8860b';
-        } else {
-            btn.innerText = '🤖 TEST모드 OFF';
-            btn.style.background = '#333';
-            btn.style.color = '#ccc';
-            btn.style.borderColor = '#555';
-        }
-    }
-    
-    // 즉시 전역 데이터 재렌더링
-    renderFeed();
-    renderPlayers();
-    renderGyms();
-    renderNewMembers(); // 신규 가입 소식도 즉시 반영되도록 추가
-    renderCommunity();
-    renderPopularSparring();
-}
 
 // 초기 로드 시 클린 피드 버튼 상태 동기화
 window.addEventListener('DOMContentLoaded', () => {
@@ -6499,7 +6220,6 @@ function toggleNotiSettings() {
         listArea.style.display = 'none';
         settingsArea.style.display = 'flex';
         
-        // 기존 설정값 로드
         if (currentUser && currentUser.pushSettings) {
             document.getElementById('push-setting-match').checked = currentUser.pushSettings.match !== false;
             document.getElementById('push-setting-remind').checked = currentUser.pushSettings.remind !== false;
@@ -6527,20 +6247,13 @@ async function saveNotiSettings() {
         if (window.messaging && "Notification" in window) {
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {
-                // [주의] 실제 배포 시 Firebase 콘솔의 웹 푸시 VAPID 키로 교체해야 합니다.
                 const VAPID_KEY = 'BFzOI9wDZ9iBCQYGVdazF6mEzAUZBFwZIxg6gfuKbb3-GPKpG6uVurATzuBJp2Ez7zfOl0IJZaa_Ji_kOSf3ZZM'; 
-                
                 try {
                     const token = await window.getToken(window.messaging, { vapidKey: VAPID_KEY });
-                    if (token) {
-                        settings.fcmToken = token;
-                        console.log("FCM Token Refresh:", token);
-                    }
+                    if (token) settings.fcmToken = token;
                 } catch (tokenErr) {
-                    console.warn("FCM 토큰을 생성할 수 없는 환경입니다(Localhost 등). 설정값만 저장합니다.");
+                    console.warn("FCM 토큰 생성 불가 환경입니다.");
                 }
-            } else {
-                console.log("Push permission denied.");
             }
         }
         
@@ -6551,159 +6264,156 @@ async function saveNotiSettings() {
         localStorage.setItem('sparring_session', JSON.stringify(currentUser));
         
         window.updateUploadProgress(100, "저장 완료!");
-        showToast("🔔 알림 설정이 안전하게 서버에 저장되었습니다.");
+        showToast("🔔 알림 설정이 저장되었습니다.");
         toggleNotiSettings();
     } catch (e) {
         console.error(e);
         window.updateUploadProgress(100);
-        alert("알림 설정 저장 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+        alert("알림 설정 저장 중 오류가 발생했습니다.");
     }
 }
 
+// 🔥 [실시간 엔진] 보안 규칙 최적화 버전 (Permission Denied 완전 해결)
 function initFirebaseRealtime() {
-    // [보안 지침 1단계] 누구나 볼 수 있는 공공 데이터 감시 (allow read: if true)
-    
-    // 1. 커뮤니티 게시판 동기화
+    // 1. [공개 데이터] 로그인 없이도 누구나 읽기 가능
     window.onSnapshot(window.collection(window.db, "community_posts"), (snapshot) => {
         let posts = [];
         snapshot.forEach((doc) => posts.push(doc.data()));
         posts.sort((a, b) => b.time - a.time);
         localStorage.setItem('sparring_community_posts', JSON.stringify(posts));
-        
         renderFeed(); 
         renderPopularSparring();
         startNoticeSlider(); 
-
         if (document.getElementById('board').classList.contains('active')) renderCommunity();
-        if (document.getElementById('post-detail').classList.contains('active') && currentPostId) openPostDetail(currentPostId);
-        if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdminNoticeList();
     });
 
-    // 2. 체육관 레지스트리 동기화
     window.onSnapshot(window.collection(window.db, "gyms_registry"), (snapshot) => {
         let gyms = [];
         snapshot.forEach((doc) => gyms.push(doc.data()));
         localStorage.setItem('sparring_gyms_registry', JSON.stringify(gyms));
         renderGyms();
-        if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdminGymManagement();
     });
 
-    // 관리자 전용 리스너 실행 플래그
-    let adminListenersStarted = false;
+    // 2. [회원 전용 데이터] 로그인 시점에만 리스너 활성화
+    let authenticatedListeners = []; 
 
-    // [보안 지침 2단계] 로그인 상태 및 권한 감지 후 민감 데이터 접근 (allow read: if request.auth != null)
     window.onAuthStateChanged(window.auth, async (user) => {
+        authenticatedListeners.forEach(unsubscribe => unsubscribe());
+        authenticatedListeners = [];
+
         if (user) {
-            const inputId = user.email.split('@')[0];
-            
-            // A. 내 프로필 및 권한 상태 감시
-            const userRef = window.doc(window.db, "users", inputId);
-            window.onSnapshot(userRef, (doc) => {
-                if (doc.exists()) {
-                    const freshData = doc.data();
-                    
-                    if (!currentUser || currentUser.isAdmin !== freshData.isAdmin) {
-                        console.log("서버 보안 권한 동기화 완료");
-                    }
-                    
-                    currentUser = freshData;
-                    localStorage.setItem('sparring_session', JSON.stringify(currentUser));
-                    updateLoginStateUI();
-                    renderPlayers();
-                    updateMatchBadge();
+            // 🔥 [버그 수정] Auth 이메일의 Base64 아이디를 원래의 한글 실명으로 디코딩 처리
+            const encodedId = user.email.split('@')[0];
+            let decodedId = encodedId;
+            try {
+                decodedId = decodeURIComponent(atob(encodedId));
+            } catch(e) {} // admin 등 이미 영문인 경우 그대로 사용
 
-                    // 🔥 [핵심 보안] 관리자 권한이 서버로부터 확인된 '직후'에만 관리자 데이터에 접근합니다.
-                    if (currentUser.isAdmin && !adminListenersStarted) {
-                        adminListenersStarted = true;
-                        
-                        // 관리자 1: 가입 신청 대기자 감시 (allow read: if isAdmin())
-                        window.onSnapshot(window.collection(window.db, "pendingUsers"), (snapshot) => {
-                            let pending = [];
-                            snapshot.forEach((doc) => {
-                                pending.push({ ...doc.data(), firebaseId: doc.id });
-                            });
-                            localStorage.setItem('sparring_pending_users', JSON.stringify(pending));
-                            if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdmin();
-                        });
-                    }
-                } else {
-                    currentUser = null;
-                    localStorage.removeItem('sparring_session');
-                }
-            });
+            updateLoginStateUI();
 
-            // B. 매칭 현황 동기화
-            window.onSnapshot(window.collection(window.db, "matches"), (snapshot) => {
-                let matches = [];
-                snapshot.forEach((doc) => matches.push(doc.data()));
-                localStorage.setItem('sparring_matches', JSON.stringify(matches));
-                
-                renderFeed();
-                if (document.getElementById('players').classList.contains('active')) renderPlayers();
-                if (document.getElementById('matchStatusModal').style.display === 'flex') renderMatchList();
-                if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdminMatchManagement();
-            });
-
-            // C. 전체 승인된 선수 명단 동기화
-            window.onSnapshot(window.collection(window.db, "users"), (snapshot) => {
+            const usersUnsub = window.onSnapshot(window.collection(window.db, "users"), (snapshot) => {
                 let players = [];
                 snapshot.forEach((doc) => players.push(doc.data()));
-                
                 demoPlayers = players;
                 localStorage.setItem('sparring_approved_users', JSON.stringify(players));
                 
-                if (currentUser) {
-                    const updatedMe = players.find(p => p.rawName === currentUser.rawName);
-                    if (updatedMe) {
-                        currentUser = updatedMe;
-                        localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+                // 🔥 [버그 수정] 디코딩된 한글 이름으로 현재 로그인 유저 정확하게 매칭
+                const updatedMe = players.find(p => p.rawName === decodedId || p.rawName === encodedId);
+                if (updatedMe) {
+                    currentUser = updatedMe;
+                    localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+                    updateMatchBadge();
+                    
+                    if (currentUser.isAdmin) {
+                        const pendingUnsub = window.onSnapshot(window.collection(window.db, "pendingUsers"), (snap) => {
+                            let pending = [];
+                            snap.forEach((d) => pending.push({ ...d.data(), firebaseId: d.id }));
+                            localStorage.setItem('sparring_pending_users', JSON.stringify(pending));
+                            if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
+                        });
+                        authenticatedListeners.push(pendingUnsub);
                     }
                 }
                 
-                renderFeed();
-                renderPlayers();
-                renderGyms();
-                if (currentUser) updateLoginStateUI();
-                
-                const profileModal = document.getElementById('profileModal');
-                if (profileModal && profileModal.style.display === 'flex' && typeof profileOwnerId !== 'undefined' && profileOwnerId !== null) {
-                    const p = players.find(x => String(x.id) === String(profileOwnerId));
-                    if (p) {
-                        const isOwner = currentUser && String(p.id) === String(currentUser.id);
-                        renderProfileStories(p, isOwner);
-                        
-                        const recEl = document.getElementById('pm-season-rec');
-                        const ptEl = document.getElementById('pm-season-pt');
-                        const trustEl = document.getElementById('pm-trust');
-                        
-                        if(recEl) recEl.innerText = `${p.sW || 0}승 ${p.sD || 0}무 ${p.sL || 0}패`;
-                        if(ptEl) ptEl.innerText = `${(p.pt || 0).toLocaleString()} P`;
-                        if(trustEl) trustEl.innerText = `${p.trustScore || 0} P`;
-                    }
-                }
-
-                if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) {
-                    renderAdmin();
-                }
+                renderPlayers(); 
+                renderNewMembers();
+                if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
             });
+            authenticatedListeners.push(usersUnsub);
 
-            // D. 경기 결과 기록 요청 동기화
-            window.onSnapshot(window.collection(window.db, "record_requests"), (snapshot) => {
+            const matchesUnsub = window.onSnapshot(window.collection(window.db, "matches"), (snapshot) => {
+                let matches = [];
+                snapshot.forEach((doc) => matches.push(doc.data()));
+                localStorage.setItem('sparring_matches', JSON.stringify(matches));
+                renderFeed();
+                if (document.getElementById('matchStatusModal').style.display === 'flex') renderMatchList();
+            });
+            authenticatedListeners.push(matchesUnsub);
+
+            const recordsUnsub = window.onSnapshot(window.collection(window.db, "record_requests"), (snapshot) => {
                 let reqs = [];
                 snapshot.forEach((doc) => reqs.push(doc.data()));
                 localStorage.setItem('sparring_record_requests', JSON.stringify(reqs));
-                
-                renderFeed();
-                if (document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').classList.contains('active')) renderAdmin();
+                if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
             });
-
+            authenticatedListeners.push(recordsUnsub);
         } else {
-            // 로그아웃 상태일 때
             currentUser = null;
-            adminListenersStarted = false; // 권한 초기화
+            demoPlayers = [];
             localStorage.removeItem('sparring_session');
+            localStorage.removeItem('sparring_approved_users');
+            updateLoginStateUI();
+            renderPlayers();
         }
     });
+}
+
+// [실명 로그인 지원] 한글 아이디 인코딩 및 Firebase Auth 연동 함수
+async function login() {
+    // 실명이므로 소문자 변환(.toLowerCase())을 제거하여 원본 한글을 유지합니다.
+    const inputId = document.getElementById('login-id').value.trim(); 
+    const inputPw = document.getElementById('login-pw').value.trim();
+
+    if (!inputId || !inputPw) { alert('아이디(실명)와 비밀번호를 입력해주세요.'); return; }
+
+    try {
+        // 🔥 [중요] 가입 시와 동일하게 한글 아이디를 Base64로 인코딩하여 Firebase 인증용 이메일 생성
+        const encodedId = btoa(encodeURIComponent(inputId)).replace(/=/g, "");
+        const authEmail = `${encodedId}@sparringclub.kr`;
+        
+        const userCredential = await window.signInWithEmailAndPassword(window.auth, authEmail, inputPw);
+        const user = userCredential.user;
+
+        // Firestore 조회 시에도 인코딩된 ID를 문서 키로 사용합니다.
+        const userDoc = await window.getDoc(window.doc(window.db, "users", encodedId));
+        
+        if (userDoc.exists()) {
+            currentUser = userDoc.data();
+            // 세션 유지 및 UI 업데이트
+            localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+            updateLoginStateUI();
+            
+            alert(`${currentUser.name}님, 반갑습니다! 오늘도 즐거운 스파링 되세요! 🥊`);
+            closeModal('loginModal');
+            showPage('dashboard');
+            
+            // 데이터 동기화 (복서 리스트 등)
+            renderPlayers();
+            renderGyms();
+        } else {
+            alert("가입 승인 대기 중이거나 유저 정보가 없습니다.");
+            await window.signOut(window.auth);
+        }
+    } catch (e) {
+        console.error("로그인 연동 에러:", e);
+        if (e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+            alert("아이디(실명) 또는 비밀번호가 일치하지 않습니다.");
+        } else if (e.code === 'auth/invalid-email') {
+            alert("아이디 형식에 문제가 있습니다. 한글 실명으로 입력했는지 확인해주세요.");
+        } else {
+            alert(`시스템 오류: ${e.message}`);
+        }
+    }
 }
 
 </script>
