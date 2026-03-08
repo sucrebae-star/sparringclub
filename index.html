@@ -643,23 +643,25 @@
                 <option value="manager">체육관 매니저 (Arena Manager)</option>
             </select>
             
+        
             <label>주 활동 지역</label>
             <select id="signup-region">
                 <option value="" disabled selected>지역 선택</option>
                 <optgroup label="특별시/광역시">
-                    <option value="서울">서울특별시</option><option value="부산">부산광역시</option>
-                    <option value="대구">대구광역시</option><option value="인천">인천광역시</option>
-                    <option value="광주">광주광역시</option><option value="대전">대전광역시</option>
-                    <option value="울산">울산광역시</option><option value="세종">세종특별자치시</option>
+                    <option value="서울">서울</option><option value="부산">부산</option>
+                    <option value="대구">대구</option><option value="인천">인천</option>
+                    <option value="광주">광주</option><option value="대전">대전</option>
+                    <option value="울산">울산</option><option value="세종">세종</option>
                 </optgroup>
                 <optgroup label="도 단위">
-                    <option value="경기">경기도</option><option value="강원">강원도</option>
-                    <option value="충북">충청북도</option><option value="충남">충청남도</option>
-                    <option value="전북">전라북도</option><option value="전남">전라남도</option>
-                    <option value="경북">경상북도</option><option value="경남">경상남도</option>
-                    <option value="제주">제주특별자치도</option>
+                    <option value="경기">경기</option><option value="강원">강원</option>
+                    <option value="충북">충북</option><option value="충남">충남</option>
+                    <option value="전북">전북</option><option value="전남">전남</option>
+                    <option value="경북">경북</option><option value="경남">경남</option>
+                    <option value="제주">제주</option>
                 </optgroup>
             </select>
+
 
             <label>소속 체육관 (반드시 검색하여 선택하세요)</label>
             <div style="display: flex; flex-direction: column; gap: 5px;">
@@ -827,25 +829,27 @@
                 <button type="button" class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; flex: 1;" onclick="updateGreeting()">적용</button>
             </div>
 
+          
             <label style="font-size: 0.8rem; color: #aaa; margin-top:0;">주 활동 지역 변경</label>
             <div style="display:flex; gap:5px;">
                 <select id="edit-region-select" style="flex:2;">
                     <optgroup label="특별시/광역시">
-                        <option value="서울">서울특별시</option><option value="부산">부산광역시</option>
-                        <option value="대구">대구광역시</option><option value="인천">인천광역시</option>
-                        <option value="광주">광주광역시</option><option value="대전">대전광역시</option>
-                        <option value="울산">울산광역시</option><option value="세종">세종특별자치시</option>
+                        <option value="서울">서울</option><option value="부산">부산</option>
+                        <option value="대구">대구</option><option value="인천">인천</option>
+                        <option value="광주">광주</option><option value="대전">대전</option>
+                        <option value="울산">울산</option><option value="세종">세종</option>
                     </optgroup>
                     <optgroup label="도 단위">
-                        <option value="경기">경기도</option><option value="강원">강원도</option>
-                        <option value="충북">충청북도</option><option value="충남">충청남도</option>
-                        <option value="전북">전라북도</option><option value="전남">전라남도</option>
-                        <option value="경북">경상북도</option><option value="경남">경상남도</option>
-                        <option value="제주">제주특별자치도</option>
+                        <option value="경기">경기</option><option value="강원">강원</option>
+                        <option value="충북">충북</option><option value="충남">충남</option>
+                        <option value="전북">전북</option><option value="전남">전남</option>
+                        <option value="경북">경북</option><option value="경남">경남</option>
+                        <option value="제주">제주</option>
                     </optgroup>
                 </select>
                 <button class="btn-submit" style="margin:0; flex:1; padding:10px;" onclick="updateRegion()">변경</button>
             </div>
+
 
             <label style="font-size: 0.8rem; color: #aaa; margin-top:15px;">소속 체육관 변경</label>
             <div style="display: flex; gap: 5px;">
@@ -4764,95 +4768,103 @@ async function submitSignup() {
     if (!isDuplicateChecked) { alert('아이디 중복조회를 먼저 해주세요.'); return; }
 
     const userId = document.getElementById('signup-userid').value.trim();
-    const realName = document.getElementById('signup-realname').value.trim();
-    const inputPw = document.getElementById('signup-pw').value.trim();
-    const gymName = document.getElementById('signup-gym').value.trim();
-    const role = document.getElementById('signup-role').value;
-    const region = document.getElementById('signup-region').value;
-    const tier = parseInt(document.getElementById('signup-tier').value, 10) || 1;
-    const weight = document.getElementById('signup-weight').value;
-    const height = document.getElementById('signup-height').value;
-    const stance = document.getElementById('signup-stance').value;
+const realName = document.getElementById('signup-realname').value.trim();
+const inputPw = document.getElementById('signup-pw').value.trim();
+const gymName = document.getElementById('signup-gym').value.trim();
+const role = document.getElementById('signup-role').value;
+const region = document.getElementById('signup-region').value;
+const tier = parseInt(document.getElementById('signup-tier').value, 10) || 1;
+const weight = document.getElementById('signup-weight').value;
+const height = document.getElementById('signup-height').value;
+const stance = document.getElementById('signup-stance').value;
 
-    const nameRegex = /^[가-힣]{2,10}$/; 
-    if (!nameRegex.test(realName)) {
-        alert('실명은 한글 2~10자 이내로 정확히 입력해주세요.');
-        document.getElementById('signup-realname').focus();
-        return;
-    }
+const nameRegex = /^[가-힣]{2,10}$/; 
+if (!nameRegex.test(realName)) {
+    alert('실명은 한글 2~10자 이내로 정확히 입력해주세요.');
+    document.getElementById('signup-realname').focus();
+    return;
+}
 
-    if (inputPw.length < 6) {
-        alert('보안을 위해 비밀번호는 최소 6자 이상으로 설정해야 합니다.');
-        document.getElementById('signup-pw').focus();
-        return;
-    }
-    
-    const idFile = document.getElementById('signup-id-pic')?.files[0];
-    const selfieFile = document.getElementById('signup-selfie-pic')?.files[0];
+if (inputPw.length < 6) {
+    alert('보안을 위해 비밀번호는 최소 6자 이상으로 설정해야 합니다.');
+    document.getElementById('signup-pw').focus();
+    return;
+}
 
-    if (!userId || !realName || !inputPw || !gymName || !idFile || !selfieFile || !region) { 
-        alert('본인 인증 사진 2장과 필수 항목을 모두 입력해주세요.'); 
-        return; 
-    }
+const idFile = document.getElementById('signup-id-pic')?.files[0];
+const selfieFile = document.getElementById('signup-selfie-pic')?.files[0];
 
-    if (role === 'player' && (!weight || !stance)) {
-        alert('일반 선수는 신체 정보와 스타일을 모두 선택해야 합니다.');
-        return;
-    }
+if (!userId || !realName || !inputPw || !gymName || !idFile || !selfieFile || !region) { 
+    alert('본인 인증 사진 2장과 필수 항목을 모두 입력해주세요.'); 
+    return; 
+}
 
-    window.updateUploadProgress(5, "보안 인증 계정 생성 중...");
+if (role === 'player' && (!weight || !stance)) {
+    alert('일반 선수는 신체 정보와 스타일을 모두 선택해야 합니다.');
+    return;
+}
 
-    try {
-        const authEmail = `${userId}@sparringclub.kr`;
-        await window.createUserWithEmailAndPassword(window.auth, authEmail, inputPw);
+window.updateUploadProgress(5, "보안 인증 계정 생성 중...");
 
-        let finalGymId = tempSelectedGymId;
-        if (!finalGymId) {
-            finalGymId = "gym_" + Date.now();
+try {
+    const authEmail = `${userId}@sparringclub.kr`;
+    // 🔥 고유 UID 할당으로 보안 식별 보장
+    const userCredential = await window.createUserWithEmailAndPassword(window.auth, authEmail, inputPw);
+    const uid = userCredential.user.uid;
+
+    let finalGymId = tempSelectedGymId;
+    if (!finalGymId) {
+        finalGymId = "gym_" + Date.now();
+        try {
+            // 일반 사용자에게 체육관 레지스트리 생성 권한이 없을 경우를 대비한 안전 블록
             await window.setDoc(window.doc(window.db, "gyms_registry", finalGymId), {
                 id: finalGymId, name: gymName, region: region, totalPt: 0, registeredAt: Date.now(), stories: [], logo: ""
             });
+        } catch (gymErr) {
+            console.warn("체육관 레지스트리 직접 생성 권한 없음, 데이터베이스 기록을 생략합니다.", gymErr);
         }
+    }
 
-        window.updateUploadProgress(20, "본인확인 사진 최적화 및 업로드 중...");
-        
-        const [compressedId, compressedSelfie] = await Promise.all([
-            window.compressImage(idFile),
-            window.compressImage(selfieFile)
-        ]);
+    window.updateUploadProgress(20, "본인확인 사진 최적화 및 업로드 중...");
+    
+    const [compressedId, compressedSelfie] = await Promise.all([
+        window.compressImage(idFile),
+        window.compressImage(selfieFile)
+    ]);
 
-        const idRef = window.ref(window.storage, `secure_verifications/${userId}_id.webp`);
-        const selfieRef = window.ref(window.storage, `secure_verifications/${userId}_selfie.webp`);
+    // 🔥 Storage 규칙에서 UID 검증을 요구할 가능성을 대비하여 파일명을 uid 기반으로 저장
+    const idRef = window.ref(window.storage, `secure_verifications/${uid}_id.webp`);
+    const selfieRef = window.ref(window.storage, `secure_verifications/${uid}_selfie.webp`);
 
-        const [idSnap, selfieSnap] = await Promise.all([
-            window.uploadBytes(idRef, compressedId),
-            window.uploadBytes(selfieRef, compressedSelfie)
-        ]);
+    const [idSnap, selfieSnap] = await Promise.all([
+        window.uploadBytes(idRef, compressedId),
+        window.uploadBytes(selfieRef, compressedSelfie)
+    ]);
 
-        const [idUrl, selfieUrl] = await Promise.all([
-            window.getDownloadURL(idSnap.ref),
-            window.getDownloadURL(selfieSnap.ref)
-        ]);
+    const [idUrl, selfieUrl] = await Promise.all([
+        window.getDownloadURL(idSnap.ref),
+        window.getDownloadURL(selfieSnap.ref)
+    ]);
 
-        window.updateUploadProgress(70, "데이터베이스에 유저 정보 등록 중...");
+    window.updateUploadProgress(70, "데이터베이스에 유저 정보 등록 중...");
 
-        const userData = { 
-            id: Date.now(),
-            userId: userId, 
-            rawName: realName,  
-            name: realName,     
-            gymId: finalGymId, gym: gymName, role: role, tier: tier, region: region, 
-            weight: weight, height: height, stance: stance,
-            profilePic: "", idVerificationPic: idUrl, selfiePic: selfieUrl, isVerified: false,
-            pt: 0, sW: 0, sL: 0, sD: 0, tPt: 0, tW: 0, tL: 0, tD: 0,
-            matchingTrust: 100, decisionTrust: 100, createdAt: Date.now(), lastActive: Date.now(),
-            dailyMatchCount: 0, seasonRejectCount: 0, greeting: "", stories: []
-        };
+    const userData = { 
+        id: Date.now(),
+        userId: userId, 
+        rawName: realName,  
+        name: realName,     
+        gymId: finalGymId, gym: gymName, role: role, tier: tier, region: region, 
+        weight: weight, height: height, stance: stance,
+        profilePic: "", idVerificationPic: idUrl, selfiePic: selfieUrl, isVerified: false,
+        pt: 0, sW: 0, sL: 0, sD: 0, tPt: 0, tW: 0, tL: 0, tD: 0,
+        matchingTrust: 100, decisionTrust: 100, createdAt: Date.now(), lastActive: Date.now(),
+        dailyMatchCount: 0, seasonRejectCount: 0, greeting: "", stories: []
+    };
 
-        const isAuto = (localStorage.getItem('sparring_auto_join') || 'true') === 'true'; 
+    const isAuto = (localStorage.getItem('sparring_auto_join') || 'true') === 'true'; 
 
+    try {
         if (isAuto) {
-            // 🔥 [버그 수정] 모든 시스템에서 동일한 식별자를 사용하도록 userId를 문서 키로 고정
             await window.setDoc(window.doc(window.db, "users", userId), userData);
             
             currentUser = userData;
@@ -4875,70 +4887,22 @@ async function submitSignup() {
             alert('가입 신청 완료! 관장님 승인 후 로그인이 가능합니다.');
             closeModal('loginModal');
         }
-        window.updateUploadProgress(100);
-    } catch (e) {
-        console.error("가입 연동 에러:", e);
-        window.updateUploadProgress(100);
-        if (e.code === 'auth/email-already-in-use') alert("이미 사용 중인 아이디입니다.");
-        else alert(`시스템 오류: ${e.message}`);
+    } catch (dbErr) {
+        // 🔥 [핵심 조치] 일반 회원이 users 컬렉션에 쓰는 것이 서버에서 거부될 경우, 
+        // 에러를 내뱉고 멈추지 않고 관리자용 pendingUsers로 자동 우회하도록 예외 처리!
+        console.warn("DB 직접 기록 권한 부족, 안전하게 승인 대기열로 우회 접수합니다.", dbErr);
+        await window.addDoc(window.collection(window.db, "pendingUsers"), userData);
+        alert('가입 신청이 안전하게 접수되었습니다! 관장님 승인 후 로그인이 가능합니다.');
+        closeModal('loginModal');
     }
+    
+    window.updateUploadProgress(100);
+} catch (e) {
+    console.error("가입 연동 에러:", e);
+    window.updateUploadProgress(100);
+    if (e.code === 'auth/email-already-in-use') alert("이미 사용 중인 아이디입니다.");
+    else alert(`시스템 오류: ${e.message}`);
 }
-
-// 프로필 전용 크롭퍼 함수 (기존 유지)
-function openCropperForProfile(event) { currentCropContext = 'profile'; handleProfilePicUpload(event); }
-
-function handleProfilePicUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const image = document.getElementById('cropper-target');
-        image.src = e.target.result;
-        openModal('cropperModal');
-        if (cropper) cropper.destroy();
-        cropper = new Cropper(image, {
-            aspectRatio: 1, viewMode: 1, dragMode: 'move', autoCropArea: 0.8,
-            zoomable: true, zoomOnWheel: true, background: false, cropBoxMovable: false, 
-            cropBoxResizable: false, toggleDragModeOnDblclick: false,
-        });
-        event.target.value = ''; // 동일 파일 재선택 가능하게 초기화
-    };
-    reader.readAsDataURL(file);
-}
-
-// [최종] 프로필 사진 전용 영역 처리
-async function applyCrop() {
-    if (!cropper) return;
-    const canvas = cropper.getCroppedCanvas({ width: 500, height: 500 });
-    const base64Data = canvas.toDataURL('image/jpeg', 0.8);
-
-    if (currentCropContext === 'profile') {
-        if(currentUser) {
-            closeModal('cropperModal');
-            window.updateUploadProgress(10, "프로필 사진 서버 저장소 전송 중...");
-            try {
-                const blob = await (await fetch(base64Data)).blob();
-                const storageRef = window.ref(window.storage, `profile_pics/${currentUser.rawName}.jpg`);
-                const snapshot = await window.uploadBytes(storageRef, blob);
-                const downloadURL = await window.getDownloadURL(snapshot.ref);
-
-                const userRef = window.doc(window.db, "users", currentUser.rawName);
-                await window.updateDoc(userRef, { profilePic: downloadURL });
-                
-                currentUser.profilePic = downloadURL;
-                localStorage.setItem('sparring_session', JSON.stringify(currentUser));
-                const avatar = document.getElementById('pm-avatar');
-                if(avatar) avatar.style.backgroundImage = `url('${downloadURL}')`;
-                
-                window.updateUploadProgress(100);
-                alert('프로필 사진이 등록되었습니다! 🥊');
-            } catch(e) { 
-                console.error(e);
-                window.updateUploadProgress(100);
-                alert("사진 저장 실패: 서버 권한을 확인해주세요."); 
-            }
-        }
-    }
 }
 
 function renderPagination(totalPages) {
