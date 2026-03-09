@@ -141,6 +141,21 @@
             <div class="slider-track" id="main-notice-track"></div>
         </div>
 
+        <div id="dashboard-daily-widget" style="display: none; background: linear-gradient(135deg, #1e1e1e, #111); border: 1px solid var(--gold); border-radius: 12px; padding: 12px 15px; margin-bottom: 15px; align-items: center; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; margin-right: 10px;">
+                <div id="daily-widget-avatar" class="avatar" style="width: 40px; height: 40px; border: 2px solid var(--gold); flex-shrink: 0; background-color: #333;"></div>
+                <div style="flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                    <div style="font-size: 0.75rem; color: #ccc; display: block; margin-bottom: 2px;">
+                        <span id="daily-widget-name" style="color: white; font-weight: bold; font-size: 0.9rem;">이름</span> 님의 전적
+                    </div>
+                    <div style="color: var(--gold); font-size: 0.85rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        <span id="daily-widget-pt">0 P</span> <span style="color: #666; margin: 0 3px;">|</span> <span id="daily-widget-record" style="color: #aaa; font-weight: normal;">0승 0무 0패</span>
+                    </div>
+                </div>
+            </div>
+            <button id="btn-daily-checkin" onclick="doDailyCheckIn()" style="background: var(--primary-red); color: white; border: none; padding: 10px 14px; border-radius: 8px; font-weight: bold; font-size: 0.8rem; cursor: pointer; transition: transform 0.2s; flex-shrink: 0; white-space: nowrap; box-shadow: 0 2px 8px rgba(214, 48, 49, 0.4);">출석 +5P</button>
+        </div>
+
         <div style="text-align: center; margin-bottom: 25px;">
             <a href="https://kr.boxraw.com/" target="_blank" style="display: flex; align-items: center; justify-content: center; background: #111; border: 1px solid #444; padding: 16px; border-radius: 12px; text-decoration: none; color: white; min-height: 54px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
                 <b style="font-size: 1.2rem; letter-spacing: 1px; margin-right: 5px;">BOXRAW</b> 공식 사이트 바로가기
@@ -151,6 +166,7 @@
         </div>
 
         <div id="popular-sparring-section" class="popular-sparring-section" style="display: none;">
+
             <h2 style="margin: 0 0 12px 0; font-size: 1.1rem; letter-spacing: -0.5px;">🔥 인기 스파링 🔥</h2>
             <div id="popular-sparring-wrap" class="popular-sparring-wrap">
                 </div>
@@ -565,10 +581,14 @@
 </div>
 
 <nav id="main-nav">
-    <button onclick="showPage('dashboard')" id="nav-dashboard" class="active">대시보드</button>
-    <button onclick="showPage('players')" id="nav-players">복서 리스트</button> <button onclick="showPage('gyms')" id="nav-gyms">체육관 정보</button> 
-    <button onclick="showPage('board')" id="nav-board">커뮤니티</button>
+    <button onclick="showPage('dashboard')" id="nav-dashboard" class="active"><span class="nav-icon">🏠</span><span>대시보드</span></button>
+    <button onclick="showPage('players')" id="nav-players"><span class="nav-icon">🥊</span><span>복서 리스트</span></button> <button onclick="showPage('gyms')" id="nav-gyms"><span class="nav-icon">🏢</span><span>체육관 정보</span></button> 
+    <button onclick="showPage('board')" id="nav-board"><span class="nav-icon">💬</span><span>커뮤니티</span></button>
 </nav>
+
+<div class="fab-container" id="global-fab">
+    <div class="fab-btn" onclick="showPage('board'); setTimeout(()=>toggleWriteMode(true), 100);" title="새 게시글 작성">✏️</div>
+</div>
 
 <div id="loginModal" class="modal">
     <div class="modal-content">
@@ -1128,7 +1148,7 @@ window.onload = async function() {
     localStorage.removeItem('sparring_deleted_users');
 
     // 🔥 [신규] 모바일 환경에서 과거 권한 에러 시절 저장된 '빈 화면' 캐시 강제 삭제 (버전 컨트롤)
-    const currentAppVersion = "20260309_v3";
+    const currentAppVersion = "20260309_v4";
     if (localStorage.getItem('sparring_app_version') !== currentAppVersion) {
         localStorage.removeItem('sparring_approved_users');
         localStorage.setItem('sparring_app_version', currentAppVersion);
@@ -2831,6 +2851,92 @@ function updateLoginStateUI() {
             </div>
         `;
         updateMatchBadge();
+    }
+    
+    if (typeof updateCheckInUI === 'function') updateCheckInUI();
+}
+
+// --- [신규 기능] 일일 출석체크 및 요약 위젯 로직 ---
+function updateCheckInUI() {
+    const wrap = document.getElementById('dashboard-daily-widget');
+    const btn = document.getElementById('btn-daily-checkin');
+    
+    if (!currentUser || currentUser.isAdmin || currentUser.role === 'admin') { 
+        if(wrap) wrap.style.display = 'none'; 
+        return; 
+    }
+    
+    if(wrap) wrap.style.display = 'flex';
+    
+    let avatarImg = currentUser.profilePic ? `url('${currentUser.profilePic}')` : 'none';
+    document.getElementById('daily-widget-avatar').style.backgroundImage = avatarImg;
+    document.getElementById('daily-widget-name').innerText = currentUser.name || currentUser.rawName;
+    document.getElementById('daily-widget-pt').innerText = `${(currentUser.pt || 0).toLocaleString()} P`;
+    document.getElementById('daily-widget-record').innerText = `${currentUser.sW || 0}승 ${currentUser.sD || 0}무 ${currentUser.sL || 0}패`;
+    
+    const todayStr = new Date().toLocaleDateString();
+    const lastCheckIn = currentUser.lastCheckInDate || "";
+    
+    if (lastCheckIn === todayStr) {
+        if(btn) { 
+            btn.innerText = "출석완료 ✅"; 
+            btn.style.background = "#444"; 
+            btn.style.color = "#aaa"; 
+            btn.style.boxShadow = "none";
+            btn.disabled = true; 
+        }
+    } else {
+        if(btn) { 
+            btn.innerText = "출석 +5P"; 
+            btn.style.background = "var(--primary-red)"; 
+            btn.style.color = "white"; 
+            btn.style.boxShadow = "0 2px 8px rgba(214, 48, 49, 0.4)";
+            btn.disabled = false; 
+        }
+    }
+}
+
+async function doDailyCheckIn() {
+    if (!currentUser) return;
+    const todayStr = new Date().toLocaleDateString();
+    
+    if (currentUser.lastCheckInDate === todayStr) { 
+        alert("오늘은 이미 훈련 인증을 완료했습니다. 내일 다시 만나요!"); 
+        return; 
+    }
+    
+    try {
+        const userRef = window.doc(window.db, "users", currentUser.userId || currentUser.rawName);
+        await window.updateDoc(userRef, { 
+            lastCheckInDate: todayStr, 
+            pt: window.increment(5), 
+            tPt: window.increment(5) 
+        });
+        
+        currentUser.lastCheckInDate = todayStr;
+        currentUser.pt = (currentUser.pt || 0) + 5;
+        currentUser.tPt = (currentUser.tPt || 0) + 5;
+        localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+        
+        updateCheckInUI();
+        
+        // 소속 체육관의 랭킹 점수도 함께 상승 (협동심 자극)
+        if (currentUser.gymId) {
+            await window.updateDoc(window.doc(window.db, "gyms_registry", currentUser.gymId), { 
+                totalPt: window.increment(5) 
+            });
+        }
+        
+        if (typeof showToast === 'function') {
+            showToast("출석 완료! 시즌 포인트 5P가 적립되었습니다. 🥊");
+        } else {
+            alert("출석 완료! 시즌 포인트 5P가 적립되었습니다. 🥊");
+        }
+        renderPlayers(); 
+        renderGyms(); 
+    } catch (e) {
+        console.error("출석체크 에러:", e);
+        alert("인증 처리 중 서버 오류가 발생했습니다.");
     }
 }
 
