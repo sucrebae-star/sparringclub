@@ -22,8 +22,8 @@
     
     <link rel="manifest" href="manifest.json">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -349,6 +349,17 @@
             <label>결과 (나의 관점)</label>
             <select id="record-result"><option value="win">내가 승리</option><option value="loss">상대방 승리</option><option value="draw">무승부</option></select>
             
+            <label style="color: var(--gold); margin-top: 15px;">🤝 상대방 매너/스타일 리뷰 (다중 선택)</label>
+            <p style="font-size: 0.75rem; color: #888; margin-top: 0; margin-bottom: 8px;">선택한 태그는 상대 프로필에 누적되어 좋은 스파링 문화를 만듭니다.</p>
+            <div id="record-tags-wrap" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px;">
+                <label style="background:#222; border:1px solid #444; padding:6px 12px; border-radius:20px; font-size:0.8rem; cursor:pointer; color:#ccc; margin:0;"><input type="checkbox" value="안전제일매너" style="display:none;" onchange="this.parentElement.style.borderColor = this.checked ? 'var(--gold)' : '#444'; this.parentElement.style.color = this.checked ? 'var(--gold)' : '#ccc'; this.parentElement.style.background = this.checked ? 'rgba(253, 203, 110, 0.1)' : '#222';">🛡️ 안전제일매너</label>
+                <label style="background:#222; border:1px solid #444; padding:6px 12px; border-radius:20px; font-size:0.8rem; cursor:pointer; color:#ccc; margin:0;"><input type="checkbox" value="가벼운매스" style="display:none;" onchange="this.parentElement.style.borderColor = this.checked ? 'var(--gold)' : '#444'; this.parentElement.style.color = this.checked ? 'var(--gold)' : '#ccc'; this.parentElement.style.background = this.checked ? 'rgba(253, 203, 110, 0.1)' : '#222';">🕊️ 가벼운매스</label>
+                <label style="background:#222; border:1px solid #444; padding:6px 12px; border-radius:20px; font-size:0.8rem; cursor:pointer; color:#ccc; margin:0;"><input type="checkbox" value="테크니션" style="display:none;" onchange="this.parentElement.style.borderColor = this.checked ? 'var(--gold)' : '#444'; this.parentElement.style.color = this.checked ? 'var(--gold)' : '#ccc'; this.parentElement.style.background = this.checked ? 'rgba(253, 203, 110, 0.1)' : '#222';">✨ 테크니션</label>
+                <label style="background:#222; border:1px solid #444; padding:6px 12px; border-radius:20px; font-size:0.8rem; cursor:pointer; color:#ccc; margin:0;"><input type="checkbox" value="파워펀처" style="display:none;" onchange="this.parentElement.style.borderColor = this.checked ? 'var(--gold)' : '#444'; this.parentElement.style.color = this.checked ? 'var(--gold)' : '#ccc'; this.parentElement.style.background = this.checked ? 'rgba(253, 203, 110, 0.1)' : '#222';">💥 파워펀처</label>
+                <label style="background:#222; border:1px solid #444; padding:6px 12px; border-radius:20px; font-size:0.8rem; cursor:pointer; color:#ccc; margin:0;"><input type="checkbox" value="강철체력" style="display:none;" onchange="this.parentElement.style.borderColor = this.checked ? 'var(--gold)' : '#444'; this.parentElement.style.color = this.checked ? 'var(--gold)' : '#ccc'; this.parentElement.style.background = this.checked ? 'rgba(253, 203, 110, 0.1)' : '#222';">🔋 강철체력</label>
+                <label style="background:#222; border:1px solid #444; padding:6px 12px; border-radius:20px; font-size:0.8rem; cursor:pointer; color:#ccc; margin:0;"><input type="checkbox" value="인파이터" style="display:none;" onchange="this.parentElement.style.borderColor = this.checked ? 'var(--gold)' : '#444'; this.parentElement.style.color = this.checked ? 'var(--gold)' : '#ccc'; this.parentElement.style.background = this.checked ? 'rgba(253, 203, 110, 0.1)' : '#222';">🔥 인파이터</label>
+            </div>
+
             <label>인증 자료 첨부</label>
             <input type="url" id="cert-video-url" placeholder="유튜브 링크">
             <input type="file" id="cert-image-file" accept=".jpg,.jpeg,.png" style="background: #222; margin-top: 5px;">
@@ -648,18 +659,9 @@
                 </select>
             </div>
             
-            <div style="margin-top: 15px; padding: 12px; border: 2px solid #FF007F; border-radius: 8px; background: rgba(255, 0, 127, 0.05);">
-                <label style="color: #FF007F; font-size: 0.95rem; font-weight: bold; margin-top: 0; text-shadow: 0 0 5px rgba(255,0,127,0.3);">🚨 본인 인증 (신분증 & 셀카)</label>
-                <p style="font-size: 0.75rem; color: #ddd; margin-top: 6px; margin-bottom: 12px; line-height: 1.5;">신분증의 <b style="color: #FF007F;">주민번호 뒷자리와 주소는 가리고</b> 촬영해 주세요. 대조를 위해 얼굴 정면 사진(셀카)도 함께 첨부해야 합니다.</p>
-                
-            <label style="font-size: 0.8rem; color: #aaa;">1. 신분증 사본 (필수)</label>
-                <div style="display:flex; align-items:center; gap:10px; margin-bottom: 15px;">
-                    <input type="file" accept="image/*" id="signup-id-pic" onchange="previewImage(event, 'preview-id')" style="flex:1; border: 1px solid #FF007F; padding: 8px; border-radius: 8px; background: #333; color: white;">
-                    <div id="preview-id" style="width: 40px; height: 40px; border-radius: 4px; background: #555; background-size: cover; background-position: center; display: none; border: 1px solid #FF007F; flex-shrink: 0;"></div>
-                </div>
-
-                <label style="font-size: 0.8rem; color: #aaa;">2. 프로필 사진 설정 (선택)</label>
-                <div style="font-size:0.7rem; color:#888; margin-bottom:5px;">비워두면 기본 실루엣 이미지로 설정됩니다.</div>
+            <div style="margin-top: 15px; padding: 12px; border: 1px solid #444; border-radius: 8px; background: rgba(255, 255, 255, 0.03);">
+                <label style="color: var(--gold); font-size: 0.95rem; font-weight: bold; margin-top: 0;">📸 프로필 사진 설정 (선택)</label>
+                <div style="font-size: 0.75rem; color: #aaa; margin-top: 6px; margin-bottom: 12px;">비워두면 기본 실루엣으로 설정됩니다. <br>🚨 신분증 인증은 '공식 랭킹전' 신청 시에만 필요합니다.</div>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <button type="button" onclick="document.getElementById('signup-profile-pic').click()" style="flex:1; background:#333; color:#fff; border:1px solid #555; padding:10px; border-radius:8px; font-size:0.85rem; cursor:pointer;">📷 사진 선택 및 영역 조절</button>
                     <input type="file" accept="image/*" id="signup-profile-pic" style="display:none;" onchange="window.openSignupCropper(event)">
@@ -675,26 +677,7 @@
                 </label>
             </div>
 
-            <div style="margin-top: 15px;">
-                <label style="color: var(--gold); font-weight: bold; margin-top: 0; margin-bottom: 8px;">[필수] 개인정보 수집 및 이용 동의 <span style="font-size:0.75rem; color:#aaa;">(끝까지 스크롤해야 동의 가능)</span></label>
-                <div id="privacy-scroll-box" onscroll="handlePrivacyScroll()" style="height: 120px; overflow-y: auto; background: #222; border: 1px solid #444; border-radius: 8px; padding: 12px; font-size: 0.75rem; color: #aaa; line-height: 1.6; margin-bottom: 10px;">
-                    <b>개인정보 수집 및 이용안내</b><br><br>
-                    1. 수집 목적: 본인 확인, 티어 배정 및 스파링클럽 회원 관리<br>
-                    2. 수집 항목: 아이디, 이름, 비밀번호, 소속 체육관, 체급, 지역, 신분증 및 안면 사진<br>
-                    3. 보유 및 이용 기간: 회원 탈퇴 시까지<br><br>
-                    <span style="color: #FF007F; font-weight: bold;">[핵심 보안 사항]<br>제출된 신분증 및 얼굴 사진은 가입 승인 직후 자동 파기 프로세스에 의해 안전하게 삭제됩니다.</span><br><br>
-                    아래까지 모두 읽으셔야 동의 체크가 가능합니다.<br>
-                    안전하고 건강한 스파링 문화를 위해 협조해 주셔서 감사합니다.<br>
-                    .<br>.<br>.<br>.<br>
-                    - 약관 끝 -
-                </div>
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <input type="checkbox" id="pledge-privacy" style="width: 20px; height: 20px; margin: 0; flex-shrink: 0;" disabled onchange="checkSignupAgreements()">
-                    <span id="privacy-checkbox-text" style="font-size: 0.85rem; color: #888;">약관을 끝까지 읽어주세요.</span>
-                </label>
-            </div>
-
-            <button type="button" id="btn-signup-submit" class="btn-submit" onclick="submitSignup()" disabled style="background: #555; cursor: not-allowed; transition: all 0.3s; margin-top: 20px;">가입 신청 (관장 승인제)</button>
+            <button type="button" id="btn-signup-submit" class="btn-submit" onclick="submitSignup()" disabled style="background: #555; cursor: not-allowed; transition: all 0.3s; margin-top: 20px;">10초 만에 즉시 시작하기</button>
         </div>
     </div>
 </div>
@@ -705,10 +688,14 @@
         
         <div id="pm-speech-bubble" class="speech-bubble" style="display: none;"></div>
 
-        <div id="pm-trust-container" style="display: flex; gap: 8px; margin-bottom: 15px;">
+        <button id="btn-fighter-card" onclick="exportFighterCard()" style="width: 100%; margin-bottom: 15px; background: linear-gradient(135deg, #d63031, #fdcb6e); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; display: none; align-items: center; justify-content: center; gap: 8px; font-size: 0.95rem; box-shadow: 0 4px 10px rgba(214, 48, 49, 0.3);">📸 내 파이터 카드 인스타에 공유하기</button>
+
+        <div id="pm-trust-container" style="display: flex; gap: 8px; margin-bottom: 10px;">
             <div id="pm-matching-trust" class="trust-badge trust-high" style="flex: 1; text-align: center; margin: 0; padding: 10px 0; font-size: 0.85rem; letter-spacing: -0.5px;">🤝 매칭 신뢰도 100%</div>
             <div id="pm-decision-trust" class="trust-badge trust-high" style="flex: 1; text-align: center; margin: 0; padding: 10px 0; font-size: 0.85rem; letter-spacing: -0.5px;">⚖️ 판정 신뢰도 100%</div>
         </div>
+
+        <div id="pm-tags-container" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px;"></div>
 
         <div class="profile-header" style="border-bottom:none; padding-bottom:0; margin-bottom:15px; align-items: flex-start;">
             <div class="avatar" style="width: 80px; height: 80px; border-radius: 50%; background-color: #555; background-size: cover; background-position: center; margin-top: 5px;" id="pm-avatar"></div>
@@ -796,6 +783,12 @@
                 <button class="btn-submit" style="margin:0; flex:1; padding:10px;" onclick="updateRegion()">변경</button>
             </div>
 
+
+            <div id="edit-id-verification-wrap" style="display:none; margin-top: 15px; padding: 12px; background: rgba(214, 48, 49, 0.05); border: 1px dashed var(--primary-red); border-radius: 8px;">
+                <label style="font-size: 0.85rem; color: var(--primary-red); margin-top: 0; font-weight: bold;">🚨 랭킹전 필수: 신분증 본인 인증</label>
+                <div style="font-size: 0.75rem; color: #aaa; margin-bottom: 8px;">랭킹전에 참여하려면 최초 1회 신분증 사본이 필요합니다. 주민번호 뒷자리와 주소는 가리고 올려주세요.</div>
+                <input type="file" id="edit-id-pic" accept="image/*" onchange="uploadIdVerification(event)" style="background: #222; border: 1px solid var(--primary-red); color: white; padding: 8px; border-radius: 8px; width: 100%;">
+            </div>
 
             <label style="font-size: 0.8rem; color: #aaa; margin-top:15px;">소속 체육관 변경</label>
             <div style="display: flex; gap: 5px;">
@@ -1135,7 +1128,7 @@ window.onload = async function() {
     localStorage.removeItem('sparring_deleted_users');
 
     // 🔥 [신규] 모바일 환경에서 과거 권한 에러 시절 저장된 '빈 화면' 캐시 강제 삭제 (버전 컨트롤)
-    const currentAppVersion = "20260309_v2";
+    const currentAppVersion = "20260309_v3";
     if (localStorage.getItem('sparring_app_version') !== currentAppVersion) {
         localStorage.removeItem('sparring_approved_users');
         localStorage.setItem('sparring_app_version', currentAppVersion);
@@ -2070,6 +2063,15 @@ async function submitSparringRecord() {
             });
         }
 
+        let selectedTags = [];
+        document.querySelectorAll('#record-tags-wrap input:checked').forEach(cb => {
+            selectedTags.push(cb.value);
+            cb.checked = false; 
+            cb.parentElement.style.background = '#222'; 
+            cb.parentElement.style.color = '#ccc'; 
+            cb.parentElement.style.borderColor = '#444';
+        });
+
         let recordId = Date.now();
         let recordData = {
             id: recordId, matchId: matchId, matchType: matchType, resultValue: resultValue,
@@ -2078,9 +2080,10 @@ async function submitSparringRecord() {
             imageUrl: finalImageUrl,
             mediaType: mediaType, 
             requester: currentUser.rawName,
-            requesterRawName: currentUser.rawName,  // 🔥 추가
+            requesterRawName: currentUser.rawName,
             requesterId: currentUser.id, 
-            opponentRawName: oppRawName, opponentId: oppId, time: new Date().toLocaleString()
+            opponentRawName: oppRawName, opponentId: oppId, time: new Date().toLocaleString(),
+            givenTags: selectedTags
         };
 
         if (judgeMethod === 'community') {
@@ -2213,6 +2216,19 @@ let p2 = demoPlayers.find(p => p.rawName === record.opponentRawName || p.name ==
                 p1Gain = 10; p2Gain = 10;
                 p1Updates = { sD: (p1Data.sD || 0) + 1, tD: (p1Data.tD || 0) + 1 };
                 p2Updates = { sD: (p2Data.sD || 0) + 1, tD: (p2Data.tD || 0) + 1 };
+            }
+
+            // 매너/스타일 태그 업데이트 로직 추가
+            if (record.givenTags && record.givenTags.length > 0) {
+                if (record.requesterRawName === p1DocName) {
+                    let p2TagsUpdate = p2Data.tags || {};
+                    record.givenTags.forEach(t => { p2TagsUpdate[t] = (p2TagsUpdate[t] || 0) + 1; });
+                    p2Updates.tags = p2TagsUpdate;
+                } else {
+                    let p1TagsUpdate = p1Data.tags || {};
+                    record.givenTags.forEach(t => { p1TagsUpdate[t] = (p1TagsUpdate[t] || 0) + 1; });
+                    p1Updates.tags = p1TagsUpdate;
+                }
             }
 
             transaction.update(p1Ref, {
@@ -2994,8 +3010,25 @@ async function openProfile(id) {
             dEl.className = `trust-badge ${dTrust >= 80 ? 'trust-high' : (dTrust >= 50 ? 'trust-mid' : 'trust-low')}`;
         }
 
+        // 🔥 매너/스타일 태그 렌더링
+        const tagsContainer = document.getElementById('pm-tags-container');
+        if(tagsContainer) {
+            let tagsObj = p.tags || {};
+            let sortedTags = Object.entries(tagsObj).sort((a,b) => b[1] - a[1]).slice(0, 5);
+            if(sortedTags.length === 0) {
+                tagsContainer.innerHTML = '<span style="font-size:0.75rem; color:#666;">아직 획득한 매너/스타일 태그가 없습니다.</span>';
+            } else {
+                tagsContainer.innerHTML = sortedTags.map(t => {
+                    let isHot = t[1] >= 3;
+                    let style = isHot ? 'background: rgba(214, 48, 49, 0.1); color: #ff7675; border: 1px solid var(--primary-red); font-weight: bold;' : 'background: rgba(255,255,255,0.05); color: #ccc; border: 1px solid #444;';
+                    return `<span style="${style} padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; white-space: nowrap;">#${t[0]} <span style="opacity:0.7; font-size:0.65rem; margin-left:3px;">${t[1]}</span></span>`;
+                }).join('');
+            }
+        }
+
         // 3. 레이아웃 기반 정보 세팅
         const nameEl = document.getElementById('pm-name');
+        
         if(nameEl) nameEl.innerText = p.name || p.rawName;
         
         // 가입 시 입력한 활동지역, 티어, 스탠스 정보 프로필 출력 로직 동기화
@@ -3131,6 +3164,12 @@ async function openProfile(id) {
         const isSelf = currentUser && String(p.id) === String(currentUser.id);
         const isManagerAuth = currentUser && currentUser.role === 'manager' && currentUser.gymId === p.gymId;
         const canEdit = isSelf || isManagerAuth;
+
+        const fighterCardBtn = document.getElementById('btn-fighter-card');
+        if(fighterCardBtn) fighterCardBtn.style.display = isSelf ? 'flex' : 'none';
+
+        const idVerifyWrap = document.getElementById('edit-id-verification-wrap');
+        if(idVerifyWrap) idVerifyWrap.style.display = (isSelf && !p.isVerified) ? 'block' : 'none';
 
         if(withdrawBtn && editSection) {
             if(canEdit) {
@@ -3868,6 +3907,13 @@ function validateMatchRank() {
         return;
     }
 
+    // 🔥 랭킹전 신청 시 신분증 인증 여부 검사 (가입 허들 지연)
+    if (type === 'rank' && !senderPlayer.isVerified && !senderPlayer.isAdmin && senderPlayer.role !== 'admin') {
+        warn.innerText = "🚨 랭킹전(공식전)은 신분증 본인 인증이 완료된 유저만 신청 가능합니다. [내 프로필 수정]에서 등록해 주세요.";
+        warn.style.display = 'block'; btn.disabled = true; btn.style.opacity = '0.5';
+        return;
+    }
+
     // [신규 로직] 상위 티어 도전 권한 검증 및 상대 순위 방어 (가상 데이터 배제)
      let realPlayersValidation = demoPlayers.filter(pl => pl.isAdmin !== true && pl.rawName !== 'admin' && pl.role !== 'admin');
     
@@ -4172,7 +4218,10 @@ function openChat(matchId) {
         actionHtml = `
             <div style="display:flex; flex-direction:column; gap:10px;">
                 <div style="text-align:center; padding:12px; background:#111; color:var(--gold); font-weight:bold; border-radius:8px; border:1px solid var(--gold);">🥊 매칭이 성사되었습니다! 🥊</div>
-                <button onclick="goToRecordPage('${m.id}')" style="width:100%; background:var(--tier2); color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;">📝 경기 결과 기록하기</button>
+                <div style="display:flex; gap:10px;">
+                    <button onclick="exportFightPoster('${m.id}')" style="flex:1; background:linear-gradient(90deg, #833ab4, #fd1d1d, #fcb045); color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.85rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">📸 포스터 공유</button>
+                    <button onclick="goToRecordPage('${m.id}')" style="flex:1; background:var(--tier2); color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.85rem;">📝 결과 기록</button>
+                </div>
             </div>`;
     }
     
@@ -4564,54 +4613,21 @@ function previewImage(event, targetId) {
 
 
 // --- [신규] 회원가입 약관 동의 및 폼 제어 로직 ---
-function handlePrivacyScroll() {
-    const box = document.getElementById('privacy-scroll-box');
-    const checkbox = document.getElementById('pledge-privacy');
-    const text = document.getElementById('privacy-checkbox-text');
-    
-    // 오차 5px 허용하여 스크롤 맨 하단 도달 감지
-    if (box.scrollHeight - box.scrollTop <= box.clientHeight + 5) {
-        checkbox.disabled = false;
-        text.style.color = 'var(--gold)';
-        text.style.fontWeight = 'bold';
-        text.innerText = "개인정보 수집 및 파기 정책에 동의합니다.";
-    }
-}
-
 function checkSignupAgreements() {
     const mannerChecked = document.getElementById('pledge-manner').checked;
-    const privacyChecked = document.getElementById('pledge-privacy').checked;
     const submitBtn = document.getElementById('btn-signup-submit');
 
-    if (mannerChecked && privacyChecked) {
+    if (mannerChecked) {
         submitBtn.disabled = false;
         submitBtn.style.background = 'var(--primary-red)';
         submitBtn.style.cursor = 'pointer';
-        submitBtn.innerText = '가입 신청 (관장 승인제)';
+        submitBtn.innerText = '10초 만에 즉시 시작하기 🥊';
     } else {
         submitBtn.disabled = true;
         submitBtn.style.background = '#555';
         submitBtn.style.cursor = 'not-allowed';
-        submitBtn.innerText = '가입 신청 (서약서 및 약관 동의 필요)';
+        submitBtn.innerText = '매너 스파링 서약서 동의 필요';
     }
-}
-
-// 🔥 [신규] 본인확인 사진 업로드 핸들러 (크롭 과정 제거)
-function handleIdVerificationUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    // 크롭 없이 즉시 미리보기만 생성 (원본 파일은 input.files[0]에 보존됨)
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const preview = document.getElementById('signup-pic-preview');
-        if(preview) {
-            preview.style.backgroundImage = `url('${e.target.result}')`;
-            preview.style.display = 'block';
-        }
-        alert('본인확인용 사진이 선택되었습니다. 가입 신청을 계속 진행해주세요!');
-    };
-    reader.readAsDataURL(file);
 }
 
 // [최종 점검 완료] 가입 신청 데이터 - 복서리스트/체육관 정보 필드 완전 일치화 버전
@@ -5993,14 +6009,8 @@ async function submitSignup() {
             try { await window.setDoc(window.doc(window.db, "gyms_registry", finalGymId), { id: finalGymId, name: gymName, region: region || "미정", totalPt: 0, registeredAt: Date.now(), stories: [], logo: "" }); } catch (e) {}
         } else if (gymName === '무소속') { finalGymId = ""; }
 
-        let idUrl = "", profileUrl = "";
+        let profileUrl = "";
         try {
-            const idFile = document.getElementById('signup-id-pic')?.files[0];
-            if (idFile) {
-                const cId = await window.compressImage(idFile);
-                const idSnap = await window.uploadBytes(window.ref(window.storage, `secure_verifications/${uid}_id.webp`), cId);
-                idUrl = await window.getDownloadURL(idSnap.ref);
-            }
             if (signupCroppedBlob) {
                 const pfSnap = await window.uploadBytes(window.ref(window.storage, `profiles/${uid}_pf.webp`), signupCroppedBlob);
                 profileUrl = await window.getDownloadURL(pfSnap.ref); signupCroppedBlob = null; 
@@ -6009,21 +6019,24 @@ async function submitSignup() {
 
         const userData = { 
             id: Date.now(), userId: userId, name: realName, rawName: realName, gymId: finalGymId, gym: gymName, role: 'player', tier: parseInt(document.getElementById('signup-tier').value) || 1, 
-            region: region || "미정", weight: weight, height: height, stance: stance, profilePic: profileUrl, idVerificationPic: idUrl, selfiePic: "", isVerified: false,
+            region: region || "미정", weight: weight, height: height, stance: stance, profilePic: profileUrl, idVerificationPic: "", selfiePic: "", isVerified: false,
             authEmail: authEmail,
             pt: 0, sW: 0, sL: 0, sD: 0, tPt: 0, tW: 0, tL: 0, tD: 0, matchingTrust: 100, decisionTrust: 100, createdAt: Date.now(), lastActive: Date.now(),
-            dailyMatchCount: 0, seasonRejectCount: 0, greeting: "", stories: [], isAdmin: false
+            dailyMatchCount: 0, seasonRejectCount: 0, greeting: "", stories: [], tags: {}, isAdmin: false
         };
 
-        if (isAuto) {
-            await window.setDoc(window.doc(window.db, "users", userId), userData);
-            demoPlayers.push(userData); localStorage.setItem('sparring_approved_users', JSON.stringify(demoPlayers));
-            renderPlayers(); renderNewMembers(); alert(`${realName}님, 가입 완료되었습니다! 🥊`);
-        } else {
-            await window.setDoc(window.doc(window.db, "pendingUsers", userId), userData); alert('가입 신청 완료! 관장님 승인 후 이용 가능합니다.');
-        }
-
+        // 🔥 관리자 승인 대기 없이 즉시 가입 완료
+        await window.setDoc(window.doc(window.db, "users", userId), userData);
+        demoPlayers.push(userData); localStorage.setItem('sparring_approved_users', JSON.stringify(demoPlayers));
+        renderPlayers(); renderNewMembers(); 
+        
         window.updateUploadProgress(100); closeModal('loginModal');
+        alert(`🎉 ${realName}님, 가입이 완료되었습니다!\n이제 스파링클럽을 자유롭게 이용해 보세요.`);
+        
+        // 자동 로그인 실행
+        document.getElementById('login-id').value = userId;
+        document.getElementById('login-pw').value = inputPw;
+        processLogin();
     } catch (e) { window.updateUploadProgress(100); alert(`가입 실패: ${e.message}`); }
 }
 
@@ -6332,7 +6345,191 @@ function renderGyms(filterRegion = 'all') {
 
 <div id="toast-message" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: bold; font-size: 0.95rem; z-index: 9999; box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-align: center; white-space: nowrap; pointer-events: none;">링크가 복사되었습니다.</div>
 
-</body>
+<div id="capture-container" style="position: absolute; left: -9999px; top: -9999px; width: 1080px; height: 1920px; background: #000; overflow: hidden; box-sizing: border-box;"></div>
 
+<script>
+// --- [신규] 랭킹전 필수 신분증 업로드 기능 ---
+async function uploadIdVerification(event) {
+    const file = event.target.files[0];
+    if (!file || !profileOwnerId) return;
+
+    window.updateUploadProgress(1, "신분증 업로드 중...");
+    try {
+        const compressedFile = await window.compressImage(file);
+        const fileName = "id_verify_" + Date.now() + ".webp";
+        const storageRef = window.ref(window.storage, `secure_verifications/${profileOwnerId}/${fileName}`);
+        const uploadTask = window.uploadBytesResumable(storageRef, compressedFile);
+
+        uploadTask.on('state_changed',
+            (snapshot) => { window.updateUploadProgress((snapshot.bytesTransferred / snapshot.totalBytes) * 100); },
+            (error) => { window.updateUploadProgress(100); alert("업로드 실패"); },
+            async () => {
+                const downloadURL = await window.getDownloadURL(uploadTask.snapshot.ref);
+                const targetPlayer = demoPlayers.find(x => String(x.id) === String(profileOwnerId));
+                if (targetPlayer) {
+                    await window.updateDoc(window.doc(window.db, "users", targetPlayer.rawName), { 
+                        idVerificationPic: downloadURL,
+                        isVerified: true
+                    });
+                    targetPlayer.idVerificationPic = downloadURL;
+                    targetPlayer.isVerified = true;
+                    if (currentUser && currentUser.id === targetPlayer.id) {
+                        currentUser.idVerificationPic = downloadURL;
+                        currentUser.isVerified = true;
+                        localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+                    }
+                    alert("인증 완료! 이제 랭킹전을 자유롭게 신청할 수 있습니다.");
+                    document.getElementById('edit-id-verification-wrap').style.display = 'none';
+                    openProfile(targetPlayer.id); 
+                }
+                window.updateUploadProgress(100);
+                event.target.value = '';
+            }
+        );
+    } catch (e) { window.updateUploadProgress(100); alert("업로드 중 오류 발생"); }
+}
+
+// --- [신규] 파이터 카드 및 매치 포스터 캡처(다운로드) 생성 유틸 ---
+function downloadCanvasImage(dataUrl, filename) {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+// 파이터 카드 생성
+async function exportFighterCard() {
+    const p = demoPlayers.find(x => String(x.id) === String(profileOwnerId));
+    if(!p) return;
+    
+    window.updateUploadProgress(10, "파이터 카드 렌더링 중...");
+    
+    let captureContainer = document.getElementById('capture-container');
+    
+    const avatarImg = p.profilePic ? p.profilePic : 'logo.png';
+    const totalW = p.tW || p.sW || 0;
+    const totalD = p.tD || p.sD || 0;
+    const totalL = p.tL || p.sL || 0;
+    const winRate = (totalW+totalD+totalL) === 0 ? 0 : Math.round((totalW / (totalW+totalD+totalL))*100);
+    const tierColor = p.tier == 5 ? '#fdcb6e' : (p.tier == 4 ? '#ff7675' : (p.tier == 3 ? '#a29bfe' : (p.tier == 2 ? '#74b9ff' : '#b2bec3')));
+
+    captureContainer.innerHTML = `
+        <div style="width:1080px; height:1920px; background:linear-gradient(135deg, #0a0a0a, #1a1a1a); display:flex; flex-direction:column; align-items:center; padding:150px 80px; box-sizing:border-box; border:15px solid ${tierColor}; position:relative; font-family:'Pretendard', sans-serif;">
+            <div style="position:absolute; top:0; left:0; width:100%; height:100%; background:radial-gradient(circle at 50% 30%, rgba(255,255,255,0.05) 0%, transparent 60%); z-index:1;"></div>
+            <div style="z-index:2; text-align:center; width:100%;">
+                <div style="font-size:55px; color:${tierColor}; font-weight:900; letter-spacing:8px; margin-bottom:100px;">SPARRING CLUB</div>
+                <div style="width:480px; height:480px; border-radius:50%; border:15px solid ${tierColor}; background-image:url('${avatarImg}'); background-size:cover; background-position:center; margin:0 auto 50px auto; box-shadow:0 0 50px rgba(0,0,0,0.8); background-color:#333;"></div>
+                <div style="background:${tierColor}; color:#000; padding:15px 50px; border-radius:50px; font-weight:900; font-size:50px; display:inline-block; margin-bottom:50px; box-shadow:0 10px 20px rgba(0,0,0,0.5);">TIER ${p.tier || 1}</div>
+                <div style="font-size:130px; color:white; font-weight:900; margin-bottom:30px; text-shadow:0 10px 20px rgba(0,0,0,0.5);">${p.name || p.rawName}</div>
+                <div style="font-size:55px; color:#ccc; font-weight:bold; margin-bottom:120px;">[ ${p.weight || '체급미상'} · ${p.gym || '무소속'} ]</div>
+                
+                <div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.05); padding:60px; border-radius:40px; border:2px solid #444; margin-bottom:100px;">
+                    <div style="text-align:center; flex:1;">
+                        <div style="font-size:40px; color:#888; margin-bottom:20px;">통산 전적</div>
+                        <div style="font-size:75px; color:white; font-weight:900;">${totalW}W - ${totalD}D - ${totalL}L</div>
+                    </div>
+                    <div style="width:2px; background:#555; margin:0 40px;"></div>
+                    <div style="text-align:center; flex:1;">
+                        <div style="font-size:40px; color:#888; margin-bottom:20px;">시즌 승점</div>
+                        <div style="font-size:75px; color:${tierColor}; font-weight:900;">${p.pt||0} P</div>
+                    </div>
+                </div>
+                
+                <div style="font-size:45px; color:#fff; font-weight:bold; padding:40px; background:var(--primary-red); border-radius:30px; box-shadow:0 10px 20px rgba(214,48,49,0.5);">
+                    지금 앱에서 저에게 도전하세요! 🥊
+                </div>
+            </div>
+        </div>
+    `;
+    
+    try {
+        await new Promise(r => setTimeout(r, 800)); // 이미지 로드 대기
+        const canvas = await html2canvas(captureContainer.firstElementChild, { scale: 1, useCORS: true, backgroundColor: '#000' });
+        const imgData = canvas.toDataURL('image/jpeg', 0.9);
+        
+        if (navigator.share) {
+            try {
+                const blob = await (await fetch(imgData)).blob();
+                const file = new File([blob], 'fighter_card.jpg', { type: 'image/jpeg' });
+                await navigator.share({ files: [file], title: '스파링클럽 파이터 카드', text: '나의 스파링클럽 전적을 확인하고 도전하세요! 🥊' });
+            } catch(e) { downloadCanvasImage(imgData, `FighterCard_${p.rawName}.jpg`); }
+        } else {
+            downloadCanvasImage(imgData, `FighterCard_${p.rawName}.jpg`); 
+            alert('파이터 카드가 다운로드 되었습니다. 인스타에 공유해보세요!');
+        }
+        window.updateUploadProgress(100);
+        captureContainer.innerHTML = '';
+    } catch(err) { window.updateUploadProgress(100); alert("이미지 생성 실패"); }
+}
+
+// 매치 포스터 생성
+async function exportFightPoster(matchId) {
+    let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
+    const m = allMatches.find(x => String(x.id) === String(matchId));
+    if(!m) return;
+    const p1 = demoPlayers.find(p => p.rawName === m.senderRawName);
+    const p2 = demoPlayers.find(p => p.rawName === m.receiverRawName);
+    if(!p1 || !p2) return;
+
+    window.updateUploadProgress(10, "매치 포스터 렌더링 중...");
+    
+    let captureContainer = document.getElementById('capture-container');
+    const bgMatch = m.matchType === 'rank' ? 'linear-gradient(135deg, #4b0000, #000)' : 'linear-gradient(135deg, #001f3f, #000)';
+    const typeTitle = m.matchType === 'rank' ? 'OFFICIAL RANKING MATCH' : 'OPEN SPARRING MATCH';
+    const typeColor = m.matchType === 'rank' ? '#d63031' : '#0984e3';
+    
+    const p1Pic = p1.profilePic || 'logo.png';
+    const p2Pic = p2.profilePic || 'logo.png';
+
+    captureContainer.innerHTML = `
+        <div style="width:1080px; height:1920px; background:${bgMatch}; display:flex; flex-direction:column; align-items:center; padding:150px 60px; box-sizing:border-box; border:20px solid #222; font-family:'Pretendard', sans-serif; position:relative;">
+            <div style="font-size:55px; color:#aaa; font-weight:900; letter-spacing:10px; margin-bottom:40px;">SPARRING CLUB</div>
+            <div style="background:${typeColor}; color:#fff; font-size:65px; font-weight:900; padding:20px 60px; border-radius:20px; margin-bottom:150px; box-shadow:0 10px 30px rgba(0,0,0,0.8);">${typeTitle}</div>
+            
+            <div style="display:flex; width:100%; justify-content:space-between; align-items:center; position:relative; margin-bottom:150px;">
+                <div style="flex:1; display:flex; flex-direction:column; align-items:center; z-index:2;">
+                    <div style="width:380px; height:380px; border-radius:50%; border:12px solid #fff; background-image:url('${p1Pic}'); background-size:cover; background-position:center; margin-bottom:40px; box-shadow:0 20px 40px rgba(0,0,0,0.8); background-color:#333;"></div>
+                    <div style="font-size:85px; color:white; font-weight:900; margin-bottom:20px; text-shadow:0 5px 10px #000;">${p1.name || p1.rawName}</div>
+                    <div style="font-size:45px; color:var(--gold); font-weight:bold;">Tier ${p1.tier||1} | ${p1.gym||'무소속'}</div>
+                </div>
+                
+                <div style="position:absolute; left:50%; top:35%; transform:translate(-50%, -50%); font-size:220px; color:${typeColor}; font-weight:900; font-style:italic; text-shadow:0 0 50px rgba(0,0,0,0.8); z-index:1;">VS</div>
+                
+                <div style="flex:1; display:flex; flex-direction:column; align-items:center; z-index:2;">
+                    <div style="width:380px; height:380px; border-radius:50%; border:12px solid #fff; background-image:url('${p2Pic}'); background-size:cover; background-position:center; margin-bottom:40px; box-shadow:0 20px 40px rgba(0,0,0,0.8); background-color:#333;"></div>
+                    <div style="font-size:85px; color:white; font-weight:900; margin-bottom:20px; text-shadow:0 5px 10px #000;">${p2.name || p2.rawName}</div>
+                    <div style="font-size:45px; color:var(--gold); font-weight:bold;">Tier ${p2.tier||1} | ${p2.gym||'무소속'}</div>
+                </div>
+            </div>
+            
+            <div style="background:rgba(0,0,0,0.6); border:3px solid #555; width:100%; border-radius:40px; padding:80px 40px; text-align:center; margin-top:auto; box-shadow:0 20px 40px rgba(0,0,0,0.8);">
+                <div style="font-size:60px; color:#fff; font-weight:900; margin-bottom:40px; letter-spacing:2px;">📅 ${m.modifiedDate || m.date}</div>
+                <div style="font-size:75px; color:var(--gold); font-weight:900;">📍 ${m.matchGymName || '장소 협의중'}</div>
+            </div>
+        </div>
+    `;
+    
+    try {
+        await new Promise(r => setTimeout(r, 800)); 
+        const canvas = await html2canvas(captureContainer.firstElementChild, { scale: 1, useCORS: true, backgroundColor: '#000' });
+        const imgData = canvas.toDataURL('image/jpeg', 0.9);
+        
+        if (navigator.share) {
+            try {
+                const blob = await (await fetch(imgData)).blob();
+                const file = new File([blob], 'match_poster.jpg', { type: 'image/jpeg' });
+                await navigator.share({ files: [file], title: '스파링클럽 매치업' });
+            } catch(e) { downloadCanvasImage(imgData, `MatchPoster_${matchId}.jpg`); }
+        } else {
+            downloadCanvasImage(imgData, `MatchPoster_${matchId}.jpg`); alert('매치 포스터가 저장되었습니다!');
+        }
+        window.updateUploadProgress(100);
+        captureContainer.innerHTML = '';
+    } catch(err) { window.updateUploadProgress(100); alert("포스터 생성 실패"); }
+}
+</script>
+</body>
 </html>
 
