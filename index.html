@@ -26,150 +26,95 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
 <script type="module">
-  // Firebase 초기화 및 필수 함수 임포트 (Storage 및 Auth 추가)
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, getDocs, getDoc, addDoc, updateDoc, doc, deleteDoc, setDoc, onSnapshot, query, orderBy, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-  import { getStorage, ref, uploadBytes, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+  import { getFirestore, collection, getDocs, getDoc, addDoc, updateDoc, doc, deleteDoc, setDoc, onSnapshot, query, orderBy, increment, runTransaction, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { getStorage, ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
   import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
-// 🔥 [보안 강화] Firebase Authentication 라이브러리 추가
-import { getAuth, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getAuth, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-const firebaseConfig = {
-apiKey: "AIzaSyB_-4dxADvEU1__WrhSYjn0RQ096Hj1fX4",
-authDomain: "sparringclub-c3676.firebaseapp.com",
-projectId: "sparringclub-c3676",
-storageBucket: "sparringclub-c3676.firebasestorage.app",
-messagingSenderId: "81450971276",
-appId: "1:81450971276:web:814b7de26564e28c3ccba9"
-};
+  const firebaseConfig = {
+    apiKey: "AIzaSyB_-4dxADvEU1__WrhSYjn0RQ096Hj1fX4",
+    authDomain: "sparringclub-c3676.firebaseapp.com",
+    projectId: "sparringclub-c3676",
+    storageBucket: "sparringclub-c3676.firebasestorage.app",
+    messagingSenderId: "81450971276",
+    appId: "1:81450971276:web:814b7de26564e28c3ccba9"
+  };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const storage = getStorage(app); // 🔥 Storage 초기화
-const auth = getAuth(app);       // 🔥 [보안 강화] Auth 서비스 활성화
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const storage = getStorage(app); 
+  const auth = getAuth(app);       
 
-// 새로고침 시 세션이 끊기지 않도록 브라우저 로컬 저장소에 인증 상태를 강제 고정합니다.
-setPersistence(auth, browserLocalPersistence)
-.then(() => console.log("세션 유지 설정 완료"))
-.catch((error) => console.error("세션 설정 오류:", error));
-
-// 🔥 [수정] Firebase 세션 영구 유지 설정 (새로고침 시 로그아웃되는 현상 완벽 차단)
-setPersistence(auth, browserLocalPersistence).catch((error) => console.error("세션 유지 설정 오류:", error));
+  setPersistence(auth, browserLocalPersistence).catch((error) => console.error("세션 유지 설정 오류:", error));
   
-// FCM 초기화 (브라우저 지원 여부 확인 필요)
   let messaging = null;
-  try {
-      if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-          messaging = getMessaging(app);
-      }
-  } catch (e) {
-      console.error("FCM 초기화 실패:", e);
-  }
+  try { if (typeof window !== "undefined" && "serviceWorker" in navigator) { messaging = getMessaging(app); } } catch (e) {}
 
-// 🔥 서비스 워커 이벤트 로직은 sw.js 로 완전히 이동되었습니다. (중복 방지);
+  window.db = db; window.storage = storage; window.auth = auth; window.messaging = messaging;
+  window.getToken = getToken; window.ref = ref; window.uploadBytes = uploadBytes; 
+  window.uploadBytesResumable = uploadBytesResumable; window.getDownloadURL = getDownloadURL; window.deleteObject = deleteObject;
 
-
-  // 전역 window 객체 등록
-  window.db = db;
-  window.storage = storage; // 🔥 Storage 전역 등록
-  window.auth = auth;       // 🔥 [보안 강화] Auth 서비스 전역 등록
-  window.messaging = messaging;
-  window.getToken = getToken;
-  window.ref = ref;         // 🔥 Storage 경로 설정용
-  window.uploadBytes = uploadBytes; // 🔥 파일 업로드용 (기존 호환)
-  window.uploadBytesResumable = uploadBytesResumable; // 🔥 실시간 진행 추적용
-  window.getDownloadURL = getDownloadURL; // 🔥 URL 가져오기용
-
-  // 🔥 [보안 강화] Auth 관련 필수 기능들을 전역 함수로 등록
   window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
   window.signInWithEmailAndPassword = signInWithEmailAndPassword;
   window.onAuthStateChanged = onAuthStateChanged;
-  window.signOut = signOut;
-  window.updatePassword = updatePassword;
+  window.signOut = signOut; window.updatePassword = updatePassword;
   window.reauthenticateWithCredential = reauthenticateWithCredential;
   window.EmailAuthProvider = EmailAuthProvider;
 
-  // --- [신규] 미디어 압축 및 최적화 유틸리티 함수 ---
-  window.compressImage = async function(file, maxWidth = 1200, quality = 0.7) {
-    // 비디오 파일인 경우 용량 체크 후 반환 (클라이언트 사이드 비디오 인코딩은 ffmpeg.wasm이 필요하나 CORS/COEP 헤더 제약으로 인해 이 환경에서는 용량 제한으로 우회합니다)
+  // 🔥 [신규] 미디어 1MB 이하 강제 압축 최적화 알고리즘
+  window.compressImage = async function(file, maxWidth = 1000, initialQuality = 0.8) {
     if (file.type.startsWith('video/')) {
-        const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB 제한
-        if (file.size > MAX_VIDEO_SIZE) {
-            alert('영상 용량이 너무 큽니다. 50MB 이하의 짧은 영상만 업로드 가능합니다.');
-            throw new Error('Video size exceeds limit');
-        }
-        return file; // 비디오는 압축 없이 반환 (서버에서 원본 저장)
+        if (file.size > 50 * 1024 * 1024) { alert('영상은 50MB 이하만 가능합니다.'); throw new Error('Video too large'); }
+        return file; 
     }
-
-    // 이미지인 경우 WebP 포맷으로 고효율 압축 진행 (저용량 중화질)
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
+      const reader = new FileReader(); reader.readAsDataURL(file);
       reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target.result;
+        const img = new Image(); img.src = event.target.result;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-          if (width > maxWidth) {
-            height = (maxWidth / width) * height;
-            width = maxWidth;
-          }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
+          let width = img.width; let height = img.height;
+          if (width > maxWidth) { height = (maxWidth / width) * height; width = maxWidth; }
+          canvas.width = width; canvas.height = height;
+          const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
           
-          // image/webp 포맷 사용으로 압축률 극대화
-          canvas.toBlob((blob) => {
-            if(!blob) {
-                reject(new Error('Canvas to Blob failed'));
-                return;
-            }
-            // 확장자를 webp로 변경하여 반환
-            const newName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
-            resolve(new File([blob], newName, { type: 'image/webp' }));
-          }, 'image/webp', quality);
+          let currentQuality = initialQuality;
+          const targetSize = 1024 * 1024; // 1MB 제한
+          const attemptCompress = () => {
+              canvas.toBlob((blob) => {
+                  if(!blob) return reject(new Error('Canvas Error'));
+                  if (blob.size > targetSize && currentQuality > 0.2) { // 1MB 초과 시 퀄리티 계속 낮춤
+                      currentQuality -= 0.1; attemptCompress(); 
+                  } else {
+                      const newName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+                      resolve(new File([blob], newName, { type: 'image/webp' }));
+                  }
+              }, 'image/webp', currentQuality);
+          };
+          attemptCompress();
         };
       };
       reader.onerror = error => reject(error);
     });
   };
 
-  // --- [신규] 업로드 진행도 제어 함수 ---
   window.updateUploadProgress = (percent, status = "파일 전송 중...") => {
     const modal = document.getElementById('uploadProgressModal');
     const fill = document.getElementById('upload-progress-fill');
     const text = document.getElementById('upload-percentage');
     const statusText = document.getElementById('upload-status-text');
-    
     if (modal) {
-        modal.style.display = 'flex';
-        statusText.innerText = status;
-        fill.style.width = percent + '%';
-        text.innerText = Math.round(percent) + '%';
-        
-        if (percent >= 100) {
-          setTimeout(() => { modal.style.display = 'none'; fill.style.width = '0%'; }, 1000);
-        }
+        modal.style.display = 'flex'; statusText.innerText = status; fill.style.width = percent + '%'; text.innerText = Math.round(percent) + '%';
+        if (percent >= 100) setTimeout(() => { modal.style.display = 'none'; fill.style.width = '0%'; }, 1000);
     }
   };
   
-  // 필수 Firestore 함수 전역 등록
-  window.collection = collection;
-  window.addDoc = addDoc;
-  window.getDoc = getDoc;
-  window.getDocs = getDocs;
-  window.onSnapshot = onSnapshot;
-  window.query = query;
-  window.orderBy = orderBy;
-  window.doc = doc;
-  window.setDoc = setDoc;
-  window.updateDoc = updateDoc;
-  window.deleteDoc = deleteDoc;
-  window.increment = increment; 
-  window.runTransaction = runTransaction; // 🔥 [신규] 트랜잭션 추가 
+  window.collection = collection; window.addDoc = addDoc; window.getDoc = getDoc; window.getDocs = getDocs; 
+  window.onSnapshot = onSnapshot; window.query = query; window.orderBy = orderBy; window.doc = doc; 
+  window.setDoc = setDoc; window.updateDoc = updateDoc; window.deleteDoc = deleteDoc; 
+  window.increment = increment; window.runTransaction = runTransaction; 
+  window.limit = limit; // 🔥 요금 폭탄 방지용 limit 함수 전역 등록
 </script>
 
     <link rel="stylesheet" href="style.css">
@@ -421,9 +366,6 @@ setPersistence(auth, browserLocalPersistence).catch((error) => console.error("�
 
         <div id="slider-title-area" style="font-size: 0.8rem; color: #aaa; margin-bottom: 5px; font-weight: bold;">📸 게시된 사진 영상 모아보기</div>
 
-        <div id="media-slider-container" class="media-slider-wrap" style="display: none;">
-            <div class="media-slider-track" id="media-slider-track"></div>
-        </div>
 
         <div class="photo-slider-wrap" id="community-photo-slider" style="margin-bottom: 10px;">
             <div class="photo-slider-track" id="photo-slider-track">
@@ -441,6 +383,8 @@ setPersistence(auth, browserLocalPersistence).catch((error) => console.error("�
                 <option value="[건의]">[건의]</option>
             </select>
             <input type="text" id="cb-title" placeholder="제목을 입력하세요" style="margin-bottom: 10px;">
+            <input type="url" id="cb-youtube-link" placeholder="📺 유튜브 영상 링크를 첨부하세요 (선택)" style="margin-bottom: 10px; width: 100%; border: 1px solid var(--primary-red); background: rgba(214,48,49,0.05); color: #fff; padding: 12px; border-radius: 8px; box-sizing: border-box; font-size: 1rem;">
+            <input type="url" id="cb-youtube-link" placeholder="📺 유튜브 영상 링크를 첨부하세요 (선택)" style="margin-bottom: 10px; width: 100%; border: 1px solid var(--primary-red); background: rgba(214,48,49,0.05); color: #fff; padding: 12px; border-radius: 8px; box-sizing: border-box; font-size: 1rem;">
             
             <div class="editor-toolbar" style="border: 2px solid #444; border-bottom: 1px solid #333; border-radius: 8px 8px 0 0;">
                 <button type="button" onclick="formatDoc('bold')" title="진하게"><b>B</b></button>
@@ -642,9 +586,8 @@ setPersistence(auth, browserLocalPersistence).catch((error) => console.error("�
             <label style="margin-top: 10px; display:block;">실명 (실제 이름)</label>
             <input type="text" id="signup-realname" placeholder="실명을 입력하세요 (예: 홍길동)" style="margin-top: 5px;">
             
-            <label style="margin-top: 10px; display:block;">비밀번호</label>
-            <input type="password" id="signup-pw" placeholder="비밀번호 (숫자+영대소문자+특수기호)">
-
+<label style="margin-top: 10px; display:block;">비밀번호 <span style="font-size:0.75rem; color:#ff7675;">(6자 이상 필수)</span></label>
+            <input type="password" id="signup-pw" placeholder="비밀번호를 6자 이상 적어주세요" onblur="window.checkSignupPwLength(this)">
             <label>주 활동 지역</label>
             <select id="signup-region">
                 <option value="" disabled selected>지역 선택</option>
@@ -667,7 +610,7 @@ setPersistence(auth, browserLocalPersistence).catch((error) => console.error("�
             <label>소속 체육관 (반드시 검색하여 선택하세요)</label>
             <div style="display: flex; flex-direction: column; gap: 5px;">
                 <div style="display: flex; gap: 5px;">
-                    <input type="text" id="signup-gym-keyword" placeholder="체육관명 검색 (예: 전주 복싱아카데미)" style="flex: 1; margin: 0;" onkeydown="if(event.key === 'Enter') searchGym()">
+                    <input type="text" id="signup-gym-keyword" placeholder="체육관명 검색 (영문은 대문자로)" style="flex: 1; margin: 0; text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()" onkeydown="if(event.key === 'Enter') searchGym()">
                     <button type="button" class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555;" onclick="searchGym()">조회</button>
                 </div>
                 <div id="gym-search-results" style="display: none; background: #222; border: 1px solid #444; border-radius: 4px; padding: 8px; font-size: 0.85rem; max-height: 150px; overflow-y: auto;"></div>
@@ -709,16 +652,18 @@ setPersistence(auth, browserLocalPersistence).catch((error) => console.error("�
                 <label style="color: #FF007F; font-size: 0.95rem; font-weight: bold; margin-top: 0; text-shadow: 0 0 5px rgba(255,0,127,0.3);">🚨 본인 인증 (신분증 & 셀카)</label>
                 <p style="font-size: 0.75rem; color: #ddd; margin-top: 6px; margin-bottom: 12px; line-height: 1.5;">신분증의 <b style="color: #FF007F;">주민번호 뒷자리와 주소는 가리고</b> 촬영해 주세요. 대조를 위해 얼굴 정면 사진(셀카)도 함께 첨부해야 합니다.</p>
                 
-                <label style="font-size: 0.8rem; color: #aaa;">1. 신분증 사본</label>
-                <div style="display:flex; align-items:center; gap:10px; margin-bottom: 10px;">
-                    <input type="file" accept="image/*" id="signup-id-pic" onchange="previewImage(event, 'preview-id')" style="flex:1; border: 1px solid #FF007F;">
-                    <div id="preview-id" style="width: 40px; height: 40px; border-radius: 4px; background: #555; background-size: cover; background-position: center; display: none; border: 1px solid #FF007F;"></div>
+            <label style="font-size: 0.8rem; color: #aaa;">1. 신분증 사본 (필수)</label>
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom: 15px;">
+                    <input type="file" accept="image/*" id="signup-id-pic" onchange="previewImage(event, 'preview-id')" style="flex:1; border: 1px solid #FF007F; padding: 8px; border-radius: 8px; background: #333; color: white;">
+                    <div id="preview-id" style="width: 40px; height: 40px; border-radius: 4px; background: #555; background-size: cover; background-position: center; display: none; border: 1px solid #FF007F; flex-shrink: 0;"></div>
                 </div>
 
-                <label style="font-size: 0.8rem; color: #aaa;">2. 본인 셀카</label>
+                <label style="font-size: 0.8rem; color: #aaa;">2. 프로필 사진 설정 (선택)</label>
+                <div style="font-size:0.7rem; color:#888; margin-bottom:5px;">비워두면 기본 실루엣 이미지로 설정됩니다.</div>
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <input type="file" accept="image/*" id="signup-selfie-pic" onchange="previewImage(event, 'preview-selfie')" style="flex:1; border: 1px solid #FF007F;">
-                    <div id="preview-selfie" style="width: 40px; height: 40px; border-radius: 50%; background: #555; background-size: cover; background-position: center; display: none; border: 1px solid #FF007F;"></div>
+                    <button type="button" onclick="document.getElementById('signup-profile-pic').click()" style="flex:1; background:#333; color:#fff; border:1px solid #555; padding:10px; border-radius:8px; font-size:0.85rem; cursor:pointer;">📷 사진 선택 및 영역 조절</button>
+                    <input type="file" accept="image/*" id="signup-profile-pic" style="display:none;" onchange="window.openSignupCropper(event)">
+                    <div id="preview-signup-profile" style="width: 40px; height: 40px; border-radius: 50%; background: #333 url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23777%22><path d=%22M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z%22/></svg>') center/cover; border: 1px solid #555; flex-shrink: 0;"></div>
                 </div>
             </div>
 
@@ -854,7 +799,7 @@ setPersistence(auth, browserLocalPersistence).catch((error) => console.error("�
 
             <label style="font-size: 0.8rem; color: #aaa; margin-top:15px;">소속 체육관 변경</label>
             <div style="display: flex; gap: 5px;">
-                <input type="text" id="edit-gym-input" placeholder="체육관 검색 또는 직접 입력" style="flex: 2; margin: 0; font-size: 0.9rem;">
+                <input type="text" id="edit-gym-input" placeholder="체육관 검색 또는 직접 입력" style="flex: 2; margin: 0; font-size: 0.9rem; text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()">
                 <button type="button" class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555; flex: 1;" onclick="searchEditGym()">조회</button>
             </div>
             <div id="edit-gym-results" style="display: none; background: #111; border: 1px solid #444; border-radius: 4px; padding: 8px; margin-top: 5px; font-size: 0.8rem; max-height: 150px; overflow-y: auto;"></div>
@@ -902,20 +847,16 @@ setPersistence(auth, browserLocalPersistence).catch((error) => console.error("�
             <input type="time" id="match-time" style="flex:1;" step="900" min="10:00" max="22:00" list="interval-15min">
         </div>
         
-        <label style="margin-top: 10px; display:block;">경기 장소 (체육관 아레나 필수 선택)</label>
+<label style="margin-top: 10px; display:block;">경기 장소 (체육관 검색 또는 장소 직접입력)</label>
         <div style="display: flex; gap: 5px;">
-            <input type="text" id="match-gym-input" placeholder="등록된 체육관 검색" style="flex: 2; margin: 0; font-size: 0.9rem;" readonly>
-            <button class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555; flex: 1;" onclick="document.getElementById('match-gym-search-wrap').style.display='block'">검색</button>
+            <input type="text" id="match-gym-input" placeholder="장소 입력 후 검색 버튼 클릭" style="flex: 2; margin: 0; font-size: 0.9rem;" onkeydown="if(event.key === 'Enter') searchArenaGym('match')">
+            <button class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555; flex: 1;" onclick="searchArenaGym('match')">검색</button>
             <input type="hidden" id="match-gym-id">
         </div>
         <div id="match-gym-search-wrap" style="display:none; margin-top:5px; background: #222; padding: 10px; border-radius: 8px;">
-            <div style="display: flex; gap: 5px;">
-                <input type="text" id="match-gym-keyword" placeholder="체육관 이름" style="flex: 1; padding: 8px; font-size: 0.85rem;" onkeydown="if(event.key === 'Enter') searchArenaGym('match')">
-                <button class="btn-submit" style="margin: 0; width: 60px; padding: 0;" onclick="searchArenaGym('match')">조회</button>
-            </div>
-            <div id="match-gym-results" style="background: #111; border: 1px solid #444; border-radius: 4px; padding: 8px; margin-top: 5px; font-size: 0.8rem; max-height:120px; overflow-y:auto; display:none;"></div>
+            <div id="match-gym-results" style="background: #111; border: 1px solid #444; border-radius: 4px; padding: 8px; font-size: 0.8rem; max-height:120px; overflow-y:auto;"></div>
         </div>
-
+        
         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 15px; color: var(--gold); font-weight: bold;">
             <input type="checkbox" id="match-negotiable" style="width: auto; margin: 0; transform: scale(1.2);"> 조건(시간/장소) 조율 가능
         </label>
@@ -958,18 +899,14 @@ setPersistence(auth, browserLocalPersistence).catch((error) => console.error("�
             <input type="date" id="modify-date-input" style="flex: 2;">
             <input type="time" id="modify-time-input" style="flex: 1;" step="900" min="10:00" max="22:00" list="interval-15min">
         </div>
-        <label>새롭게 제안할 경기 장소 (체육관)</label>
+        <label>새롭게 제안할 경기 장소</label>
         <div style="display: flex; gap: 5px; margin-bottom: 15px;">
-            <input type="text" id="modify-gym-input" placeholder="등록된 체육관 검색" style="flex: 2; margin: 0; font-size: 0.9rem;" readonly>
-            <button class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555; flex: 1;" onclick="document.getElementById('modify-gym-search-wrap').style.display='block'">검색</button>
+            <input type="text" id="modify-gym-input" placeholder="장소 입력 후 검색 버튼 클릭" style="flex: 2; margin: 0; font-size: 0.9rem;" onkeydown="if(event.key === 'Enter') searchArenaGym('modify')">
+            <button class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555; flex: 1;" onclick="searchArenaGym('modify')">검색</button>
             <input type="hidden" id="modify-gym-id">
         </div>
         <div id="modify-gym-search-wrap" style="display:none; margin-top:-10px; margin-bottom: 15px; background: #222; padding: 10px; border-radius: 8px;">
-            <div style="display: flex; gap: 5px;">
-                <input type="text" id="modify-gym-keyword" placeholder="체육관 이름" style="flex: 1; padding: 8px; font-size: 0.85rem;" onkeydown="if(event.key === 'Enter') searchArenaGym('modify')">
-                <button class="btn-submit" style="margin: 0; width: 60px; padding: 0;" onclick="searchArenaGym('modify')">조회</button>
-            </div>
-            <div id="modify-gym-results" style="background: #111; border: 1px solid #444; border-radius: 4px; padding: 8px; margin-top: 5px; font-size: 0.8rem; max-height:120px; overflow-y:auto; display:none;"></div>
+            <div id="modify-gym-results" style="background: #111; border: 1px solid #444; border-radius: 4px; padding: 8px; font-size: 0.8rem; max-height:120px; overflow-y:auto;"></div>
         </div>
         <button class="btn-submit" onclick="submitModifyDate()">조건 역제안하기</button>
     </div>
@@ -1196,6 +1133,14 @@ function formatName(p) {
 window.onload = async function() {
     // 1. [정리] 테스트 유저 캐시 로직 완전 제거 (오류 원인 차단)
     localStorage.removeItem('sparring_deleted_users');
+
+    // 🔥 [신규] 모바일 환경에서 과거 권한 에러 시절 저장된 '빈 화면' 캐시 강제 삭제 (버전 컨트롤)
+    const currentAppVersion = "20260309_v2";
+    if (localStorage.getItem('sparring_app_version') !== currentAppVersion) {
+        localStorage.removeItem('sparring_approved_users');
+        localStorage.setItem('sparring_app_version', currentAppVersion);
+        console.log("모바일 로컬 찌꺼기 데이터 강제 초기화 완료");
+    }
 
     // 2. 초기 로컬 데이터 기반 렌더링 (서버의 최신 데이터는 로그인 후 initFirebaseRealtime에서 가져옴)
     let savedPlayers = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
@@ -1735,38 +1680,39 @@ function toggleWriteMode(show, postId = null) {
     const writeStartBtn = document.getElementById('btn-write-start');
     const editor = document.getElementById('cb-content-editor');
     const photoSlider = document.getElementById('community-photo-slider');
-    const mediaSlider = document.getElementById('media-slider-container');
     
     if (show) {
-        writeBox.style.display = 'block';
-        writeStartBtn.style.display = 'none'; // 글쓰기 시작 시 상단 버튼 숨김
-        if (photoSlider) photoSlider.style.display = 'none'; // 사진 노출 섹션 제거
-        if (mediaSlider) mediaSlider.style.display = 'none'; // 미디어 슬라이더 숨김
+        writeBox.style.display = 'block'; writeStartBtn.style.display = 'none';
+        if (photoSlider) photoSlider.style.display = 'none';
 
         if (postId) {
-            // 수정 모드인 경우 기존 데이터 로드
             const posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
-            const post = posts.find(p => p.id === postId);
+            // ID 타입을 String으로 맞춰서 정확하게 찾기
+            const post = posts.find(p => String(p.id) === String(postId));
             if (post) {
-                editingPostId = postId;
+                editingPostId = post.id;
                 document.getElementById('cb-prefix').value = post.prefix;
                 document.getElementById('cb-title').value = post.title;
-                editor.innerHTML = post.content;
+                const ytInput = document.getElementById('cb-youtube-link');
+                if(ytInput) ytInput.value = post.videoUrl || '';
+                
+                // 에디터에는 iframe을 빼고 텍스트만 보여주기
+                let cleanContent = post.content.replace(/<br><iframe.*?<\/iframe>/ig, '');
+                editor.innerHTML = cleanContent;
+                
+                // 수정 누르면 상세 페이지를 닫고 커뮤니티 게시판 탭으로 이동 후 부드럽게 스크롤
+                closeModal('post-detail');
+                showPage('board');
+                writeBox.scrollIntoView({ behavior: 'smooth' });
             }
         }
     } else {
-        writeBox.style.display = 'none';
-        writeStartBtn.style.display = 'block'; // 다시 버튼 표시
+        writeBox.style.display = 'none'; writeStartBtn.style.display = 'block';
         if (photoSlider) photoSlider.style.display = 'block';
-        if (mediaSlider) mediaSlider.style.display = 'block';
-
-        editingPostId = null;
-        document.getElementById('cb-title').value = '';
-        editor.innerHTML = '';
-        if(typeof hideImgControls === 'function') hideImgControls();
+        editingPostId = null; document.getElementById('cb-title').value = ''; editor.innerHTML = '';
+        if(document.getElementById('cb-youtube-link')) document.getElementById('cb-youtube-link').value = '';
     }
 }
-
 // 텍스트 서식 적용 (굵게, 기울기 등)
 function formatDoc(cmd, value = null) {
     document.execCommand(cmd, false, value);
@@ -1848,164 +1794,8 @@ function filterCommunity(category) {
 }
 
 // 9단계 수정: 실시간 검색(Query) 필터링 로직 통합 및 페이징 안정화
-function renderCommunity() {
-    let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
-    
-    const listContainer = document.getElementById('community-list');
-    const noticeContainer = document.getElementById('community-notice-container');
-    if (!listContainer) return;
 
-    if (typeof updatePhotoSlider === 'function') updatePhotoSlider(posts);
-    if (typeof startMediaSlider === 'function') startMediaSlider(); 
 
-    // 1. 카테고리 필터링 (공지사항은 항상 노출)
-    if (currentCommunityCategory !== 'all') {
-        posts = posts.filter(p => p.prefix === currentCommunityCategory || p.type === 'notice');
-    }
-
-    // 2. [9단계 핵심] 검색어 필터링 로직 추가
-    if (currentSearchQuery && currentSearchQuery.trim() !== "") {
-        const query = currentSearchQuery.toLowerCase().trim();
-        posts = posts.filter(p => {
-            if (p.type === 'notice') return true; // 검색 시에도 공지는 유지
-            const titleMatch = p.title.toLowerCase().includes(query);
-            const authorMatch = p.authorName.toLowerCase().includes(query);
-            if (currentSearchType === 'title') return titleMatch;
-            if (currentSearchType === 'author') return authorMatch;
-            return titleMatch || authorMatch;
-        });
-    }
-
-    let notices = posts.filter(p => p.type === 'notice').slice(0, 3);
-    let normalPosts = posts.filter(p => p.type !== 'notice');
-
-    let noticeHtml = '';
-    if (notices.length > 0) {
-        noticeHtml += `<div style="margin-bottom: 5px;">`;
-        notices.forEach(n => {
-            noticeHtml += `
-            <div style="background: rgba(253, 203, 110, 0.05); border: 1px solid rgba(253, 203, 110, 0.3); border-left: 4px solid var(--gold); padding: 10px 15px; margin-bottom: 8px; cursor: pointer; border-radius: 6px; display: flex; align-items: center; gap: 10px;" onclick="openPostDetail(${n.id})">
-                <span style="font-size: 1rem;">📢</span>
-                <span style="font-size: 0.9rem; color: var(--gold); font-weight: 800; letter-spacing: -0.5px;">${n.title}</span>
-            </div>`;
-        });
-        noticeHtml += `</div>`;
-    }
-    if (noticeContainer) noticeContainer.innerHTML = noticeHtml;
-
-    // 최신순 정렬 후 페이징 적용
-    normalPosts.sort((a, b) => b.time - a.time);
-    const itemsPerPage = 8;
-    const totalPages = Math.ceil(normalPosts.length / itemsPerPage) || 1;
-    if (communityCurrentPage > totalPages) communityCurrentPage = totalPages;
-    if (communityCurrentPage < 1) communityCurrentPage = 1;
-    
-    const startIndex = (communityCurrentPage - 1) * itemsPerPage;
-    let displayedPosts = normalPosts.slice(startIndex, startIndex + itemsPerPage);
-
-    let html = '';
-    if (displayedPosts.length === 0) {
-        html += `<div style="color:#888; text-align:center; padding:40px; background:#1a1a1a; border-radius:12px;">'${currentSearchQuery}'에 대한 검색 결과가 없습니다.</div>`;
-    } else {
-        displayedPosts.forEach(post => {
-            let dateStr = new Date(post.time).toLocaleDateString().slice(2); 
-            let attachIcon = post.imageUrl ? ' 📷' : (post.videoUrl ? ' ▶' : '');
-            let commentCount = (post.comments && Array.isArray(post.comments)) ? post.comments.length : 0;
-            let likeCount = (post.likes && Array.isArray(post.likes)) ? post.likes.length : 0;
-            
-            let titleDisplay = post.title;
-            let matchCodeBadge = '';
-            
-            if (post.prefix === '[경기결과]') {
-                const matchCodeMatch = post.title.match(/\[(Sparring [0-9]+|Test [0-9]+)\]/i) || post.title.match(/\[(.*?)\]/);
-                if (matchCodeMatch && matchCodeMatch[1] && matchCodeMatch[1] !== '경기결과') {
-                    const matchCode = matchCodeMatch[1]; 
-                    matchCodeBadge = `<div style="display:inline-block; background: var(--tier2); color: white; font-size: 0.65rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-bottom: 4px;">${matchCode}</div><br>`;
-                    titleDisplay = post.title.replace(`[${matchCode}]`, '').trim();
-                }
-            }
-            
-            html += `
-            <div class="post-item" onclick="openPostDetail(${post.id})">
-                <div class="post-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; width: 100%;">
-                    <div style="display: inline-block; vertical-align: middle; margin-right: 5px; text-align: center;">
-                        ${matchCodeBadge}
-                        <span class="post-badge" style="padding:1px 4px; font-size:0.7rem; display: inline-block;">${post.prefix}</span>
-                    </div>
-                    <span style="color:#fff; font-weight:500; vertical-align: middle;">${colorizeTitle(titleDisplay)}${attachIcon}</span>
-                </div>
-                <div class="post-info-row" style="margin-top:4px; display: flex; justify-content: space-between; overflow: hidden;">
-                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0;">
-                        <span style="color:var(--text-white);">${post.authorName}</span>
-                        <span style="margin: 0 5px; opacity: 0.3;">|</span>
-                        <span>${dateStr}</span>
-                    </div>
-                    <div style="color:#aaa; font-size:0.75rem; display:flex; gap:10px; flex-shrink: 0; padding-left: 5px;">
-                        <span>👍 ${likeCount}</span>
-                        <span style="color:var(--gold); font-weight:bold;">💬 ${commentCount}</span>
-                        <span>✈️ 공유</span>
-                    </div>
-                </div>
-            </div>`;
-        });
-    }
-    
-    listContainer.innerHTML = html;
-    if (typeof renderPagination === 'function') renderPagination(totalPages);
-}
-
-async function addCommunityPost() {
-    if(!currentUser) { 
-        alert('로그인이 필요합니다.'); 
-        openModal('loginModal'); 
-        return; 
-    }
-    
-    const prefix = document.getElementById('cb-prefix').value;
-    const title = document.getElementById('cb-title').value.trim();
-    const editor = document.getElementById('cb-content-editor');
-    
-    // [보안 강화] 저장 전 DOMPurify를 사용하여 악성 스크립트 제거
-    const rawContent = editor.innerHTML.trim();
-    const content = DOMPurify.sanitize(rawContent);
-
-    if (!title || content === "" || content === "<br>") { 
-        alert("제목과 내용을 모두 입력해주세요."); 
-        return; 
-    }
-
-    try {
-        const postId = editingPostId ? editingPostId : Date.now();
-        const postRef = window.doc(window.collection(window.db, "community_posts"), postId.toString());
-
-        // --- [수정] 본문 HTML에서 첫 번째 이미지 주소(src)를 추출하여 필드에 저장 (슬라이더 자동 업데이트용) ---
-        const imgMatch = content.match(/<img[^>]+src="([^">]+)"/);
-        const firstImageUrl = imgMatch ? imgMatch[1] : "";
-
-        const postData = {
-            id: postId,
-            prefix: prefix,
-            title: title,
-            content: content,
-            imageUrl: firstImageUrl, // 🔥 추출된 이미지 주소 저장 (슬라이더 인식용)
-            authorId: currentUser.id,
-            authorName: currentUser.rawName,
-            time: editingPostId ? Date.now() : postId, // 수정 시간이면 현재 시간
-            comments: editingPostId ? (JSON.parse(localStorage.getItem('sparring_community_posts')).find(p => p.id === editingPostId)?.comments || []) : [],
-            type: 'normal'
-        };
-
-        // Firebase에 저장 (실시간 엔진이 감지하고 모든 기기에 즉시 반영됨)
-        await window.setDoc(postRef, postData);
-
-        alert(editingPostId ? "게시글이 수정되었습니다." : "게시글이 등록되었습니다.");
-        toggleWriteMode(false);
-        renderCommunity(); // 즉시 리프레시 반영
-    } catch (error) {
-        console.error("게시글 저장 실패: ", error);
-        alert("서버 오류로 게시글을 등록하지 못했습니다.");
-    }
-}
 
 
 window.previousPageBeforePostDetail = 'board';
@@ -2023,7 +1813,6 @@ function openPostDetail(postId) {
 
     currentPostId = postId;
     let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
-    
     let post = posts.find(p => String(p.id) === String(postId));
     if(!post) return;
 
@@ -2072,13 +1861,7 @@ function openPostDetail(postId) {
     html += `
     <div class="post-content-view" style="font-size:0.95rem; line-height:1.6; color:#ccc; margin-bottom:30px; word-break: break-all;">
         <style>
-            .post-content-view img {
-                max-width: 100% !important;
-                height: auto !important;
-                border-radius: 8px;
-                display: block;
-                margin: 15px auto;
-            }
+            .post-content-view img { max-width: 100% !important; height: auto !important; border-radius: 8px; display: block; margin: 15px auto; }
         </style>
         ${cleanContent}
     </div>`;
@@ -2097,9 +1880,7 @@ function openPostDetail(postId) {
 
     if(post.type === 'judge' && post.judgeData) {
         let jd = post.judgeData;
-        let v1 = jd.votes.p1.length;
-        let vDraw = jd.votes.draw.length;
-        let v2 = jd.votes.p2.length;
+        let v1 = jd.votes.p1.length; let vDraw = jd.votes.draw.length; let v2 = jd.votes.p2.length;
         let total = v1 + vDraw + v2;
         
         if (jd.status === 'voting') {
@@ -2763,7 +2544,8 @@ function renderAdmin() {
     } else {
         pendingUsers.forEach(req => {
             let picHtml = req.profilePic ? `<div class="avatar" style="background-image:url('${req.profilePic}'); width:50px; height:50px; display:inline-block; vertical-align:middle; margin-right:10px;"></div>` : '';
-            
+            let idVerifyBtn = req.idVerificationPic ? `<button onclick="window.open('${req.idVerificationPic}', '_blank')" style="background:#555; color:white; border:1px solid #777; padding:4px 8px; border-radius:4px; font-size:0.75rem; margin-top:5px; cursor:pointer;">신분증 사진 확인</button>` : '';
+
             reqList.innerHTML += `
             <div style="background:#222; padding:15px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid var(--gold);">
                 <div>
@@ -2771,11 +2553,12 @@ function renderAdmin() {
                     <div style="display:inline-block; vertical-align:middle;">
                         <b style="font-size:1.1rem;">${req.name}</b> <span style="color:var(--gold); font-size:0.8rem; margin-left:5px;">[Tier ${req.tier} 신청]</span><br>
                         <span style="color:#aaa; font-size:0.85rem; display:block; margin-top:5px;">소속: ${req.gym} | [${req.weight}, ${req.region}]</span>
+                        ${idVerifyBtn}
                     </div>
                 </div>
                 <div style="display:flex; gap:8px;">
                     <button onclick="approveUser('${req.firebaseId}')" style="background:var(--primary-red); color:white; border:none; padding:5px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">승인</button>
-                    <button onclick="rejectUser('${req.firebaseId}')" style="background:#444; color:#ff7675; border:none; padding:5px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">X</button>
+                    <button onclick="rejectUser('${req.firebaseId}')" style="background:#444; color:#ff7675; border:none; padding:5px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">거절</button>
                 </div>
             </div>`;
         });
@@ -2834,11 +2617,18 @@ async function approveUser(firebaseId) {
                 id: newUserId,
                 isAdmin: false,
                 sW: 0, sD: 0, sL: 0, pt: 0, matchingTrust: 100, decisionTrust: 100, 
-                pending: 0, noReply: 0, acc: 0
+                pending: 0, noReply: 0, acc: 0,
+                idVerificationPic: ""
             };
             
             await window.setDoc(window.doc(window.db, "users", user.userId || user.rawName), newUserObj);
             await window.deleteDoc(window.doc(window.db, "pendingUsers", firebaseId));
+
+            if (user.idVerificationPic) {
+                try {
+                    await window.deleteObject(window.ref(window.storage, user.idVerificationPic));
+                } catch(e) { console.warn("신분증 사진 폐기 에러(무시가능):", e); }
+            }
 
             // 🔥 [추가] 서버 동기화 지연 방지를 위해 로컬 데이터 즉시 갱신
             let existingIndex = demoPlayers.findIndex(p => p.rawName === newUserObj.rawName);
@@ -2872,6 +2662,15 @@ async function approveUser(firebaseId) {
 async function rejectUser(firebaseId) {
     if(!confirm('가입을 거절하시겠습니까?\n신청 데이터가 영구 삭제됩니다.')) return;
     try {
+        let pendingUsers = JSON.parse(localStorage.getItem('sparring_pending_users')) || [];
+        let user = pendingUsers.find(u => u.firebaseId === firebaseId);
+        
+        if (user && user.idVerificationPic) {
+            try {
+                await window.deleteObject(window.ref(window.storage, user.idVerificationPic));
+            } catch(e) { console.warn("신분증 사진 폐기 에러(무시가능):", e); }
+        }
+
         // 서버에서 해당 신청서 바로 삭제
         await window.deleteDoc(window.doc(window.db, "pendingUsers", firebaseId));
         alert('가입 신청이 거절 및 삭제되었습니다.');
@@ -3047,15 +2846,27 @@ async function processLogin() {
     window.updateUploadProgress(20, "보안 서버 인증 확인 중...");
 
     try {
-        let authEmail = `${inputId}@sparringclub.kr`;
         let docId = inputId;
         
         // 기존 한글 실명 로그인(레거시) 유저를 위한 인코딩 지원
         const koreanRegex = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/;
         if (koreanRegex.test(inputId)) {
             docId = btoa(encodeURIComponent(inputId)).replace(/=/g, "");
-            authEmail = `${docId}@sparringclub.kr`;
         }
+        
+        // 🔥 중복 에러 해결을 위해 authEmail은 여기서 한 번만 선언
+        let authEmail = `${docId}@sparringclub.kr`;
+        
+        // 아이디 중복 회피를 위해 생성된 고유 이메일이 있는지 확인
+        try {
+            let userSnap = await window.getDoc(window.doc(window.db, "users", docId));
+            if (!userSnap.exists()) {
+                userSnap = await window.getDoc(window.doc(window.db, "pendingUsers", docId));
+            }
+            if (userSnap.exists() && userSnap.data().authEmail) {
+                authEmail = userSnap.data().authEmail;
+            }
+        } catch(e) {}
         
         try {
             await window.signInWithEmailAndPassword(window.auth, authEmail, inputPw);
@@ -4019,7 +3830,6 @@ function requestMatch(id) {
     document.getElementById('match-time').value = '';
     document.getElementById('match-gym-input').value = '';
     document.getElementById('match-gym-id').value = '';
-    document.getElementById('match-gym-keyword').value = '';
     document.getElementById('match-gym-search-wrap').style.display = 'none';
     document.getElementById('match-negotiable').checked = false;
     document.getElementById('match-msg').value = '';
@@ -4084,23 +3894,32 @@ function validateMatchRank() {
 }
 
 function searchArenaGym(type) {
-    const keyword = document.getElementById(`${type}-gym-keyword`).value.trim();
+    const inputEl = document.getElementById(`${type}-gym-input`);
+    const keyword = inputEl.value.trim();
     const resultsDiv = document.getElementById(`${type}-gym-results`);
-    if(!keyword) { resultsDiv.innerHTML = '<div style="color:#ff7675;">검색어를 입력해주세요.</div>'; resultsDiv.style.display = 'block'; return; }
+    const wrapDiv = document.getElementById(`${type}-gym-search-wrap`);
+    
+    document.getElementById(`${type}-gym-id`).value = ""; 
+
+    if(!keyword) { 
+        resultsDiv.innerHTML = '<div style="color:#ff7675;">장소를 입력해주세요.</div>'; 
+        wrapDiv.style.display = 'block'; 
+        return; 
+    }
     
     let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
-    let matched = registeredGyms.filter(g => g.name.includes(keyword));
+    let matched = registeredGyms.filter(g => g.name.toUpperCase().includes(keyword.toUpperCase()));
     
     if(matched.length > 0) {
-        let html = '<div style="color:#aaa; margin-bottom:5px;">등록된 체육관 (선택하세요):</div>';
-        matched.forEach(g => { 
-            html += `<div style="padding: 5px 0; cursor: pointer; color: var(--gold); border-bottom:1px solid #333;" onclick="selectArenaGym('${type}', '${g.name}', '${g.id}')">▶ ${g.name} (${g.region})</div>`; 
-        });
+        let html = '<div style="color:#aaa; margin-bottom:5px;">검색된 관련 체육관 (클릭하여 선택):</div>';
+        matched.forEach(g => { html += `<div style="padding: 5px 0; cursor: pointer; color: var(--gold); border-bottom:1px solid #333;" onclick="selectArenaGym('${type}', '${g.name}', '${g.id}')">▶ ${g.name} (${g.region})</div>`; });
         resultsDiv.innerHTML = html;
+        wrapDiv.style.display = 'block';
     } else {
-        resultsDiv.innerHTML = `<div style="color:#aaa;">검색 결과가 없습니다. 등록된 체육관만 지정할 수 있습니다.</div>`;
+        resultsDiv.innerHTML = `<div style="color:#aaa;">관련 체육관이 없습니다.<br>입력하신 텍스트 이름으로 장소가 기록됩니다.</div>`;
+        wrapDiv.style.display = 'block';
+        setTimeout(() => { wrapDiv.style.display = 'none'; }, 2500);
     }
-    resultsDiv.style.display = 'block';
 }
 
 function selectArenaGym(type, name, id) {
@@ -4114,14 +3933,14 @@ function selectArenaGym(type, name, id) {
 async function sendMatchRequest() {
     const date = document.getElementById('match-date').value;
     const time = document.getElementById('match-time').value;
-    const gymName = document.getElementById('match-gym-input').value;
-    const gymId = document.getElementById('match-gym-id').value;
+    const gymName = document.getElementById('match-gym-input').value.trim();
+    const gymId = document.getElementById('match-gym-id').value || "";
     const negotiable = document.getElementById('match-negotiable').checked;
     const msg = document.getElementById('match-msg').value.trim();
     const matchType = document.querySelector('input[name="match-type-radio"]:checked').value;
 
     if(!date || !time) { alert('희망 날짜와 시간을 정확히 선택해주세요.'); return; }
-    if(!gymName || !gymId) { alert('경기 장소(체육관)를 반드시 검색하여 지정해주세요.'); return; }
+    if(!gymName) { alert('경기 장소를 기입해주세요.'); return; }
 
     let senderPlayer = currentUser;
     if (currentUser.role === 'manager') {
@@ -4178,7 +3997,8 @@ async function sendMatchRequest() {
         });
 
         // 3. 신청 횟수 차감 및 세션 갱신
-        await window.updateDoc(window.doc(window.db, "users", senderPlayer.rawName), {
+        const senderDocId = senderPlayer.userId || senderPlayer.rawName;
+        await window.updateDoc(window.doc(window.db, "users", senderDocId), {
             dailyMatchCount: currentDailyCount + 1,
             dailyMatchDate: todayStr
         });
@@ -4191,9 +4011,9 @@ async function sendMatchRequest() {
         alert(`신청 완료! (No. Sparring ${String(nextSeq).padStart(3, '0')})`);
         closeModal('matchReqModal');
     } catch (error) {
-        console.error(error);
+        console.error("매칭 신청 중 에러:", error);
         window.updateUploadProgress(100);
-        alert("서버 연결 실패");
+        alert("서버 연결에 실패했습니다. 다시 시도해주세요.");
     }
 }
 
@@ -4523,15 +4343,19 @@ async function modifyMatchDate(matchId) {
 async function submitModifyDate() {
     const d = document.getElementById('modify-date-input').value;
     const t = document.getElementById('modify-time-input').value;
+    const gymName = document.getElementById('modify-gym-input').value.trim();
+    const gymId = document.getElementById('modify-gym-id').value || "";
+    
     if(!d || !t) { alert('날짜와 시간을 모두 선택해주세요.'); return; }
+    if(!gymName) { alert('새롭게 제안할 경기 장소를 입력해주세요.'); return; }
 
     let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
     let m = allMatches.find(x => String(x.id) === String(modifyingMatchId));
     if(m) {
-        const updatedMessages = [...(m.messages || []), { sender: '시스템알림', text: `🔄 신청자가 희망 일시를 [${d} ${t}](으)로 변경 제안했습니다.` }];
+        const updatedMessages = [...(m.messages || []), { sender: '시스템알림', text: `🔄 신청자가 조건을 [${gymName} / ${d} ${t}](으)로 변경 제안했습니다.` }];
         try {
             await window.updateDoc(window.doc(window.db, "matches", modifyingMatchId.toString()), {
-                modifiedDate: `${d} ${t}`, messages: updatedMessages
+                modifiedDate: `${d} ${t}`, matchGymName: gymName, matchGymId: gymId, messages: updatedMessages
             });
             alert('일정이 성공적으로 변경 제안되었습니다.');
             closeModal('modifyDateModal');
@@ -4662,12 +4486,14 @@ function autoSetMatchType() {
 let tempSelectedGymId = null; // 선택된 체육관 ID 임시 보관
 
 function searchGym() {
-    const input = document.getElementById('signup-gym-keyword').value.trim();
+    const inputEl = document.getElementById('signup-gym-keyword');
+    const input = inputEl.value.trim().toUpperCase(); 
+    inputEl.value = input; // 화면에 입력되는 글자도 대문자로 변환
     const resultsDiv = document.getElementById('gym-search-results');
     if(!input) { resultsDiv.innerHTML = '<div style="color:#ff7675;">체육관 이름을 먼저 입력해주세요.</div>'; resultsDiv.style.display = 'block'; return; }
     
     let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
-    let matched = registeredGyms.filter(g => g.name.includes(input));
+    let matched = registeredGyms.filter(g => g.name.toUpperCase().includes(input));
     
     if(matched.length > 0) {
         let html = '<div style="color:#aaa; margin-bottom:5px;">등록된 체육관 목록 (선택):</div>';
@@ -4676,20 +4502,16 @@ function searchGym() {
         });
         resultsDiv.innerHTML = html;
     } else {
-        tempSelectedGymId = null; // 신규 생성을 위해 ID 초기화
-        resultsDiv.innerHTML = `
-            <div style="color:#aaa; margin-bottom: 8px;">검색 결과가 없습니다.</div>
-            <div style="padding: 8px; background: #333; color: #fff; text-align: center; border-radius: 4px; cursor: pointer; border: 1px solid var(--gold);" onclick="selectGym('${input}', null)">
-                <b style="color:var(--gold);">'${input}'</b> (으)로 신규 생성 후 선택하기
-            </div>`;
+        tempSelectedGymId = null;
+        resultsDiv.innerHTML = `<div style="color:#aaa; margin-bottom: 8px;">검색 결과가 없습니다.</div><div style="padding: 8px; background: #333; color: #fff; text-align: center; border-radius: 4px; cursor: pointer; border: 1px solid var(--gold);" onclick="selectGym('${inputEl.value.trim().toUpperCase()}', null)"><b style="color:var(--gold);">'${inputEl.value.trim().toUpperCase()}'</b> (으)로 신규 생성 후 선택하기</div>`;
     }
     resultsDiv.style.display = 'block';
 }
 
 function selectGym(gymName, gymId) {
-    document.getElementById('signup-gym-display').value = `[선택됨] ${gymName}`;
-    document.getElementById('signup-gym').value = gymName; // submitSignup() 연동을 위해 hidden 필드에 유지
-    tempSelectedGymId = gymId; // 전역 변수에 ID 저장
+    document.getElementById('signup-gym-display').value = `[선택됨] ${gymName.toUpperCase()}`;
+    document.getElementById('signup-gym').value = gymName.toUpperCase(); 
+    tempSelectedGymId = gymId; 
     document.getElementById('gym-search-results').style.display = 'none';
 }
 
@@ -4794,95 +4616,6 @@ function handleIdVerificationUpload(event) {
 
 // [최종 점검 완료] 가입 신청 데이터 - 복서리스트/체육관 정보 필드 완전 일치화 버전
 // [관장님 요청 반영] 필수 항목 검증 및 자동승인 시 즉각 노출 로직 추가
-async function submitSignup() {
-    if (!isDuplicateChecked) { alert('아이디 중복조회를 먼저 해주세요.'); return; }
-
-    const userId = document.getElementById('signup-userid').value.trim();
-    const realName = document.getElementById('signup-realname').value.trim();
-    const inputPw = document.getElementById('signup-pw').value.trim();
-    let gymName = document.getElementById('signup-gym').value.trim();
-    const role = 'player'; 
-    const region = document.getElementById('signup-region').value;
-
-    // 🔥 [추가] 필수 입력 항목 누락 방지 및 기본값 보장 (필터링 렌더링 에러 차단)
-    if (!gymName) gymName = '무소속';
-    const weight = document.getElementById('signup-weight').value || '체급미정';
-    const height = document.getElementById('signup-height').value || '키 미상';
-    const stance = document.getElementById('signup-stance').value || '미정';
-
-    window.updateUploadProgress(5, "서버 설정 확인 및 계정 생성 중...");
-
-    try {
-        // 1. 서버의 현재 가입 모드(자동/승인제) 실시간 확인
-        const configSnap = await window.getDoc(window.doc(window.db, "settings", "global_config"));
-        const isAuto = configSnap.exists() ? configSnap.data().autoJoin === true : true;
-
-        // 2. Auth 계정 생성
-        const authEmail = `${userId}@sparringclub.kr`;
-        const userCredential = await window.createUserWithEmailAndPassword(window.auth, authEmail, inputPw);
-        const uid = userCredential.user.uid;
-
-        // 3. 체육관 정보 처리
-        let finalGymId = tempSelectedGymId || "gym_" + Date.now();
-        if (!tempSelectedGymId && gymName !== '무소속') {
-            try {
-                await window.setDoc(window.doc(window.db, "gyms_registry", finalGymId), {
-                    id: finalGymId, name: gymName, region: region || "미정", totalPt: 0, registeredAt: Date.now(), stories: [], logo: ""
-                });
-            } catch (e) { console.warn("체육관 레지스트리 생성 생략"); }
-        } else if (gymName === '무소속') {
-            finalGymId = "";
-        }
-
-        // 4. 사진 업로드 (독립 try-catch로 사진 에러가 가입을 막지 않게 조치)
-        let idUrl = "", selfieUrl = "";
-        try {
-            const idFile = document.getElementById('signup-id-pic')?.files[0];
-            const selfieFile = document.getElementById('signup-selfie-pic')?.files[0];
-            if (idFile && selfieFile) {
-                const [cId, cS] = await Promise.all([window.compressImage(idFile), window.compressImage(selfieFile)]);
-                const idRef = window.ref(window.storage, `secure_verifications/${uid}_id.webp`);
-                const selfieRef = window.ref(window.storage, `secure_verifications/${uid}_selfie.webp`);
-                const [idSnap, selfieSnap] = await Promise.all([window.uploadBytes(idRef, cId), window.uploadBytes(selfieRef, cS)]);
-                [idUrl, selfieUrl] = await Promise.all([window.getDownloadURL(idSnap.ref), window.getDownloadURL(selfieSnap.ref)]);
-            }
-        } catch (imgErr) { console.warn("인증 사진 업로드 실패(권한이슈), 정보만 저장합니다."); }
-
-        // 5. 유저 데이터 구성
-        const userData = { 
-            id: Date.now(), userId: userId, name: realName, rawName: realName,     
-            gymId: finalGymId, gym: gymName, role: role, tier: parseInt(document.getElementById('signup-tier').value) || 1, 
-            region: region || "미정", weight: weight, height: height, stance: stance,
-            profilePic: "", idVerificationPic: idUrl, selfiePic: selfieUrl, isVerified: false,
-            pt: 0, sW: 0, sL: 0, sD: 0, tPt: 0, tW: 0, tL: 0, tD: 0,
-            matchingTrust: 100, decisionTrust: 100, createdAt: Date.now(), lastActive: Date.now(),
-            dailyMatchCount: 0, seasonRejectCount: 0, greeting: "", stories: [], isAdmin: false
-        };
-
-        // 6. 가입 모드에 따라 DB 저장
-        if (isAuto) {
-            await window.setDoc(window.doc(window.db, "users", userId), userData);
-            
-            // 🔥 [추가] 자동 승인 시 로컬 리스트 강제 갱신으로 즉각적인 복서 리스트 노출
-            demoPlayers.push(userData);
-            localStorage.setItem('sparring_approved_users', JSON.stringify(demoPlayers));
-            
-            renderPlayers();
-            renderNewMembers();
-
-            alert(`${realName}님, 즉시 승인되어 가입이 완료되었습니다! 🥊\n설정한 아이디(${userId})로 로그인해 주세요.`);
-        } else {
-            await window.setDoc(window.doc(window.db, "pendingUsers", userId), userData);
-            alert('가입 신청 완료! 관장님 승인 후 이용 가능합니다. (현재 승인 대기 상태)');
-        }
-
-        window.updateUploadProgress(100);
-        closeModal('loginModal');
-    } catch (e) {
-        window.updateUploadProgress(100);
-        alert(`가입 실패: ${e.message}`);
-    }
-}
 
 function renderPagination(totalPages) {
     const container = document.getElementById('community-pagination');
@@ -5101,17 +4834,20 @@ async function deletePost(postId) {
         await window.deleteDoc(window.doc(window.db, "community_posts", postId.toString()));
         alert('게시글이 성공적으로 삭제되었습니다.');
         
-        // 관리자 페이지에서 공지를 삭제한 경우 화면 튕김 방지
+        toggleWriteMode(false); // 혹시 열려있는 폼 강제 닫기
+        document.getElementById('post-detail').classList.remove('active'); // 상세페이지 숨김
+        
         if (document.getElementById('admin-dashboard').classList.contains('active')) {
-            // 관리자 페이지 유지 (실시간 엔진이 렌더링을 자동으로 해줌)
+            renderAdminNoticeList(); // 관리자 탭 유지
         } else {
-            showPage('board'); // 커뮤니티 게시판에서 삭제한 경우 목록으로 돌아감
+            showPage('board'); // 커뮤니티로 돌아감
         }
     } catch (e) { 
         console.error("게시글 삭제 오류:", e); 
         alert('삭제 처리 중 서버 오류가 발생했습니다.');
     }
 }
+
 /* 중복되었던 옛날 방식(localStorage)의 배경화면 함수들은 제거 완료.
    (대용량 IndexedDB 방식의 배경화면 함수는 아래쪽에 정상적으로 유지됩니다.) */
 
@@ -5415,35 +5151,6 @@ function closePWABanner() {
 
 // 기존 window.onload 에 추가
 const originalOnload = window.onload;
-window.onload = function() {
-    if (originalOnload) originalOnload();
-    initBackground();
-    initFirebaseRealtime(); // 앱 켜지자마자 서버와 연결!
-    autoRejectSystem(); // 🔥 [신규] 앱 구동 시 7일이 지난 대기중인 스파링 자동 정리
-
-    // 일정 시간 후 미설치 유저에게 배너 표시 (가입 외 자연스러운 노출)
-    setTimeout(() => {
-        const isActuallyInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-        
-        if (!isActuallyInstalled && !localStorage.getItem('sparring_pwa_dismissed')) {
-            // 안드로이드/PC는 설치 프롬프트가 준비되었을 때, iOS는 항상 노출 가능
-            if (isIOS() || deferredPrompt) {
-                const banner = document.getElementById('pwa-install-banner');
-                if(banner) banner.style.display = 'flex';
-            }
-        }
-    }, 4000);
-
-    // 🔥 [신규] 딥링크(URL 공유) 파라미터 감지 및 게시글 자동 열기
-    const urlParams = new URLSearchParams(window.location.search);
-    const postIdParam = urlParams.get('postId');
-    if (postIdParam) {
-        // 데이터가 서버에서 완전히 동기화되는 것을 기다리기 위해 1초 후 모달 띄움
-        setTimeout(() => {
-            openPostDetail(parseInt(postIdParam));
-        }, 1000);
-    }
-};
 
 // --- [신규] 공유하기 및 토스트 알림 기능 ---
 function sharePost(postId) {
@@ -5732,91 +5439,6 @@ function toggleViewMode() {
 }
 
 // 🔥 [체육관 영구 보존 버전] 활동 누적 기반 랭킹 집계 (테스트 모드 제거)
-function renderGyms(filterRegion = 'all') {
-    const podiumContainer = document.getElementById('gym-top-podium');
-    const listContainer = document.getElementById('gym-list-container');
-    const pageTitle = document.getElementById('gym-page-title');
-    if(!podiumContainer || !listContainer) return;
-    
-    // 상단 제목 동적 변경
-    if (pageTitle) {
-        pageTitle.innerText = filterRegion === 'all' ? '🏆 전국 체육관 랭킹' : `🏆 ${filterRegion} 지역 랭킹`;
-    }
-
-    // 지역 필터 버튼 활성화 상태 표시
-    document.querySelectorAll('.region-btn').forEach(btn => {
-        const isAllBtn = filterRegion === 'all' && (btn.innerText.includes('전체') || btn.innerText.includes('전국'));
-        const isMatchBtn = btn.innerText === filterRegion;
-        btn.classList.toggle('active', isAllBtn || isMatchBtn);
-    });
-
-    let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
-    
-    const gymStats = {};
-
-    // 1. 등록된 체육관 기본 정보 및 승점 로드
-    registeredGyms.forEach(g => {
-        gymStats[g.id] = { 
-            id: g.id, 
-            name: g.name, 
-            region: g.region, 
-            totalPt: g.totalPt || 0,
-            members: 0 
-        };
-    });
-
-    // 2. 소속된 선수 인원수 합산 (모든 실제 선수 대상, 테스트 관련 필터 제거)
-    let basePlayers = demoPlayers.filter(p => !p.isAdmin && p.rawName !== 'admin');
-    
-    basePlayers.forEach(p => {
-        let gymId = p.gymId || registeredGyms.find(g => g.name === p.gym)?.id;
-        if (gymId && gymStats[gymId]) gymStats[gymId].members += 1;
-    });
-
-    // 3. 지역 필터링 및 승점 순 정렬
-    let filteredGyms = Object.values(gymStats);
-    if (filterRegion !== 'all') {
-        filteredGyms = filteredGyms.filter(g => g.region === filterRegion);
-    }
-    const sortedGyms = filteredGyms.sort((a, b) => b.totalPt - a.totalPt);
-
-    // 4. TOP 3 포디움 (시각적 배치: 2위 - 1위 - 3위)
-    let podiumHtml = '';
-    const top3 = sortedGyms.slice(0, 3);
-    const medalData = [{c:'gold', i:'🥇'}, {c:'silver', i:'🥈'}, {c:'bronze', i:'🥉'}];
-    [1, 0, 2].forEach((pos) => {
-        const gym = top3[pos];
-        if (gym) {
-            const m = medalData[pos];
-            podiumHtml += `
-            <div class="rank-item ${m.c}" onclick="openGymProfile('${gym.id}')" style="cursor:pointer;">
-                <span class="rank-medal">${m.i}</span>
-                <b class="rank-gym-name">${gym.name}</b>
-                <span class="rank-gym-pt">${gym.totalPt.toLocaleString()} P</span>
-            </div>`;
-        }
-    });
-    podiumContainer.innerHTML = podiumHtml;
-
-    // 5. 4위 이하 리스트 렌더링
-    let listHtml = '';
-    sortedGyms.slice(3).forEach((gym, index) => {
-        listHtml += `
-        <div class="card" onclick="openGymProfile('${gym.id}')" style="cursor:pointer; border-left: 4px solid var(--primary-red); display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:12px 15px; overflow: hidden;">
-            <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
-                <b style="color:var(--gold); font-size:1.1rem; width: 25px; flex-shrink: 0;">${index + 4}</b>
-                <div style="flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
-                    <div style="font-size:1.05rem; color:white; font-weight:bold; overflow: hidden; text-overflow: ellipsis;">${gym.name}</div>
-                    <div style="font-size:0.75rem; color:#888; margin-top:4px; overflow: hidden; text-overflow: ellipsis;">${gym.region} | 선수 ${gym.members}명</div>
-                </div>
-            </div>
-            <div style="text-align:right; flex-shrink: 0; margin-left: 10px;">
-                <div style="color:var(--gold); font-weight:bold; font-size:1rem;">${gym.totalPt.toLocaleString()} P</div>
-            </div>
-        </div>`;
-    });
-    listContainer.innerHTML = listHtml || `<div style="text-align:center; padding:40px; color:#666;">등록된 체육관 정보가 없습니다.</div>`;
-}
 
 
 
@@ -5987,106 +5609,72 @@ function startMediaSlider() {
 
 // [프로필] 소속 체육관 검색 기능
 function searchEditGym() {
-    const input = document.getElementById('edit-gym-input').value.trim();
+    const inputEl = document.getElementById('edit-gym-input');
+    const input = inputEl.value.trim().toUpperCase();
+    inputEl.value = input;
     const resultsDiv = document.getElementById('edit-gym-results');
-    
-    if(!input) { 
-        resultsDiv.innerHTML = '<div style="color:#ff7675;">체육관 이름을 먼저 입력해주세요.</div>'; 
-        resultsDiv.style.display = 'block'; 
-        return; 
-    }
+    if(!input) { resultsDiv.innerHTML = '<div style="color:#ff7675;">체육관 이름을 먼저 입력해주세요.</div>'; resultsDiv.style.display = 'block'; return; }
 
-    // 현재 등록된 모든 체육관 목록 가져오기
     let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
-    let allGymNames = registeredGyms.map(g => g.name);
-    let matched = allGymNames.filter(g => g.includes(input));
+    let matched = registeredGyms.filter(g => g.name.toUpperCase().includes(input));
     
     if(matched.length > 0) {
         let html = '<div style="color:#aaa; margin-bottom:5px;">기존 체육관 목록 (선택):</div>';
         matched.forEach(g => { 
-            html += `<div style="padding: 5px 0; cursor: pointer; color: var(--gold);" onclick="selectEditGym('${g}')">▶ ${g}</div>`; 
+            html += `<div style="padding: 5px 0; cursor: pointer; color: var(--gold);" onclick="selectEditGym('${g.name}')">▶ ${g.name}</div>`; 
         });
         resultsDiv.innerHTML = html;
     } else {
-        resultsDiv.innerHTML = `<div style="color:#aaa;">검색 결과가 없습니다.<br><b style="color:white;">'${input}'</b>(으)로 신규 등록됩니다.</div>`;
+        resultsDiv.innerHTML = `<div style="color:#aaa;">검색 결과가 없습니다.<br><b style="color:white;">'${inputEl.value.trim().toUpperCase()}'</b>(으)로 신규 등록됩니다.</div>`;
     }
     resultsDiv.style.display = 'block';
 }
 
 // [프로필] 검색 결과 선택 시 입력창에 삽입
 function selectEditGym(gymName) {
-    document.getElementById('edit-gym-input').value = gymName;
+    document.getElementById('edit-gym-input').value = gymName.toUpperCase();
     document.getElementById('edit-gym-results').style.display = 'none';
 }
 
 // [프로필] 소속 체육관 최종 업데이트 로직 (ID 기반)
 async function updateGym() {
-        let newGymName = document.getElementById('edit-gym-input').value.trim();
-        const targetPlayer = demoPlayers.find(x => String(x.id) === String(profileOwnerId));
-        if(!targetPlayer) return;
+    let newGymName = document.getElementById('edit-gym-input').value.trim().toUpperCase();
+    const targetPlayer = demoPlayers.find(x => String(x.id) === String(profileOwnerId));
+    if(!targetPlayer) return;
 
-        const isUnaffiliated = !newGymName || newGymName === '무소속';
-        if (isUnaffiliated) newGymName = '무소속';
+    const isUnaffiliated = !newGymName || newGymName === '무소속';
+    if (isUnaffiliated) newGymName = '무소속';
 
-        if(!confirm(`소속을 '${newGymName}'(으)로 변경하시겠습니까?`)) return;
+    if(!confirm(`소속을 '${newGymName}'(으)로 변경하시겠습니까?`)) return;
 
-        try {
-            let finalGymId = isUnaffiliated ? "" : tempSelectedGymId;
-            
-            // '무소속'이 아닐 때 중복 체크 수행
-            if (!isUnaffiliated) {
-                let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
-                const cleanName = newGymName.replace(/\s+/g, ' ').trim();
-                const existing = registeredGyms.find(g => g.name.replace(/\s+/g, ' ').trim().toLowerCase() === cleanName.toLowerCase());
+    try {
+        let finalGymId = isUnaffiliated ? "" : tempSelectedGymId;
+        
+        if (!isUnaffiliated) {
+            let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
+            const existing = registeredGyms.find(g => g.name.toUpperCase() === newGymName);
 
-                if (existing) {
-                    finalGymId = existing.id;
-                    newGymName = existing.name;
-                } else if (!finalGymId) {
-                    // 완전히 새로운 이름인 경우만 신규 ID 부여 및 레지스트리 등록 (초기 승점 0 설정)
-                    finalGymId = "gym_" + Date.now();
-                    await window.setDoc(window.doc(window.db, "gyms_registry", finalGymId), {
-                        id: finalGymId, name: newGymName, region: targetPlayer.region || '전북', registeredAt: Date.now(), totalPt: 0, stories: []
-                    });
-                }
+            if (existing) {
+                finalGymId = existing.id;
+                newGymName = existing.name.toUpperCase();
+            } else if (!finalGymId) {
+                finalGymId = "gym_" + Date.now();
+                await window.setDoc(window.doc(window.db, "gyms_registry", finalGymId), { id: finalGymId, name: newGymName, region: targetPlayer.region || '전북', registeredAt: Date.now(), totalPt: 0, stories: [] });
             }
-
-            // 유저 정보 업데이트
-            await window.updateDoc(window.doc(window.db, "users", targetPlayer.rawName), { 
-                gymId: finalGymId, gym: newGymName 
-            });
-
-            targetPlayer.gymId = finalGymId;
-            targetPlayer.gym = newGymName;
-            
-            // 본인 프로필 수정 시 세션 동기화
-            if (currentUser && currentUser.id === targetPlayer.id) {
-                currentUser.gymId = finalGymId;
-                currentUser.gym = newGymName;
-                localStorage.setItem('sparring_session', JSON.stringify(currentUser));
-            }
-            
-            alert('소속이 성공적으로 변경되었습니다!');
-            tempSelectedGymId = null;
-            document.getElementById('edit-gym-results').style.display = 'none';
-            
-            openProfile(targetPlayer.id);
-            renderGyms();
-            renderPlayers(); 
-        } catch(e) { 
-            console.error("체육관 변경 실패:", e); 
-            alert('변경 처리 중 오류가 발생했습니다.'); 
         }
-    }
 
-    // --- [가상 데이터] 세계관 최강자 30인 및 전국구 네트워크 활성화 모드 ---
-
-
-    // --- [데이터 청소] 가상 데이터 일괄 삭제 ---
-
-
-// 초기 로드 시 클린 피드 버튼 상태 동기화
-
+        await window.updateDoc(window.doc(window.db, "users", targetPlayer.rawName), { gymId: finalGymId, gym: newGymName });
+        targetPlayer.gymId = finalGymId; targetPlayer.gym = newGymName;
+        
+        if (currentUser && currentUser.id === targetPlayer.id) {
+            currentUser.gymId = finalGymId; currentUser.gym = newGymName;
+            localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+        }
+        alert('소속이 성공적으로 변경되었습니다!');
+        tempSelectedGymId = null; document.getElementById('edit-gym-results').style.display = 'none';
+        openProfile(targetPlayer.id); renderGyms(); renderPlayers(); 
+    } catch(e) { alert('변경 처리 중 오류가 발생했습니다.'); }
+}
 
 // --- [신규] 알림(FCM) 및 설정 UI 제어 ---
 function toggleNotiSettings() {
@@ -6154,7 +5742,481 @@ async function saveNotiSettings() {
         alert("알림 설정 저장 중 오류가 발생했습니다.");
     }
 }
+// 🔥 [신규] 입력창 터치 시 화면을 중앙으로 스크롤하여 키보드 가림 완벽 방지
+document.addEventListener('focusin', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+        const modalContent = e.target.closest('.modal-content');
+        if (modalContent) {
+            setTimeout(() => { e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300);
+        }
+    }
+});
 
+// 🔥 [수정] 새로고침 시 이용하던 탭 화면 유지 기능 (기존 window.onload 교체)
+window.onload = async function() {
+    localStorage.removeItem('sparring_deleted_users');
+    const currentAppVersion = "20260309_v4";
+    if (localStorage.getItem('sparring_app_version') !== currentAppVersion) {
+        localStorage.removeItem('sparring_approved_users');
+        localStorage.setItem('sparring_app_version', currentAppVersion);
+    }
+
+    let savedPlayers = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
+    demoPlayers = [...savedPlayers];
+
+    const savedSession = localStorage.getItem('sparring_session');
+    if (savedSession) { try { currentUser = JSON.parse(savedSession); updateLoginStateUI(); } catch(e) {} }
+
+    let autoApprove = localStorage.getItem('sparring_auto_approve') === 'true';
+    const toggleRecordEl = document.getElementById('admin-auto-approve-toggle');
+    if (toggleRecordEl) toggleRecordEl.checked = autoApprove;
+
+    let autoJoinStr = localStorage.getItem('sparring_auto_join');
+    let autoJoin = autoJoinStr !== null ? autoJoinStr === 'true' : true; 
+    const toggleJoinEl = document.getElementById('admin-auto-join-toggle');
+    if (toggleJoinEl) toggleJoinEl.checked = autoJoin;
+
+    renderFeed(); renderPlayers(); renderNewMembers(); renderCommunity();
+    startNoticeSlider(); setInterval(updateMatchBadge, 2000); initBackground(); initFirebaseRealtime(); autoRejectSystem(); 
+
+    const hash = window.location.hash.replace('#', '');
+    
+    // 🔥 관리자로 로그인 되어있을 경우 무조건 관리자 페이지를 1순위로 띄움
+    if (currentUser && (currentUser.isAdmin || currentUser.role === 'admin') && (!hash || hash === 'dashboard')) {
+        showPage('admin-dashboard', false);
+        switchAdminTab('auth');
+    } else if (hash && hash !== 'dashboard' && !hash.startsWith('modal-') && document.getElementById(hash)) {
+        showPage(hash, false); // 새로고침 시 현재 이용 중이던 탭 유지
+    } else {
+        showPage('dashboard', false);
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const postIdParam = urlParams.get('postId');
+    if (postIdParam) { setTimeout(() => { openPostDetail(parseInt(postIdParam)); }, 1000); }
+};
+
+// 🔥 [신규] 비밀번호 6자리 유효성 검사 함수
+window.checkSignupPwLength = function(element) {
+    if (element.value.length > 0 && element.value.length < 6) {
+        alert("비밀번호는 보안을 위해 6자 이상 적어야 합니다.");
+        element.value = ''; 
+        setTimeout(() => element.focus(), 100);
+    }
+};
+
+// 🔥 [신규] 회원가입 시 프로필 사진 전용 크롭퍼 연동
+let signupCroppedBlob = null; 
+window.openSignupCropper = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    currentCropContext = 'signupProfile';
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = document.getElementById('cropper-target');
+        img.src = e.target.result;
+        openModal('cropperModal');
+        if (cropper) cropper.destroy();
+        cropper = new Cropper(img, { aspectRatio: 1, viewMode: 1, autoCropArea: 1, background: false });
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+};
+
+window.applyCrop = function() {
+    if (!cropper) return;
+    cropper.getCroppedCanvas({
+        width: 300,
+        height: 300,
+        fillColor: '#fff'
+    }).toBlob((blob) => {
+        if (!blob) {
+            alert('사진 처리 중 오류가 발생했습니다.');
+            return;
+        }
+        if (currentCropContext === 'signupProfile') {
+            signupCroppedBlob = blob;
+            const url = URL.createObjectURL(blob);
+            const preview = document.getElementById('preview-signup-profile');
+            if (preview) {
+                preview.style.backgroundImage = `url('${url}')`;
+            }
+            closeModal('cropperModal');
+        }
+    }, 'image/webp', 0.9);
+};
+
+// 🔥 [수정] 기존 applyCrop 덮어쓰기 (가입 폼 동그라미 미리보기 지원)
+function initFirebaseRealtime() {
+    // 🔥 커뮤니티 게시글은 트래픽 낭비 방지를 위해 최신 150개까지만 불러옴
+    const postQuery = window.query(window.collection(window.db, "community_posts"), window.orderBy("time", "desc"), window.limit(150));
+    window.onSnapshot(postQuery, (snapshot) => {
+        let posts = [];
+        snapshot.forEach((doc) => posts.push(doc.data()));
+        localStorage.setItem('sparring_community_posts', JSON.stringify(posts));
+        renderFeed(); renderPopularSparring(); startNoticeSlider();
+        if (document.getElementById('board').classList.contains('active')) renderCommunity();
+    }, (error) => { console.warn("게시글 접근 거부:", error); });
+
+    // 🔥 [성능 최적화] 체육관 데이터 통째로 호출 시 브라우저 다운 방지 (상위 200개 제한)
+    const gymQuery = window.query(window.collection(window.db, "gyms_registry"), window.limit(200));
+    window.onSnapshot(gymQuery, (snapshot) => {
+        let gyms = []; snapshot.forEach((doc) => gyms.push(doc.data()));
+        localStorage.setItem('sparring_gyms_registry', JSON.stringify(gyms));
+        renderGyms();
+    }, (error) => {});
+
+    const subscribeUsers = () => {
+        if (usersUnsub) usersUnsub();
+        // 🔥 [보안 및 성능 강화] 1만명 동시 로드 시 Firebase 요금 폭탄 및 로컬 5MB 한도 초과 방지 (랭킹순 상위 300명 제한)
+        const usersQuery = window.query(window.collection(window.db, "users"), window.orderBy("pt", "desc"), window.limit(300));
+        usersUnsub = window.onSnapshot(usersQuery, (snapshot) => {
+            let players = []; snapshot.forEach((doc) => players.push(doc.data()));
+            demoPlayers = players; 
+            // 🔥 [메모리 최적화] 로컬 스토리지는 5MB 한계가 있으므로 상위 100명 데이터만 안전하게 저장
+            try { localStorage.setItem('sparring_approved_users', JSON.stringify(players.slice(0, 100))); } catch(e) {}
+            renderPlayers(); renderNewMembers();
+            if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
+        }, (error) => { console.error("🔥 유저 목록 접근 실패 (보안 규칙 확인 필요)"); });
+    };
+
+    subscribeUsers();
+
+    window.onSnapshot(window.doc(window.db, "settings", "global_config"), (doc) => {
+        if (doc.exists()) {
+            localStorage.setItem('sparring_auto_join', doc.data().autoJoin === true);
+            const toggleJoinEl = document.getElementById('admin-auto-join-toggle');
+            if (toggleJoinEl) toggleJoinEl.checked = doc.data().autoJoin === true;
+        }
+    });
+
+    let authenticatedListeners = []; 
+    let pendingUnsub = null;
+
+    window.onAuthStateChanged(window.auth, async (user) => {
+        authenticatedListeners.forEach(unsub => unsub());
+        if (pendingUnsub) { pendingUnsub(); pendingUnsub = null; }
+        authenticatedListeners = [];
+
+        if (user) {
+            const encodedId = user.email.split('@')[0];
+            updateLoginStateUI(); subscribeUsers();
+
+            const userUnsub = window.onSnapshot(window.doc(window.db, "users", encodedId), (doc) => {
+                if (doc.exists()) {
+                    currentUser = doc.data(); localStorage.setItem('sparring_session', JSON.stringify(currentUser)); updateMatchBadge();
+                    if ((currentUser.isAdmin || currentUser.role === 'admin') && !pendingUnsub) {
+                        // 🔥 [성능 최적화] 관리자 승인 대기자도 무제한 호출 방지 (최근 50명 제한)
+                        const pendingQuery = window.query(window.collection(window.db, "pendingUsers"), window.limit(50));
+                        pendingUnsub = window.onSnapshot(pendingQuery, (snap) => {
+                            let pending = []; snap.forEach((d) => pending.push({ ...d.data(), firebaseId: d.id }));
+                            localStorage.setItem('sparring_pending_users', JSON.stringify(pending));
+                            if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
+                        });
+                    }
+                }
+            });
+            authenticatedListeners.push(userUnsub);
+
+            // 🔥 [요금 폭탄 방지] 매치 기록도 최근 300개로 제한
+            const matchesQuery = window.query(window.collection(window.db, "matches"), window.orderBy("createdAt", "desc"), window.limit(300));
+            const matchesUnsub = window.onSnapshot(matchesQuery, (snapshot) => {
+                let matches = []; snapshot.forEach((doc) => matches.push(doc.data()));
+                localStorage.setItem('sparring_matches', JSON.stringify(matches));
+                renderFeed(); if (document.getElementById('matchStatusModal').style.display === 'flex') renderMatchList();
+            });
+            authenticatedListeners.push(matchesUnsub);
+
+            const recordsQuery = window.query(window.collection(window.db, "record_requests"), window.limit(100));
+            const recordsUnsub = window.onSnapshot(recordsQuery, (snapshot) => {
+                let reqs = []; snapshot.forEach((doc) => reqs.push(doc.data()));
+                localStorage.setItem('sparring_record_requests', JSON.stringify(reqs));
+                if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
+            });
+            authenticatedListeners.push(recordsUnsub);
+        } else {
+            if (!localStorage.getItem('sparring_session')) { currentUser = null; updateLoginStateUI(); }
+        }
+    });
+}
+
+// 🔥 [수정] 회원가입 제출 함수 (권한 에러 우회, 이메일 중복 방지, 신분증 연동)
+async function submitSignup() {
+    if (!isDuplicateChecked) { alert('아이디 중복조회를 먼저 해주세요.'); return; }
+    
+    const userId = document.getElementById('signup-userid').value.trim();
+    const realName = document.getElementById('signup-realname').value.trim();
+    const inputPw = document.getElementById('signup-pw').value.trim();
+    if(inputPw.length < 6) { alert('비밀번호는 6자 이상이어야 합니다.'); return; }
+    
+    let gymName = document.getElementById('signup-gym').value.trim().toUpperCase();
+    const role = 'player'; 
+    const region = document.getElementById('signup-region').value;
+
+    if (!gymName) gymName = '무소속';
+    const weight = document.getElementById('signup-weight').value || '체급미정';
+    const height = document.getElementById('signup-height').value || '키 미상';
+    const stance = document.getElementById('signup-stance').value || '미정';
+
+    window.updateUploadProgress(5, "계정 생성 중...");
+
+    let isAuto = true;
+    try {
+        const configSnap = await window.getDoc(window.doc(window.db, "settings", "global_config"));
+        if(configSnap.exists()) isAuto = configSnap.data().autoJoin === true;
+    } catch(e) { console.warn("설정 읽기 우회 완료"); }
+
+    try {
+        let authEmail = `${userId}@sparringclub.kr`;
+        let userCredential;
+        let uid;
+        
+        try {
+            userCredential = await window.createUserWithEmailAndPassword(window.auth, authEmail, inputPw);
+            uid = userCredential.user.uid;
+        } catch (authErr) {
+            // 과거 삭제된 데이터 등으로 인해 이메일 중복 에러 발생 시, 타임스탬프를 붙여 고유 이메일로 회피
+            if (authErr.code === 'auth/email-already-in-use') {
+                authEmail = `${userId}_${Date.now()}@sparringclub.kr`;
+                userCredential = await window.createUserWithEmailAndPassword(window.auth, authEmail, inputPw);
+                uid = userCredential.user.uid;
+            } else {
+                throw authErr;
+            }
+        }
+
+        // 🔥 [핵심] Auth 토큰이 데이터베이스에 전파될 때까지 0.8초간 대기 (Missing permissions 에러 방어)
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+        let finalGymId = tempSelectedGymId || "gym_" + Date.now();
+        if (!tempSelectedGymId && gymName !== '무소속') {
+            try { await window.setDoc(window.doc(window.db, "gyms_registry", finalGymId), { id: finalGymId, name: gymName, region: region || "미정", totalPt: 0, registeredAt: Date.now(), stories: [], logo: "" }); } catch (e) {}
+        } else if (gymName === '무소속') { finalGymId = ""; }
+
+        let idUrl = "", profileUrl = "";
+        try {
+            const idFile = document.getElementById('signup-id-pic')?.files[0];
+            if (idFile) {
+                const cId = await window.compressImage(idFile);
+                const idSnap = await window.uploadBytes(window.ref(window.storage, `secure_verifications/${uid}_id.webp`), cId);
+                idUrl = await window.getDownloadURL(idSnap.ref);
+            }
+            if (signupCroppedBlob) {
+                const pfSnap = await window.uploadBytes(window.ref(window.storage, `profiles/${uid}_pf.webp`), signupCroppedBlob);
+                profileUrl = await window.getDownloadURL(pfSnap.ref); signupCroppedBlob = null; 
+            }
+        } catch (imgErr) { console.warn("사진 에러 발생 시 문자 정보라도 저장 진행"); }
+
+        const userData = { 
+            id: Date.now(), userId: userId, name: realName, rawName: realName, gymId: finalGymId, gym: gymName, role: 'player', tier: parseInt(document.getElementById('signup-tier').value) || 1, 
+            region: region || "미정", weight: weight, height: height, stance: stance, profilePic: profileUrl, idVerificationPic: idUrl, selfiePic: "", isVerified: false,
+            authEmail: authEmail,
+            pt: 0, sW: 0, sL: 0, sD: 0, tPt: 0, tW: 0, tL: 0, tD: 0, matchingTrust: 100, decisionTrust: 100, createdAt: Date.now(), lastActive: Date.now(),
+            dailyMatchCount: 0, seasonRejectCount: 0, greeting: "", stories: [], isAdmin: false
+        };
+
+        if (isAuto) {
+            await window.setDoc(window.doc(window.db, "users", userId), userData);
+            demoPlayers.push(userData); localStorage.setItem('sparring_approved_users', JSON.stringify(demoPlayers));
+            renderPlayers(); renderNewMembers(); alert(`${realName}님, 가입 완료되었습니다! 🥊`);
+        } else {
+            await window.setDoc(window.doc(window.db, "pendingUsers", userId), userData); alert('가입 신청 완료! 관장님 승인 후 이용 가능합니다.');
+        }
+
+        window.updateUploadProgress(100); closeModal('loginModal');
+    } catch (e) { window.updateUploadProgress(100); alert(`가입 실패: ${e.message}`); }
+}
+
+// 🔥 [수정] 커뮤니티 작성 시 유튜브 링크 Embed 자동 삽입
+async function addCommunityPost() {
+    if(!currentUser) { alert('로그인이 필요합니다.'); return; }
+    
+    const prefix = document.getElementById('cb-prefix').value;
+    const title = document.getElementById('cb-title').value.trim();
+    const editor = document.getElementById('cb-content-editor');
+    const youtubeInput = document.getElementById('cb-youtube-link');
+    const youtubeUrl = youtubeInput ? youtubeInput.value.trim() : "";
+    
+    let content = DOMPurify.sanitize(editor.innerHTML.trim());
+    if (!title || content === "" || content === "<br>") { alert("제목과 내용을 모두 입력해주세요."); return; }
+
+    let finalVideoUrl = "";
+    if (youtubeUrl) {
+        finalVideoUrl = youtubeUrl;
+        const embedUrl = getYoutubeEmbedUrl(youtubeUrl);
+        // iframe 중복 추가 방지
+        if (embedUrl && !content.includes(embedUrl)) {
+            content += `<br><iframe width="100%" height="315" src="${embedUrl}" frameborder="0" allowfullscreen style="border-radius:8px; margin:10px 0;"></iframe>`;
+        }
+    }
+
+    try {
+        const postId = editingPostId ? editingPostId : Date.now();
+        const postRef = window.doc(window.collection(window.db, "community_posts"), postId.toString());
+        const imgMatch = content.match(/<img[^>]+src="([^">]+)"/);
+        const firstImageUrl = imgMatch ? imgMatch[1] : "";
+
+        const postData = {
+            id: postId, prefix: prefix, title: title, content: content, imageUrl: firstImageUrl, videoUrl: finalVideoUrl,
+            authorId: currentUser.id, authorName: currentUser.rawName, time: editingPostId ? Date.now() : postId, 
+            comments: editingPostId ? (JSON.parse(localStorage.getItem('sparring_community_posts')).find(p => p.id === editingPostId)?.comments || []) : [], type: 'normal'
+        };
+
+        await window.setDoc(postRef, postData);
+        alert(editingPostId ? "수정되었습니다." : "등록되었습니다.");
+        toggleWriteMode(false); renderCommunity(); 
+    } catch (error) { alert("서버 오류로 게시글을 등록하지 못했습니다."); }
+}
+
+// 🔥 [수정] 공지사항 미니 출력 및 유튜브 뱃지 표시
+function renderCommunity() {
+    let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
+    const listContainer = document.getElementById('community-list');
+    const noticeContainer = document.getElementById('community-notice-container');
+    if (!listContainer) return;
+
+    if (typeof updatePhotoSlider === 'function') updatePhotoSlider(posts);
+
+    if (currentCommunityCategory !== 'all') { posts = posts.filter(p => p.prefix === currentCommunityCategory || p.type === 'notice'); }
+    if (currentSearchQuery && currentSearchQuery.trim() !== "") {
+        const query = currentSearchQuery.toLowerCase().trim();
+        posts = posts.filter(p => {
+            if (p.type === 'notice') return true; 
+            const titleMatch = p.title.toLowerCase().includes(query); const authorMatch = p.authorName.toLowerCase().includes(query);
+            return (currentSearchType === 'title') ? titleMatch : ((currentSearchType === 'author') ? authorMatch : (titleMatch || authorMatch));
+        });
+    }
+
+    let notices = posts.filter(p => p.type === 'notice').slice(0, 3);
+    let normalPosts = posts.filter(p => p.type !== 'notice');
+
+    let noticeHtml = '';
+    if (notices.length > 0) {
+        noticeHtml += `<div style="margin-bottom: 10px;">`;
+        notices.forEach(n => {
+            // 커뮤니티 리스트 상단 소형 빨간색 한 줄 공지
+            noticeHtml += `
+            <div class="mini-notice-item" onclick="openPostDetail(${n.id})">
+                <span style="font-size: 0.7rem; background: var(--primary-red); color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; flex-shrink: 0;">공지</span>
+                <span class="title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; color: #ff7675; margin-left: 8px;">${n.title}</span>
+            </div>`;
+        });
+        noticeHtml += `</div>`;
+    }
+    if (noticeContainer) noticeContainer.innerHTML = noticeHtml;
+
+    normalPosts.sort((a, b) => b.time - a.time);
+    const itemsPerPage = 8; const totalPages = Math.ceil(normalPosts.length / itemsPerPage) || 1;
+    if (communityCurrentPage > totalPages) communityCurrentPage = totalPages;
+    if (communityCurrentPage < 1) communityCurrentPage = 1;
+    let displayedPosts = normalPosts.slice((communityCurrentPage - 1) * itemsPerPage, (communityCurrentPage - 1) * itemsPerPage + itemsPerPage);
+
+    let html = '';
+    if (displayedPosts.length === 0) { html += `<div style="color:#888; text-align:center; padding:40px;">게시글이 없습니다.</div>`; } 
+    else {
+        displayedPosts.forEach(post => {
+            let dateStr = new Date(post.time).toLocaleDateString().slice(2); 
+            
+            // 영상 여부에 따라 유튜브 뱃지 표시
+            let isVideo = (post.videoUrl && post.videoUrl.trim() !== "") || (post.content && post.content.includes('<iframe'));
+            let attachIcon = post.imageUrl ? ' 📷' : '';
+            let youtubeBadge = isVideo ? '<span class="youtube-badge">▶ YouTube</span>' : '';
+            let commentCount = (post.comments && Array.isArray(post.comments)) ? post.comments.length : 0;
+            let likeCount = (post.likes && Array.isArray(post.likes)) ? post.likes.length : 0;
+            
+            let titleDisplay = post.title; let matchCodeBadge = '';
+            if (post.prefix === '[경기결과]') {
+                const matchCodeMatch = post.title.match(/\[(.*?)\]/);
+                if (matchCodeMatch && matchCodeMatch[1] && matchCodeMatch[1] !== '경기결과') {
+                    matchCodeBadge = `<div style="display:inline-block; background: var(--tier2); color: white; font-size: 0.65rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-bottom: 4px;">${matchCodeMatch[1]}</div><br>`;
+                    titleDisplay = post.title.replace(`[${matchCodeMatch[1]}]`, '').trim();
+                }
+            }
+            
+            html += `
+            <div class="post-item" onclick="openPostDetail(${post.id})">
+                <div class="post-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; width: 100%;">
+                    <div style="display: inline-block; vertical-align: middle; margin-right: 5px; text-align: center;">${matchCodeBadge}<span class="post-badge" style="padding:1px 4px; font-size:0.7rem; display: inline-block;">${post.prefix}</span></div>
+                    ${youtubeBadge}<span style="color:#fff; font-weight:500; vertical-align: middle; margin-left:4px;">${colorizeTitle(titleDisplay)}${attachIcon}</span>
+                </div>
+                <div class="post-info-row" style="margin-top:4px; display: flex; justify-content: space-between; overflow: hidden;">
+                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0;"><span style="color:var(--text-white);">${post.authorName}</span><span style="margin: 0 5px; opacity: 0.3;">|</span><span>${dateStr}</span></div>
+                    <div style="color:#aaa; font-size:0.75rem; display:flex; gap:10px; flex-shrink: 0; padding-left: 5px;"><span>👍 ${likeCount}</span><span style="color:var(--gold); font-weight:bold;">💬 ${commentCount}</span></div>
+                </div>
+            </div>`;
+        });
+    }
+    listContainer.innerHTML = html;
+    if (typeof renderPagination === 'function') renderPagination(totalPages);
+}
+
+// 🔥 [수정] 체육관 리스트 하단 1위부터 전부 노출 (slice 제거)
+function renderGyms(filterRegion = 'all') {
+    const podiumContainer = document.getElementById('gym-top-podium');
+    const listContainer = document.getElementById('gym-list-container');
+    const pageTitle = document.getElementById('gym-page-title');
+    if(!podiumContainer || !listContainer) return;
+    
+    if (pageTitle) { pageTitle.innerText = filterRegion === 'all' ? '🏆 전국 체육관 랭킹' : `🏆 ${filterRegion} 지역 랭킹`; }
+
+    document.querySelectorAll('.region-btn').forEach(btn => {
+        const isAllBtn = filterRegion === 'all' && (btn.innerText.includes('전체') || btn.innerText.includes('전국'));
+        const isMatchBtn = btn.innerText === filterRegion;
+        btn.classList.toggle('active', isAllBtn || isMatchBtn);
+    });
+
+    let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
+    const gymStats = {};
+
+    registeredGyms.forEach(g => { gymStats[g.id] = { id: g.id, name: g.name, region: g.region, totalPt: g.totalPt || 0, members: 0 }; });
+
+    let basePlayers = demoPlayers.filter(p => !p.isAdmin && p.rawName !== 'admin');
+    basePlayers.forEach(p => {
+        let gymId = p.gymId || registeredGyms.find(g => g.name === p.gym)?.id;
+        if (gymId && gymStats[gymId]) gymStats[gymId].members += 1;
+    });
+
+    let filteredGyms = Object.values(gymStats);
+    if (filterRegion !== 'all') filteredGyms = filteredGyms.filter(g => g.region === filterRegion);
+    const sortedGyms = filteredGyms.sort((a, b) => b.totalPt - a.totalPt);
+
+    let podiumHtml = '';
+    const top3 = sortedGyms.slice(0, 3);
+    const medalData = [{c:'gold', i:'🥇'}, {c:'silver', i:'🥈'}, {c:'bronze', i:'🥉'}];
+    [1, 0, 2].forEach((pos) => {
+        const gym = top3[pos];
+        if (gym) {
+            const m = medalData[pos];
+            podiumHtml += `
+            <div class="rank-item ${m.c}" onclick="openGymProfile('${gym.id}')" style="cursor:pointer;">
+                <span class="rank-medal">${m.i}</span><b class="rank-gym-name">${gym.name}</b><span class="rank-gym-pt">${gym.totalPt.toLocaleString()} P</span>
+            </div>`;
+        }
+    });
+    podiumContainer.innerHTML = podiumHtml;
+
+    // 🔥 1위부터 전부 하단 리스트에 노출되도록 slice(3) 제거
+    let listHtml = '';
+    sortedGyms.forEach((gym, index) => {
+        let rankNum = index + 1;
+        let rankColor = rankNum <= 3 ? 'var(--gold)' : '#fff';
+        let borderColor = rankNum <= 3 ? 'var(--gold)' : 'var(--primary-red)';
+        let bgColor = rankNum <= 3 ? 'rgba(253, 203, 110, 0.05)' : 'var(--card-gray)';
+        
+        listHtml += `
+        <div class="card" onclick="openGymProfile('${gym.id}')" style="cursor:pointer; border-left: 4px solid ${borderColor}; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:12px 15px; overflow: hidden; background: ${bgColor};">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
+                <b style="color:${rankColor}; font-size:1.1rem; width: 25px; flex-shrink: 0; text-align: center;">${rankNum}</b>
+                <div style="flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                    <div style="font-size:1.05rem; color:white; font-weight:bold; overflow: hidden; text-overflow: ellipsis;">${gym.name}</div>
+                    <div style="font-size:0.75rem; color:#888; margin-top:4px; overflow: hidden; text-overflow: ellipsis;">${gym.region} | 선수 ${gym.members}명</div>
+                </div>
+            </div>
+            <div style="text-align:right; flex-shrink: 0; margin-left: 10px;"><div style="color:var(--gold); font-weight:bold; font-size:1rem;">${gym.totalPt.toLocaleString()} P</div></div>
+        </div>`;
+    });
+    listContainer.innerHTML = listHtml || `<div style="text-align:center; padding:40px; color:#666;">등록된 체육관 정보가 없습니다.</div>`;
+}
 
 // [실명 로그인 지원] 한글 아이디 인코딩 및 Firebase Auth 연동 함수
 
