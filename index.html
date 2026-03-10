@@ -125,10 +125,12 @@
 
 <header style="position: fixed; top: 0; left: 0; width: 100%; z-index: 5000; background: #000; border-bottom: 1px solid #333; padding: 10px 15px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center;">
     <div class="header-left" style="flex: 1; text-align: left; min-width: 0;">
-        <h1 onclick="handleTitleClick()" style="cursor:pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; font-size: clamp(1rem, 4vw, 1.2rem);">스파링클럽</h1>
+        <div onclick="handleTitleClick()" style="cursor:pointer; display: flex; flex-direction: column; justify-content: center;">
+            <h1 style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; font-size: clamp(1rem, 4vw, 1.2rem); line-height: 1;">스파링클럽</h1>
+            <span style="font-size: 0.65rem; color: var(--primary-red); font-weight: bold; letter-spacing: 0.5px; line-height: 1; margin-top: 2px;">sparringclub.kr</span>
+        </div>
     </div>
-    <div class="header-center" style="flex: 1; text-align: center; display: flex; justify-content: center; min-width: 0;">
-        <button class="view-toggle-btn" onclick="installPWA()" id="install-app-btn" style="display: none; background: transparent; color: var(--gold); border: 1px solid var(--gold); outline: none; white-space: nowrap; font-size: clamp(0.7rem, 2.5vw, 0.85rem); padding: 6px 12px; border-radius: 20px; cursor: pointer;">📱 앱 설치</button>
+    <div class="header-center" style="flex: 1; text-align: center; display: flex; justify-content: center; min-width: 0;">        <button class="view-toggle-btn" onclick="installPWA()" id="install-app-btn" style="display: none; background: transparent; color: var(--gold); border: 1px solid var(--gold); outline: none; white-space: nowrap; font-size: clamp(0.7rem, 2.5vw, 0.85rem); padding: 6px 12px; border-radius: 20px; cursor: pointer;">📱 앱 설치</button>
     </div>
     <div class="header-right auth-btns" id="header-auth" style="flex: 1; text-align: right; display: flex; justify-content: flex-end; align-items: center; min-width: 0;">
         <button onclick="openModal('loginModal')" style="font-size: clamp(0.75rem, 3vw, 0.9rem); padding: 6px 10px; white-space: nowrap;">로그인 / 가입</button>
@@ -139,6 +141,19 @@
 <div id="dashboard" class="page active">
         <div class="card slider-wrap" style="background: var(--primary-red); color: white; text-align: center; padding: 0; border-radius: 8px; margin-bottom: 15px;">
             <div class="slider-track" id="main-notice-track"></div>
+        </div>
+
+        <div class="card" style="background: linear-gradient(135deg, #1f0f0f, #111); border: 1px solid var(--primary-red); margin-bottom: 15px;">
+            <h3 style="margin-top:0; color: var(--gold); font-size: 1.1rem; letter-spacing: -0.5px;">🥊 복서들의 놀이터, 스파링클럽!</h3>
+            <p style="font-size: 0.85rem; color: #ccc; line-height: 1.5; margin-bottom: 10px; margin-top: 0;">
+                소속, 실력에 상관없이 누구나 자유롭게 매칭하고 재밌게 즐겨보세요.<br>
+                불편하거나 구현되었으면 하는 기능들, 또는 작동하지 않는 버그가 발견되면 언제든 <b>[커뮤니티 - 건의]</b> 게시판을 활용해 주시면 감사하겠습니다.
+            </p>
+            <div style="background: rgba(253, 203, 110, 0.1); padding: 10px; border-radius: 8px; border: 1px solid rgba(253, 203, 110, 0.3);">
+                <b style="color: white; font-size: 0.9rem;">🔥 3월 31일까지 테스트 시즌 오픈!</b><br>
+                <span style="font-size: 0.8rem; color: #aaa;">시즌 종료 시점 <b>통합 랭킹 1위</b> 달성자에게 사은품 증정</span><br>
+                <span style="font-size: 0.85rem; color: var(--gold); font-weight: bold;">🎁 크로노스 헤드기어 & 16oz 스파링 글러브</span>
+            </div>
         </div>
 
         <div id="dashboard-daily-widget" style="display: none; position: relative; background: linear-gradient(135deg, #1e1e1e, #111); border: 1px solid var(--gold); border-radius: 12px; padding: 12px 15px; margin-top: 15px; margin-bottom: 15px; align-items: center; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
@@ -363,11 +378,15 @@
             <input type="text" id="record-match-type-display" value="매치를 선택하세요" readonly style="background: #222; color: #aaa; font-weight: bold; border-color: #444;">
             <input type="hidden" id="record-match-type" value="open">
             
-            <label style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">판정 방식 (합의/지도자는 즉시 전적 반영)</label>
+            <label style="color: var(--gold); margin-top: 15px;">⚖️ 판정 방식 선택</label>
+            <p style="font-size: 0.75rem; color: #888; margin-top: 0; margin-bottom: 8px; line-height: 1.4;">
+                스파링 종료 시 승/무/패 결과를 반드시 선택해야 합니다.<br>
+                ✔️ <b>선수 상호 합의 판정 (지도자 판정 포함):</b> 즉시 전적 반영<br>
+                ✔️ <b>커뮤니티 판정:</b> 결과를 내기 어려우면 보류 후 커뮤니티에 판정을 넘깁니다. (24시간 내 아이디 있는 회원들의 다수결 투표, 단 1표라도 많은 쪽이 승리!)
+            </p>
             <select id="judge-select">
-                <option value="mutual">🤝 상호합의 판정 (즉시 반영)</option>
-                <option value="coach">🧑‍⚖️ 지도자 판정 (즉시 반영)</option>
-                <option value="arena" style="color:var(--gold); font-weight:bold;">🏆 아레나 판정 (커뮤니티 24시간 다수결)</option>
+                <option value="mutual">🤝 선수 상호 합의 / 지도자 판정 (즉시 반영)</option>
+                <option value="arena" style="color:var(--primary-red); font-weight:bold;">🏆 커뮤니티 판정 (결과 보류 / 24시간 투표)</option>
             </select>
             <label style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">결과 (우리가 합의한 승패)</label>
             <select id="record-result"><option value="win">내가 승리</option><option value="loss">상대방 승리</option><option value="draw">무승부</option></select>
@@ -1195,7 +1214,7 @@ window.onload = async function() {
     localStorage.removeItem('sparring_deleted_users');
 
     // 🔥 [신규] 모바일 환경에서 과거 권한 에러 시절 저장된 '빈 화면' 캐시 강제 삭제 (버전 컨트롤)
-    const currentAppVersion = "20260309_v7";
+    const currentAppVersion = "20260310_v0";
     if (localStorage.getItem('sparring_app_version') !== currentAppVersion) {
         localStorage.removeItem('sparring_approved_users');
         localStorage.setItem('sparring_app_version', currentAppVersion);
@@ -1255,132 +1274,104 @@ window.onload = async function() {
 let usersUnsub = null; // users 컬렉션 전역 구독 해제 변수
 
 function initFirebaseRealtime() {
-// 1. [전체 공개 데이터] 로그인 없이도 항상 최신화 (대시보드, 복서리스트, 체육관)
-window.onSnapshot(window.collection(window.db, "community_posts"), (snapshot) => {
-let posts = [];
-snapshot.forEach((doc) => posts.push(doc.data()));
-posts.sort((a, b) => b.time - a.time);
-localStorage.setItem('sparring_community_posts', JSON.stringify(posts));
-renderFeed();
-renderPopularSparring();
-startNoticeSlider();
-if (document.getElementById('board').classList.contains('active')) renderCommunity();
-}, (error) => { console.warn("게시글 데이터를 가져올 수 없습니다 (보안 규칙 문제 가능성):", error); });
+    // 🔥 커뮤니티 게시글은 트래픽 낭비 방지를 위해 최신 150개까지만 불러옴
+    const postQuery = window.query(window.collection(window.db, "community_posts"), window.orderBy("time", "desc"), window.limit(150));
+    window.onSnapshot(postQuery, (snapshot) => {
+        let posts = [];
+        snapshot.forEach((doc) => posts.push(doc.data()));
+        localStorage.setItem('sparring_community_posts', JSON.stringify(posts));
+        renderFeed(); renderPopularSparring(); startNoticeSlider();
+        if (document.getElementById('board').classList.contains('active')) renderCommunity();
+    }, (error) => { console.warn("게시글 접근 거부:", error); });
 
-window.onSnapshot(window.collection(window.db, "gyms_registry"), (snapshot) => {
-    let gyms = [];
-    snapshot.forEach((doc) => gyms.push(doc.data()));
-    localStorage.setItem('sparring_gyms_registry', JSON.stringify(gyms));
-    renderGyms();
-}, (error) => { console.warn("체육관 데이터를 가져올 수 없습니다:", error); });
+    // 🔥 [성능 최적화] 체육관 데이터 통째로 호출 시 브라우저 다운 방지 (상위 200개 제한)
+    const gymQuery = window.query(window.collection(window.db, "gyms_registry"), window.limit(200));
+    window.onSnapshot(gymQuery, (snapshot) => {
+        let gyms = []; snapshot.forEach((doc) => gyms.push(doc.data()));
+        localStorage.setItem('sparring_gyms_registry', JSON.stringify(gyms));
+        renderGyms();
+    }, (error) => {});
 
-// [기능수정] users 구독을 함수화하여 권한 획득 시 재시도할 수 있도록 처리
-const subscribeUsers = () => {
-    if (usersUnsub) usersUnsub(); // 기존 연결이 있다면 해제
-    usersUnsub = window.onSnapshot(window.collection(window.db, "users"), (snapshot) => {
-        let players = [];
-        snapshot.forEach((doc) => players.push(doc.data()));
-        demoPlayers = players;
-        localStorage.setItem('sparring_approved_users', JSON.stringify(players));
-        renderPlayers(); 
-        renderNewMembers();
-        if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
-    }, (error) => { 
-        console.error("🔥 [Firestore 보안 규칙 에러] 유저 목록을 가져올 수 없습니다:", error); 
-        
-        // 권한 에러 발생 시 기존 로컬 데이터를 불러오고, 그래도 없으면 화면에 에러 원인을 직접 표시
-        if (!demoPlayers || demoPlayers.length === 0) {
-            demoPlayers = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
-        }
-        
-        if (demoPlayers.length === 0) {
-            const container = document.getElementById('tier-container');
-            if (container) {
-                container.innerHTML = `
-                <div style="text-align:center; padding:30px; margin-top:15px; color:#ff7675; background:#222; border-radius:12px; border: 1px solid #ff7675; line-height: 1.6;">
-                    <b style="font-size:1.1rem;">🚨 데이터 접근 차단됨 (보안 규칙)</b><br>
-                    <span style="font-size:0.85rem; color:#ccc;">Firebase 콘솔에서 'users' 컬렉션의 읽기 권한을 허용해주세요.</span>
-                </div>`;
+    // [기능수정] users 구독을 함수화하여 권한 획득 시 재시도할 수 있도록 처리
+    const subscribeUsers = () => {
+        if (usersUnsub) usersUnsub();
+        // 🔥 [보안 및 성능 강화] 랭킹순 상위 300명 제한
+        const usersQuery = window.query(window.collection(window.db, "users"), window.orderBy("pt", "desc"), window.limit(300));
+        usersUnsub = window.onSnapshot(usersQuery, (snapshot) => {
+            let players = []; snapshot.forEach((doc) => players.push(doc.data()));
+            demoPlayers = players; 
+            // 🔥 [메모리 최적화] 로컬 스토리지는 상위 100명 데이터만 안전하게 저장
+            try { localStorage.setItem('sparring_approved_users', JSON.stringify(players.slice(0, 100))); } catch(e) {}
+            renderPlayers(); renderNewMembers();
+            if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
+        }, (error) => { 
+            console.error("🔥 유저 목록 접근 실패 (보안 규칙 확인 필요)"); 
+            if (!demoPlayers || demoPlayers.length === 0) {
+                demoPlayers = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
             }
-        } else {
-            renderPlayers(); // 로컬 데이터가 있으면 빈 화면 방지를 위해 그려줌
+            renderPlayers();
+        });
+    };
+
+    subscribeUsers();
+
+    // 2. [전역 설정] 관장님의 가입 자동승인 스위치 상태를 DB에서 직접 동기화
+    window.onSnapshot(window.doc(window.db, "settings", "global_config"), (doc) => {
+        if (doc.exists()) {
+            localStorage.setItem('sparring_auto_join', doc.data().autoJoin === true);
+            const toggleJoinEl = document.getElementById('admin-auto-join-toggle');
+            if (toggleJoinEl) toggleJoinEl.checked = doc.data().autoJoin === true;
         }
     });
-};
 
-subscribeUsers(); // 앱 최초 실행 시 시도
+    let authenticatedListeners = []; 
+    let pendingUnsub = null;
 
-// 2. [전역 설정] 관장님의 가입 자동승인 스위치 상태를 DB에서 직접 동기화
-window.onSnapshot(window.doc(window.db, "settings", "global_config"), (doc) => {
-    if (doc.exists()) {
-        const config = doc.data();
-        localStorage.setItem('sparring_auto_join', config.autoJoin === true);
-        const toggleJoinEl = document.getElementById('admin-auto-join-toggle');
-        if (toggleJoinEl) toggleJoinEl.checked = config.autoJoin === true;
-    }
-}, (error) => { console.warn("설정 데이터를 가져올 수 없습니다:", error); });
+    window.onAuthStateChanged(window.auth, async (user) => {
+        authenticatedListeners.forEach(unsub => unsub());
+        if (pendingUnsub) { pendingUnsub(); pendingUnsub = null; }
+        authenticatedListeners = [];
 
-// 3. [인증 데이터] 로그인 시점에만 동작하는 리스너 관리
-let authenticatedListeners = []; 
-let pendingUnsub = null;
+        if (user) {
+            const encodedId = user.email.split('@')[0];
+            updateLoginStateUI(); subscribeUsers();
 
-window.onAuthStateChanged(window.auth, async (user) => {
-    authenticatedListeners.forEach(unsub => unsub());
-    if (pendingUnsub) { pendingUnsub(); pendingUnsub = null; }
-    authenticatedListeners = [];
-
-    if (user) {
-        const encodedId = user.email.split('@')[0];
-        updateLoginStateUI();
-
-        // 🔥 [기능 복구] 로그인이 확인되어 권한을 얻었으므로 users 목록을 재구독하여 신규 가입자를 불러옵니다.
-        subscribeUsers();
-
-        const userUnsub = window.onSnapshot(window.doc(window.db, "users", encodedId), (doc) => {
-            if (doc.exists()) {
-                currentUser = doc.data();
-                localStorage.setItem('sparring_session', JSON.stringify(currentUser));
-                updateMatchBadge();
-                
-                if ((currentUser.isAdmin || currentUser.role === 'admin') && !pendingUnsub) {
-                    pendingUnsub = window.onSnapshot(window.collection(window.db, "pendingUsers"), (snap) => {
-                        let pending = [];
-                        snap.forEach((d) => pending.push({ ...d.data(), firebaseId: d.id }));
-                        localStorage.setItem('sparring_pending_users', JSON.stringify(pending));
-                        if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
-                    }, (error) => { console.warn("대기 유저 목록 접근 실패:", error); });
+            const userUnsub = window.onSnapshot(window.doc(window.db, "users", encodedId), (doc) => {
+                if (doc.exists()) {
+                    currentUser = doc.data(); localStorage.setItem('sparring_session', JSON.stringify(currentUser)); updateMatchBadge();
+                    if ((currentUser.isAdmin || currentUser.role === 'admin') && !pendingUnsub) {
+                        // 🔥 [성능 최적화] 관리자 승인 대기자도 무제한 호출 방지 (최근 50명 제한)
+                        const pendingQuery = window.query(window.collection(window.db, "pendingUsers"), window.limit(50));
+                        pendingUnsub = window.onSnapshot(pendingQuery, (snap) => {
+                            let pending = []; snap.forEach((d) => pending.push({ ...d.data(), firebaseId: d.id }));
+                            localStorage.setItem('sparring_pending_users', JSON.stringify(pending));
+                            if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
+                        });
+                    }
                 }
-            } else {
-                // 🔥 [수정] DB에 문서가 당장 없다고 해서 즉시 로그아웃 시키지 않음 (가입 승인 대기자 등 보호)
-                console.warn("DB에서 사용자 정보를 찾을 수 없습니다. (승인 대기 중일 수 있음)");
-            }
-        }, (error) => { console.warn("내 정보 접근 실패:", error); });
-        authenticatedListeners.push(userUnsub);
+            });
+            authenticatedListeners.push(userUnsub);
 
-        const matchesUnsub = window.onSnapshot(window.collection(window.db, "matches"), (snapshot) => {
-            let matches = [];
-            snapshot.forEach((doc) => matches.push(doc.data()));
-            localStorage.setItem('sparring_matches', JSON.stringify(matches));
-            renderFeed();
-            if (document.getElementById('matchStatusModal').style.display === 'flex') renderMatchList();
-        }, (error) => { console.warn("매치 데이터 접근 실패:", error); });
-        authenticatedListeners.push(matchesUnsub);
+            // 🔥 [요금 폭탄 방지] 매치 기록도 최근 300개로 제한
+            const matchesQuery = window.query(window.collection(window.db, "matches"), window.orderBy("createdAt", "desc"), window.limit(300));
+            const matchesUnsub = window.onSnapshot(matchesQuery, (snapshot) => {
+                let matches = []; snapshot.forEach((doc) => matches.push(doc.data()));
+                localStorage.setItem('sparring_matches', JSON.stringify(matches));
+                renderFeed(); if (document.getElementById('matchStatusModal').style.display === 'flex') renderMatchList();
+            });
+            authenticatedListeners.push(matchesUnsub);
 
-        const recordsUnsub = window.onSnapshot(window.collection(window.db, "record_requests"), (snapshot) => {
-            let reqs = [];
-            snapshot.forEach((doc) => reqs.push(doc.data()));
-            localStorage.setItem('sparring_record_requests', JSON.stringify(reqs));
-            if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
-        }, (error) => { console.warn("기록 요청 접근 실패:", error); });
-        authenticatedListeners.push(recordsUnsub);
-    } else {
-        // 🔥 [수정] 명시적인 로그아웃 상태일 때만 초기화 진행
-        if (!localStorage.getItem('sparring_session')) {
-            currentUser = null;
-            updateLoginStateUI();
+            const recordsQuery = window.query(window.collection(window.db, "record_requests"), window.limit(100));
+            const recordsUnsub = window.onSnapshot(recordsQuery, (snapshot) => {
+                let reqs = []; snapshot.forEach((doc) => reqs.push(doc.data()));
+                localStorage.setItem('sparring_record_requests', JSON.stringify(reqs));
+                if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
+            });
+            authenticatedListeners.push(recordsUnsub);
+        } else {
+            if (!localStorage.getItem('sparring_session')) { currentUser = null; updateLoginStateUI(); }
         }
-    }
-});
+    });
 }
 
 async function toggleAutoJoinApprove() {
@@ -1889,16 +1880,30 @@ function filterCommunity(category) {
 
 
 window.previousPageBeforePostDetail = 'board';
+window.openedFromProfileId = null;
 
 function goBackFromPostDetail() {
     showPage(window.previousPageBeforePostDetail || 'board');
+    if (window.openedFromProfileId) {
+        let pid = window.openedFromProfileId;
+        window.openedFromProfileId = null;
+        setTimeout(() => openProfile(pid), 100);
+    }
 }
 
 // 🔥 [수정] 커뮤니티 게시판 조회, 투표, 댓글 등 모든 기능의 타입 에러 완벽 방어 처리
-function openPostDetail(postId) {
+function openPostDetail(postId, fromProfileId = null) {
     const activePage = document.querySelector('.page.active');
     if (activePage && activePage.id !== 'post-detail') {
         window.previousPageBeforePostDetail = activePage.id;
+    }
+
+    const profileModal = document.getElementById('profileModal');
+    if (profileModal && profileModal.style.display === 'flex') {
+        window.openedFromProfileId = fromProfileId || profileOwnerId;
+        closeModal('profileModal');
+    } else {
+        window.openedFromProfileId = null;
     }
 
     currentPostId = postId;
@@ -1992,7 +1997,7 @@ function openPostDetail(postId) {
                     <button class="vote-btn" style="${btnDrawStyle} flex:1; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="submitVote('${post.id}', 'draw')">무승부</button>
                     <button class="vote-btn" style="${btn2Style} flex:1; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="submitVote('${post.id}', 'p2')">${jd.p2Name} 승</button>
                 </div>
-                <div style="text-align:center; font-size:0.75rem; color:#888; margin-top:10px;">현재 ${total}명 참여완료</div>
+                <div style="text-align:center; font-size:0.75rem; color:#888; margin-top:10px;">현재 ${total}명 참여완료 <span style="color:#ff7675;">(* 로그인 회원만 투표 가능)</span></div>
             </div>`;
         } else {
             html += `<div style="background:#111; padding:15px; border-radius:8px; border:1px solid #444; margin-bottom:20px;">
@@ -2014,7 +2019,7 @@ function openPostDetail(postId) {
 }
 
 async function submitVote(postId, choice) {
-    if(!currentUser) { alert('로그인이 필요합니다.'); openModal('loginModal'); return; }
+    if(!currentUser) { alert('로그인이 필요합니다. 투표는 아이디가 있는 회원에 한하여 참여 가능합니다.'); openModal('loginModal'); return; }
     let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
     
     let post = posts.find(p => String(p.id) === String(postId));
@@ -2040,9 +2045,10 @@ async function closeVoting(postId, isManual = false) {
     let v1 = jd.votes.p1.length; let vDraw = jd.votes.draw.length; let v2 = jd.votes.p2.length;
     let winnerId = null; let resultValue = 'draw'; let winnerName = '무승부'; let winningVoters = jd.votes.draw;
 
-    if (vDraw > 0 || v1 === v2) { resultValue = 'draw'; winnerName = '무승부'; winningVoters = jd.votes.draw; }
-    else if (v1 > v2) { resultValue = 'win'; winnerName = jd.p1Name; winningVoters = jd.votes.p1; }
+    // 🔥 1표라도 많은 쪽이 무조건 승리 (동률일 때만 무승부)
+    if (v1 > v2) { resultValue = 'win'; winnerName = jd.p1Name; winningVoters = jd.votes.p1; }
     else if (v2 > v1) { resultValue = 'loss'; winnerName = jd.p2Name; winningVoters = jd.votes.p2; }
+    else { resultValue = 'draw'; winnerName = '무승부'; winningVoters = jd.votes.draw; }
 
     jd.status = 'closed';
     const newTitle = `[판정결과: ${winnerName} ${winnerName !== '무승부' ? '승리' : ''}] ${jd.p1Name} vs ${jd.p2Name}`;
@@ -2819,7 +2825,10 @@ function updateLoginStateUI() {
     if (currentUser.isAdmin || currentUser.role === 'admin') {
         header.innerHTML = `
             <div class="header-left" style="flex: 1; text-align: left; min-width: 0;">
-                <h1 onclick="handleTitleClick()" style="cursor:pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; font-size: clamp(1rem, 4vw, 1.2rem);">스파링클럽</h1>
+                <div onclick="handleTitleClick()" style="cursor:pointer; display: flex; flex-direction: column; justify-content: center;">
+                    <h1 style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; font-size: clamp(1rem, 4vw, 1.2rem); line-height: 1;">스파링클럽</h1>
+                    <span style="font-size: 0.65rem; color: var(--primary-red); font-weight: bold; letter-spacing: 0.5px; line-height: 1; margin-top: 2px;">sparringclub.kr</span>
+                </div>
             </div>
             <div class="header-center" style="flex: 1; text-align: center; display: flex; justify-content: center; min-width: 0;">
                 </div>
@@ -3264,7 +3273,7 @@ async function openProfile(id) {
             myPosts.sort((a,b) => b.time - a.time).slice(0, 5).forEach(post => {
                 let dateStr = new Date(post.time).toLocaleDateString().slice(2); 
                 myPostHtml += `
-                <div class="post-item" onclick="openPostDetail(${post.id})" style="padding: 10px; border-bottom: 1px dashed #333; background: #222; border-radius: 6px;">
+                <div class="post-item" onclick="openPostDetail('${post.id}', '${p.id}')" style="padding: 10px; border-bottom: 1px dashed #333; background: #222; border-radius: 6px;">
                     <div class="post-title" style="font-size: 0.85rem;"><span style="color:#74b9ff; margin-right:5px;">${post.prefix}</span> <span style="color: white;">${post.title}</span></div>
                     <div style="font-size:0.75rem; color:#666; text-align:right; margin-top:5px;">${dateStr}</div>
                 </div>`;
@@ -3873,12 +3882,12 @@ container.innerHTML = html;
 
 // 뒤로가기 제스처/버튼 시 브라우저 종료 방지 및 화면 제어
 window.addEventListener('popstate', function(event) {
+    const currentHash = location.hash;
+
     // 1. 뒤로가기 시 현재 해시(hash)와 일치하지 않는 모달만 닫도록 처리 (다중 모달 중첩 버그 해결)
     const openModals = Array.from(document.querySelectorAll('.modal')).filter(m => m.style.display === 'flex');
     
     if (openModals.length > 0) {
-        const currentHash = location.hash;
-
         openModals.forEach(m => {
             // 현재 url의 해시값이 이 모달을 가리키지 않는다면 닫기 (크롭 모달 등 상위 모달만 닫힘)
             if (currentHash !== "#modal-" + m.id) {
@@ -3895,6 +3904,19 @@ window.addEventListener('popstate', function(event) {
     // 2. 히스토리 상태에 페이지 정보가 있다면 해당 페이지로 이동 (히스토리 추가 없이)
     if (event.state && event.state.pageId) {
         showPage(event.state.pageId, false);
+        
+        // 🔥 모바일 제스처로 게시글에서 나갔을 때 프로필 모달 복원
+        if (event.state.pageId !== 'post-detail' && window.openedFromProfileId) {
+            let pid = window.openedFromProfileId;
+            window.openedFromProfileId = null;
+            setTimeout(() => { openProfile(pid); }, 100);
+        }
+    } else {
+        if (window.openedFromProfileId && currentHash !== '#post-detail') {
+            let pid = window.openedFromProfileId;
+            window.openedFromProfileId = null;
+            setTimeout(() => { openProfile(pid); }, 100);
+        }
     }
 });
 
@@ -6189,7 +6211,7 @@ document.addEventListener('focusin', function(e) {
 // 🔥 [수정] 새로고침 시 이용하던 탭 화면 유지 기능 (기존 window.onload 교체)
 window.onload = async function() {
     localStorage.removeItem('sparring_deleted_users');
-    const currentAppVersion = "20260309_v7";
+    const currentAppVersion = "20260310_v0";
     if (localStorage.getItem('sparring_app_version') !== currentAppVersion) {
         localStorage.removeItem('sparring_approved_users');
         localStorage.setItem('sparring_app_version', currentAppVersion);
@@ -6283,98 +6305,6 @@ window.applyCrop = function() {
 };
 
 // 🔥 [수정] 기존 applyCrop 덮어쓰기 (가입 폼 동그라미 미리보기 지원)
-function initFirebaseRealtime() {
-    // 🔥 커뮤니티 게시글은 트래픽 낭비 방지를 위해 최신 150개까지만 불러옴
-    const postQuery = window.query(window.collection(window.db, "community_posts"), window.orderBy("time", "desc"), window.limit(150));
-    window.onSnapshot(postQuery, (snapshot) => {
-        let posts = [];
-        snapshot.forEach((doc) => posts.push(doc.data()));
-        localStorage.setItem('sparring_community_posts', JSON.stringify(posts));
-        renderFeed(); renderPopularSparring(); startNoticeSlider();
-        if (document.getElementById('board').classList.contains('active')) renderCommunity();
-    }, (error) => { console.warn("게시글 접근 거부:", error); });
-
-    // 🔥 [성능 최적화] 체육관 데이터 통째로 호출 시 브라우저 다운 방지 (상위 200개 제한)
-    const gymQuery = window.query(window.collection(window.db, "gyms_registry"), window.limit(200));
-    window.onSnapshot(gymQuery, (snapshot) => {
-        let gyms = []; snapshot.forEach((doc) => gyms.push(doc.data()));
-        localStorage.setItem('sparring_gyms_registry', JSON.stringify(gyms));
-        renderGyms();
-    }, (error) => {});
-
-    const subscribeUsers = () => {
-        if (usersUnsub) usersUnsub();
-        // 🔥 [보안 및 성능 강화] 1만명 동시 로드 시 Firebase 요금 폭탄 및 로컬 5MB 한도 초과 방지 (랭킹순 상위 300명 제한)
-        const usersQuery = window.query(window.collection(window.db, "users"), window.orderBy("pt", "desc"), window.limit(300));
-        usersUnsub = window.onSnapshot(usersQuery, (snapshot) => {
-            let players = []; snapshot.forEach((doc) => players.push(doc.data()));
-            demoPlayers = players; 
-            // 🔥 [메모리 최적화] 로컬 스토리지는 5MB 한계가 있으므로 상위 100명 데이터만 안전하게 저장
-            try { localStorage.setItem('sparring_approved_users', JSON.stringify(players.slice(0, 100))); } catch(e) {}
-            renderPlayers(); renderNewMembers();
-            if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
-        }, (error) => { console.error("🔥 유저 목록 접근 실패 (보안 규칙 확인 필요)"); });
-    };
-
-    subscribeUsers();
-
-    window.onSnapshot(window.doc(window.db, "settings", "global_config"), (doc) => {
-        if (doc.exists()) {
-            localStorage.setItem('sparring_auto_join', doc.data().autoJoin === true);
-            const toggleJoinEl = document.getElementById('admin-auto-join-toggle');
-            if (toggleJoinEl) toggleJoinEl.checked = doc.data().autoJoin === true;
-        }
-    });
-
-    let authenticatedListeners = []; 
-    let pendingUnsub = null;
-
-    window.onAuthStateChanged(window.auth, async (user) => {
-        authenticatedListeners.forEach(unsub => unsub());
-        if (pendingUnsub) { pendingUnsub(); pendingUnsub = null; }
-        authenticatedListeners = [];
-
-        if (user) {
-            const encodedId = user.email.split('@')[0];
-            updateLoginStateUI(); subscribeUsers();
-
-            const userUnsub = window.onSnapshot(window.doc(window.db, "users", encodedId), (doc) => {
-                if (doc.exists()) {
-                    currentUser = doc.data(); localStorage.setItem('sparring_session', JSON.stringify(currentUser)); updateMatchBadge();
-                    if ((currentUser.isAdmin || currentUser.role === 'admin') && !pendingUnsub) {
-                        // 🔥 [성능 최적화] 관리자 승인 대기자도 무제한 호출 방지 (최근 50명 제한)
-                        const pendingQuery = window.query(window.collection(window.db, "pendingUsers"), window.limit(50));
-                        pendingUnsub = window.onSnapshot(pendingQuery, (snap) => {
-                            let pending = []; snap.forEach((d) => pending.push({ ...d.data(), firebaseId: d.id }));
-                            localStorage.setItem('sparring_pending_users', JSON.stringify(pending));
-                            if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
-                        });
-                    }
-                }
-            });
-            authenticatedListeners.push(userUnsub);
-
-            // 🔥 [요금 폭탄 방지] 매치 기록도 최근 300개로 제한
-            const matchesQuery = window.query(window.collection(window.db, "matches"), window.orderBy("createdAt", "desc"), window.limit(300));
-            const matchesUnsub = window.onSnapshot(matchesQuery, (snapshot) => {
-                let matches = []; snapshot.forEach((doc) => matches.push(doc.data()));
-                localStorage.setItem('sparring_matches', JSON.stringify(matches));
-                renderFeed(); if (document.getElementById('matchStatusModal').style.display === 'flex') renderMatchList();
-            });
-            authenticatedListeners.push(matchesUnsub);
-
-            const recordsQuery = window.query(window.collection(window.db, "record_requests"), window.limit(100));
-            const recordsUnsub = window.onSnapshot(recordsQuery, (snapshot) => {
-                let reqs = []; snapshot.forEach((doc) => reqs.push(doc.data()));
-                localStorage.setItem('sparring_record_requests', JSON.stringify(reqs));
-                if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
-            });
-            authenticatedListeners.push(recordsUnsub);
-        } else {
-            if (!localStorage.getItem('sparring_session')) { currentUser = null; updateLoginStateUI(); }
-        }
-    });
-}
 
 // 🔥 [수정] 회원가입 제출 함수 (권한 에러 우회, 이메일 중복 방지, 신분증 연동)
 async function submitSignup() {
