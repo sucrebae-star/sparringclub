@@ -30,7 +30,7 @@
   import { getFirestore, collection, getDocs, getDoc, addDoc, updateDoc, doc, deleteDoc, setDoc, onSnapshot, query, orderBy, increment, runTransaction, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
   import { getStorage, ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
   import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
-  import { getAuth, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getAuth, setPersistence, browserLocalPersistence, browserSessionPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyB_-4dxADvEU1__WrhSYjn0RQ096Hj1fX4",
@@ -55,6 +55,9 @@
   window.getToken = getToken; window.ref = ref; window.uploadBytes = uploadBytes; 
   window.uploadBytesResumable = uploadBytesResumable; window.getDownloadURL = getDownloadURL; window.deleteObject = deleteObject;
 
+  window.setPersistence = setPersistence;
+  window.browserLocalPersistence = browserLocalPersistence;
+  window.browserSessionPersistence = browserSessionPersistence;
   window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
   window.signInWithEmailAndPassword = signInWithEmailAndPassword;
   window.onAuthStateChanged = onAuthStateChanged;
@@ -622,6 +625,7 @@
         <div class="login-tabs">
             <div id="tab-login" class="active" onclick="switchAuthTab('login')">로그인</div>
             <div id="tab-signup" onclick="switchAuthTab('signup')">회원가입</div>
+            <div id="tab-resetpw" onclick="switchAuthTab('resetpw')" style="display: none;">비밀번호 찾기</div>
         </div>
         
         <div id="form-login" class="login-form active">
@@ -630,6 +634,9 @@
             <input type="password" id="login-pw" placeholder="비밀번호 입력" onkeydown="if(event.key === 'Enter') processLogin()">
             <label style="display:flex; align-items:center; gap:8px; color:#ccc; font-size:0.85rem; margin-top:10px; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><input type="checkbox" id="login-keep" checked style="width:auto; margin:0;"> 항상 로그인 상태 유지 (앱 접속 시 자동 적용)</label>
             <button type="button" class="btn-submit" onclick="processLogin()">로그인</button>
+            <div style="text-align: center; margin-top: 15px;">
+                <span onclick="switchAuthTab('resetpw')" style="color: var(--gold); font-size: 0.85rem; cursor: pointer; text-decoration: underline;">비밀번호를 잊으셨나요? (비밀번호 찾기)</span>
+            </div>
         </div>
         
         <div id="form-signup" class="login-form">
@@ -731,6 +738,20 @@
             </div>
 
             <button type="button" id="btn-signup-submit" class="btn-submit" onclick="submitSignup()" disabled style="background: #555; cursor: not-allowed; transition: all 0.3s; margin-top: 20px;">10초 만에 즉시 시작하기</button>
+        </div>
+        
+        <div id="form-resetpw" class="login-form">
+            <label style="color:#ff7675; font-size: 0.8rem; margin-top:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">* 가입 시 등록한 아이디와 실명을 입력해주세요.</label>
+            <input type="text" id="reset-userid" placeholder="아이디 입력" oninput="this.value = this.value.toLowerCase()" style="margin-bottom: 5px;">
+            
+            <input type="text" id="reset-realname" placeholder="가입한 실명 입력" style="margin-bottom: 5px;">
+            
+            <input type="password" id="reset-new-pw" placeholder="새로운 비밀번호 (6자 이상)" onblur="window.checkSignupPwLength(this)" style="margin-bottom: 5px;">
+            
+            <button type="button" class="btn-submit" onclick="processPwReset()" style="margin-top: 15px;">비밀번호 재설정 및 로그인</button>
+            <div style="text-align: center; margin-top: 15px;">
+                <span onclick="switchAuthTab('login')" style="color: #aaa; font-size: 0.85rem; cursor: pointer; text-decoration: underline;">← 로그인 창으로 돌아가기</span>
+            </div>
         </div>
     </div>
 </div>
@@ -1214,7 +1235,7 @@ window.onload = async function() {
     localStorage.removeItem('sparring_deleted_users');
 
     // 🔥 [신규] 모바일 환경에서 과거 권한 에러 시절 저장된 '빈 화면' 캐시 강제 삭제 (버전 컨트롤)
-    const currentAppVersion = "20260310_v0";
+    const currentAppVersion = "20260310_v2";
     if (localStorage.getItem('sparring_app_version') !== currentAppVersion) {
         localStorage.removeItem('sparring_approved_users');
         localStorage.setItem('sparring_app_version', currentAppVersion);
@@ -2993,18 +3014,33 @@ async function processLogin() {
     try {
         const isApp = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
         const keepLogin = isApp || (keepEl && keepEl.checked);
-        await window.auth.setPersistence(keepLogin ? window.browserLocalPersistence : window.browserSessionPersistence);
+        try {
+            await window.setPersistence(window.auth, keepLogin ? window.browserLocalPersistence : window.browserSessionPersistence);
+        } catch (persistErr) {
+            console.warn("세션 유지 설정 에러 우회:", persistErr);
+        }
 
         let docId = inputId;
         const koreanRegex = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/;
         if (koreanRegex.test(inputId)) { docId = btoa(encodeURIComponent(inputId)).replace(/=/g, ""); }
         
         let authEmail = `${docId}@sparringclub.kr`;
+        
+        // 🔥 1차 방어: 로컬 캐시에서 가상 이메일 강제 확보 (서버 권한 차단으로 인한 로그인 실패 완벽 방어)
+        if (typeof demoPlayers !== 'undefined') {
+            let localPlayer = demoPlayers.find(p => p.userId === docId || p.rawName === docId || String(p.id) === docId);
+            if (localPlayer && localPlayer.authEmail) {
+                authEmail = localPlayer.authEmail;
+            }
+        }
+
         try {
             let userSnap = await window.getDoc(window.doc(window.db, "users", docId));
             if (!userSnap.exists()) { userSnap = await window.getDoc(window.doc(window.db, "pendingUsers", docId)); }
             if (userSnap.exists() && userSnap.data().authEmail) { authEmail = userSnap.data().authEmail; }
-        } catch(e) {}
+        } catch(e) {
+            console.warn("비로그인 상태로 인한 DB 접근 제한 (캐시 이메일로 우회)");
+        }
         
         try {
             await window.signInWithEmailAndPassword(window.auth, authEmail, inputPw);
@@ -3035,7 +3071,12 @@ async function processLogin() {
             initFirebaseRealtime();
             
             window.updateUploadProgress(100, "로그인 성공!");
-            alert(`${currentUser.name} 님, 환영합니다! 🥊`);
+            const md = document.getElementById('uploadProgressModal');
+            if(md) md.style.display = 'none';
+            
+            setTimeout(() => {
+                alert(`${currentUser.name} 님, 환영합니다! 🥊`);
+            }, 100);
             
             closeModal('loginModal');
             updateLoginStateUI(); 
@@ -3052,15 +3093,112 @@ async function processLogin() {
             }
         } else {
             window.updateUploadProgress(100);
+            const md = document.getElementById('uploadProgressModal');
+            if(md) md.style.display = 'none';
             alert('승인된 계정 정보가 없습니다. 관장님의 승인을 기다려주세요.');
             await window.signOut(window.auth);
         }
     } catch (e) {
         window.updateUploadProgress(100);
+        const md = document.getElementById('uploadProgressModal');
+        if(md) md.style.display = 'none';
         console.error("로그인 에러:", e);
-        alert("아이디 또는 비밀번호가 일치하지 않거나 서버 연결에 실패했습니다.");
+        if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+            alert("비밀번호가 일치하지 않습니다. 기억나지 않으시면 하단의 '비밀번호 찾기'를 이용해주세요.");
+        } else if (e.code === 'auth/user-not-found') {
+            alert("존재하지 않는 계정입니다. 가입된 아이디를 확인해주세요.");
+        } else {
+            alert("아이디 또는 비밀번호가 일치하지 않거나 서버 연결에 실패했습니다.");
+        }
     }
 }
+
+// 🔥 [신규] 비밀번호 찾기 및 강제 초기화 로직 (가상 이메일 인증 한계 돌파)
+window.processPwReset = async function() {
+    const userId = document.getElementById('reset-userid').value.trim().toLowerCase();
+    const realName = document.getElementById('reset-realname').value.trim();
+    const newPw = document.getElementById('reset-new-pw').value.trim();
+
+    if (!userId || !realName || !newPw) {
+        alert("모든 정보를 정확하게 입력해주세요.");
+        return;
+    }
+    if (newPw.length < 6) {
+        alert("비밀번호는 보안을 위해 6자 이상이어야 합니다.");
+        return;
+    }
+
+    window.updateUploadProgress(20, "본인 정보 매칭 확인 중...");
+
+    try {
+        let docId = userId;
+        const krRegex = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/;
+        if (krRegex.test(userId)) { docId = btoa(encodeURIComponent(userId)).replace(/=/g, ""); }
+        
+        let userData = null;
+
+        // 1차: 로컬 데이터에서 확인 (권한 제약 없이 가장 안전함)
+        if (typeof demoPlayers !== 'undefined') {
+            userData = demoPlayers.find(p => p.userId === docId || p.rawName === docId || String(p.id) === docId);
+        }
+
+        // 2차: 로컬에 없으면 서버 데이터에서 강제 조회 시도
+        if (!userData) {
+            try {
+                let userSnap = await window.getDoc(window.doc(window.db, "users", docId));
+                if (!userSnap.exists()) {
+                    userSnap = await window.getDoc(window.doc(window.db, "pendingUsers", docId));
+                }
+                if (userSnap.exists()) {
+                    userData = userSnap.data();
+                }
+            } catch(e) {
+                console.warn("DB 권한 차단됨.");
+            }
+        }
+
+        if (!userData) {
+            window.updateUploadProgress(100);
+            alert("입력하신 아이디를 찾을 수 없습니다.");
+            return;
+        }
+
+        if (userData.name !== realName && userData.rawName !== realName) {
+            window.updateUploadProgress(100);
+            alert("가입 시 등록된 실명과 일치하지 않습니다. 다시 확인해주세요.");
+            return;
+        }
+
+        window.updateUploadProgress(60, "새 인증 서버로 덮어쓰는 중...");
+
+        // 🔥 가상 이메일을 새로 발급하여 Auth에 새 계정으로 강제 등록 (기존 로그인 오류 100% 영구 해결)
+        const newAuthEmail = `${docId}_${Date.now()}@sparringclub.kr`;
+        await window.createUserWithEmailAndPassword(window.auth, newAuthEmail, newPw);
+        
+        // Firestore의 인증 이메일 매핑을 새로 발급받은 계정으로 교체
+        const userRef = window.doc(window.db, "users", docId);
+        await window.updateDoc(userRef, { authEmail: newAuthEmail });
+
+        window.updateUploadProgress(100);
+        alert("비밀번호가 성공적으로 재설정되었습니다! 안전하게 새 비밀번호로 자동 로그인합니다.");
+        
+        // 입력 폼 초기화
+        document.getElementById('reset-userid').value = '';
+        document.getElementById('reset-realname').value = '';
+        document.getElementById('reset-new-pw').value = '';
+        
+        // 자동 로그인 실행
+        document.getElementById('login-id').value = userId;
+        document.getElementById('login-pw').value = newPw;
+        switchAuthTab('login');
+        processLogin();
+        
+    } catch (e) {
+        window.updateUploadProgress(100);
+        console.error("비밀번호 재설정 에러:", e);
+        alert("비밀번호 처리 중 서버 통신 오류가 발생했습니다.");
+    }
+};
 
 async function logout() {
     if (confirm('로그아웃 하시겠습니까? 🥊')) {
@@ -3988,12 +4126,18 @@ window.onclick = function(event) {
 };
 
 function switchAuthTab(tabName) {
-    document.querySelectorAll('.login-tabs div').forEach(d => d.classList.remove('active'));
-    document.querySelectorAll('.login-form').forEach(f => f.classList.remove('active'));
-    document.getElementById('tab-' + tabName).classList.add('active');
+    document.querySelectorAll('#loginModal .login-tabs div').forEach(d => d.classList.remove('active'));
+    document.querySelectorAll('#loginModal .login-form').forEach(f => f.classList.remove('active'));
+    
+    const targetTab = document.getElementById('tab-' + tabName);
+    if (targetTab) targetTab.classList.add('active');
+    
     document.getElementById('form-' + tabName).classList.add('active');
-    if(tabName === 'login') setTimeout(() => { document.getElementById('login-id').focus(); }, 100);
-    else if (tabName === 'signup') setTimeout(() => { document.getElementById('signup-userid').focus(); }, 100);}
+    
+    if(tabName === 'login') setTimeout(() => { const el = document.getElementById('login-id'); if(el) el.focus(); }, 100);
+    else if (tabName === 'signup') setTimeout(() => { const el = document.getElementById('signup-userid'); if(el) el.focus(); }, 100);
+    else if (tabName === 'resetpw') setTimeout(() => { const el = document.getElementById('reset-userid'); if(el) el.focus(); }, 100);
+}
 
 // --- 매칭 신청 및 진행 (중복 방지 철저 검증 및 ID 타입 호환 버전) ---
 function requestMatch(id) {
@@ -4744,7 +4888,7 @@ function selectGym(gymName, gymId) {
     document.getElementById('gym-search-results').style.display = 'none';
 }
 
-function checkDuplicateId() {
+async function checkDuplicateId() {
         let inputUserId = document.getElementById('signup-userid').value.trim();
         if (!inputUserId) { 
             alert('아이디를 입력해주세요.'); 
@@ -4758,19 +4902,35 @@ function checkDuplicateId() {
             return;
         }
 
-        let pendingUsers = JSON.parse(localStorage.getItem('sparring_pending_users')) || [];
-        let allUsers = [...demoPlayers, ...pendingUsers];
-        
-        // 아이디(고유 식별자) 기준 중복 체크
-        let isDuplicate = allUsers.some(u => u.userId === inputUserId || u.rawName === inputUserId);
+        try {
+            const userRef = window.doc(window.db, "users", inputUserId);
+            const userSnap = await window.getDoc(userRef);
+            
+            const pendingRef = window.doc(window.db, "pendingUsers", inputUserId);
+            const pendingSnap = await window.getDoc(pendingRef);
 
-        if (isDuplicate) {
-            alert(`'${inputUserId}' 아이디는 이미 사용 중입니다. 다른 아이디를 입력해주세요.`);
-            document.getElementById('signup-userid').value = '';
-            isDuplicateChecked = false;
-        } else {
-            alert('사용 가능한 아이디입니다. 가입을 계속 진행해 주세요.');
-            isDuplicateChecked = true;
+            if (userSnap.exists() || pendingSnap.exists()) {
+                alert(`'${inputUserId}' 아이디는 이미 사용 중입니다. 다른 아이디를 입력해주세요.`);
+                document.getElementById('signup-userid').value = '';
+                isDuplicateChecked = false;
+            } else {
+                alert('사용 가능한 아이디입니다. 가입을 계속 진행해 주세요.');
+                isDuplicateChecked = true;
+            }
+        } catch (e) {
+            console.error("중복체크 에러:", e);
+            let pendingUsers = JSON.parse(localStorage.getItem('sparring_pending_users')) || [];
+            let allUsers = [...demoPlayers, ...pendingUsers];
+            let isDuplicate = allUsers.some(u => u.userId === inputUserId || u.rawName === inputUserId);
+
+            if (isDuplicate) {
+                alert(`'${inputUserId}' 아이디는 이미 사용 중입니다. 다른 아이디를 입력해주세요.`);
+                document.getElementById('signup-userid').value = '';
+                isDuplicateChecked = false;
+            } else {
+                alert('사용 가능한 아이디입니다. 가입을 계속 진행해 주세요.');
+                isDuplicateChecked = true;
+            }
         }
     }
 
@@ -6211,7 +6371,7 @@ document.addEventListener('focusin', function(e) {
 // 🔥 [수정] 새로고침 시 이용하던 탭 화면 유지 기능 (기존 window.onload 교체)
 window.onload = async function() {
     localStorage.removeItem('sparring_deleted_users');
-    const currentAppVersion = "20260310_v0";
+    const currentAppVersion = "20260310_v2";
     if (localStorage.getItem('sparring_app_version') !== currentAppVersion) {
         localStorage.removeItem('sparring_approved_users');
         localStorage.setItem('sparring_app_version', currentAppVersion);
@@ -6259,7 +6419,6 @@ window.checkSignupPwLength = function(element) {
     if (element.value.length > 0 && element.value.length < 6) {
         alert("비밀번호는 보안을 위해 6자 이상 적어야 합니다.");
         element.value = ''; 
-        setTimeout(() => element.focus(), 100);
     }
 };
 
@@ -6308,11 +6467,16 @@ window.applyCrop = function() {
 
 // 🔥 [수정] 회원가입 제출 함수 (권한 에러 우회, 이메일 중복 방지, 신분증 연동)
 async function submitSignup() {
+    const mannerChecked = document.getElementById('pledge-manner').checked;
+    if (!mannerChecked) { alert('매너 스파링 서약서에 동의해 주세요.'); return; }
+
     if (!isDuplicateChecked) { alert('아이디 중복조회를 먼저 해주세요.'); return; }
     
     const userId = document.getElementById('signup-userid').value.trim();
     const realName = document.getElementById('signup-realname').value.trim();
     const inputPw = document.getElementById('signup-pw').value.trim();
+    
+    if (!userId || !realName || !inputPw) { alert('아이디, 실명, 비밀번호를 모두 입력해주세요.'); return; }
     if(inputPw.length < 6) { alert('비밀번호는 6자 이상이어야 합니다.'); return; }
     
     let gymName = document.getElementById('signup-gym').value.trim().toUpperCase();
@@ -6320,10 +6484,18 @@ async function submitSignup() {
     const role = roleEl ? roleEl.value : 'player'; 
     const region = document.getElementById('signup-region').value;
 
-    if (!gymName) gymName = '무소속';
+    if (!region) { alert('주 활동 지역을 선택해주세요.'); return; }
+
+    if (!gymName) {
+        alert("소속 체육관을 검색하여 선택해주세요.\n(소속이 없다면 검색창에 '무소속'을 입력 후 선택하세요.)");
+        return;
+    }
+
     const weight = document.getElementById('signup-weight').value || '체급미정';
     const height = document.getElementById('signup-height').value || '키 미상';
     const stance = document.getElementById('signup-stance').value || '미정';
+
+    if (weight === '체급미정' || stance === '미정') { alert('체급과 스탠스를 정확히 선택해주세요.'); return; }
 
     window.updateUploadProgress(5, "계정 생성 중...");
 
@@ -6342,11 +6514,13 @@ async function submitSignup() {
             userCredential = await window.createUserWithEmailAndPassword(window.auth, authEmail, inputPw);
             uid = userCredential.user.uid;
         } catch (authErr) {
-            // 과거 삭제된 데이터 등으로 인해 이메일 중복 에러 발생 시, 타임스탬프를 붙여 고유 이메일로 회피
+            // 🔥 계정 덮어쓰기 및 비밀번호 초기화 버그 원천 차단
             if (authErr.code === 'auth/email-already-in-use') {
-                authEmail = `${userId}_${Date.now()}@sparringclub.kr`;
-                userCredential = await window.createUserWithEmailAndPassword(window.auth, authEmail, inputPw);
-                uid = userCredential.user.uid;
+                window.updateUploadProgress(100);
+                const md = document.getElementById('uploadProgressModal');
+                if(md) md.style.display = 'none';
+                alert("해당 아이디는 이미 가입되어 있습니다. 로그인을 하시거나 '비밀번호 찾기'를 이용해주세요.");
+                return;
             } else {
                 throw authErr;
             }
@@ -6376,19 +6550,46 @@ async function submitSignup() {
             dailyMatchCount: 0, seasonRejectCount: 0, greeting: "", stories: [], tags: {}, isAdmin: false
         };
 
-        // 🔥 관리자 승인 대기 없이 즉시 가입 완료
-        await window.setDoc(window.doc(window.db, "users", userId), userData);
-        demoPlayers.push(userData); localStorage.setItem('sparring_approved_users', JSON.stringify(demoPlayers));
-        renderPlayers(); renderNewMembers(); 
-        
-        window.updateUploadProgress(100); closeModal('loginModal');
-        alert(`🎉 ${realName}님, 가입이 완료되었습니다!\n이제 스파링클럽을 자유롭게 이용해 보세요.`);
-        
-        // 자동 로그인 실행
-        document.getElementById('login-id').value = userId;
-        document.getElementById('login-pw').value = inputPw;
-        processLogin();
-    } catch (e) { window.updateUploadProgress(100); alert(`가입 실패: ${e.message}`); }
+        if (isAuto) {
+            // 🔥 자동 가입 켜짐
+            await window.setDoc(window.doc(window.db, "users", userId), userData);
+            demoPlayers.push(userData); localStorage.setItem('sparring_approved_users', JSON.stringify(demoPlayers));
+            renderPlayers(); renderNewMembers(); 
+            
+            window.updateUploadProgress(100); 
+            const md = document.getElementById('uploadProgressModal');
+            if(md) md.style.display = 'none';
+            closeModal('loginModal');
+            
+            setTimeout(() => {
+                alert(`🎉 ${realName}님, 가입이 완료되었습니다!\n이제 스파링클럽을 자유롭게 이용해 보세요.`);
+            }, 100);
+            
+            // 자동 로그인 실행
+            document.getElementById('login-id').value = userId;
+            document.getElementById('login-pw').value = inputPw;
+            processLogin();
+        } else {
+            // 🔥 자동 가입 꺼짐 -> 관리자 승인 대기
+            const pendingData = { ...userData, firebaseId: userId };
+            await window.setDoc(window.doc(window.db, "pendingUsers", userId), pendingData);
+            
+            window.updateUploadProgress(100); 
+            const md = document.getElementById('uploadProgressModal');
+            if(md) md.style.display = 'none';
+            closeModal('loginModal');
+            
+            setTimeout(() => {
+                alert(`가입 신청이 완료되었습니다.\n관장님의 승인 후 접속이 가능합니다.`);
+            }, 100);
+            await window.signOut(window.auth);
+        }
+    } catch (e) { 
+        window.updateUploadProgress(100); 
+        const md = document.getElementById('uploadProgressModal');
+        if(md) md.style.display = 'none';
+        alert(`가입 실패: ${e.message}`); 
+    }
 }
 
 // 🔥 [수정] 커뮤니티 작성 시 유튜브 링크 Embed 자동 삽입
