@@ -30,7 +30,7 @@
   import { getFirestore, collection, getDocs, getDoc, addDoc, updateDoc, doc, deleteDoc, setDoc, onSnapshot, query, orderBy, increment, runTransaction, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
   import { getStorage, ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
   import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
-  import { getAuth, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getAuth, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyB_-4dxADvEU1__WrhSYjn0RQ096Hj1fX4",
@@ -55,14 +55,13 @@
   window.getToken = getToken; window.ref = ref; window.uploadBytes = uploadBytes; 
   window.uploadBytesResumable = uploadBytesResumable; window.getDownloadURL = getDownloadURL; window.deleteObject = deleteObject;
 
-window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+  window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
   window.signInWithEmailAndPassword = signInWithEmailAndPassword;
   window.onAuthStateChanged = onAuthStateChanged;
   window.signOut = signOut; window.updatePassword = updatePassword;
   window.reauthenticateWithCredential = reauthenticateWithCredential;
   window.EmailAuthProvider = EmailAuthProvider;
-  window.sendPasswordResetEmail = sendPasswordResetEmail;
-  
+
   // 🔥 [신규] 미디어 1MB 이하 강제 압축 최적화 알고리즘
   window.compressImage = async function(file, maxWidth = 1000, initialQuality = 0.8) {
     if (file.type.startsWith('video/')) {
@@ -160,7 +159,7 @@ window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
         </div>
 
         <div style="text-align: center; margin-bottom: 25px;">
-            <a href="https://kr.boxraw.com/?utm_source=htboxing.school&utm_medium=ig" target="_blank" style="display: flex; align-items: center; justify-content: center; background: #111; border: 1px solid #444; padding: 16px; border-radius: 12px; text-decoration: none; color: white; min-height: 54px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+            <a href="https://kr.boxraw.com/" target="_blank" style="display: flex; align-items: center; justify-content: center; background: #111; border: 1px solid #444; padding: 16px; border-radius: 12px; text-decoration: none; color: white; min-height: 54px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
                 <b style="font-size: 1.2rem; letter-spacing: 1px; margin-right: 5px;">BOXRAW</b> 공식 사이트 바로가기
             </a>
             <div style="font-size: 0.95rem; color: #ddd; margin-top: 10px; padding: 10px; background: rgba(253, 203, 110, 0.1); border-radius: 8px; border: 1px solid rgba(253, 203, 110, 0.2);">
@@ -513,16 +512,10 @@ window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
                 <div id="admin-all-match-list"></div>
             </div>
 
-            <div class="card" style="border-top: 3px solid var(--gold); margin-bottom: 20px;">
+            <div class="card" style="border-top: 3px solid var(--gold);">
                 <h3 style="margin-top:0;">🏢 등록된 체육관 관리</h3>
                 <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 15px;">* 등록된 체육관 정보를 서버에서 영구 삭제할 수 있습니다.</p>
                 <div id="admin-gym-mgmt-list"></div>
-            </div>
-
-            <div class="card" style="border-top: 3px solid #ff7675;">
-                <h3 style="margin-top:0; color:#ff7675;">🔄 시즌 기록 초기화</h3>
-                <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 15px;">* 시즌 승무패 및 포인트가 모두 0으로 리셋됩니다. (통산 누적 기록은 영구 보존)</p>
-                <button class="btn-submit" style="background:var(--primary-red); margin-top:0; width:100%;" onclick="resetSeasonRecords()">새로운 시즌 시작하기 (기록 리셋)</button>
             </div>
         </div>
 
@@ -616,33 +609,25 @@ window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
             <label style="color:#aaa; font-size: 0.8rem; margin-top:0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">* 관리자 접속: 아이디에 'admin' 입력</label>
             <input type="text" id="login-id" placeholder="아이디 입력" oninput="this.value = this.value.toLowerCase()" onkeydown="if(event.key === 'Enter') processLogin()">
             <input type="password" id="login-pw" placeholder="비밀번호 입력" onkeydown="if(event.key === 'Enter') processLogin()">
-            
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                <label style="display:flex; align-items:center; gap:8px; color:#ccc; font-size:0.85rem; cursor:pointer; margin:0; white-space:nowrap;"><input type="checkbox" id="login-keep" checked style="width:auto; margin:0;"> 항상 로그인 유지</label>
-                <span onclick="resetPassword()" style="color:var(--gold); font-size:0.85rem; font-weight:bold; cursor:pointer; text-decoration:underline; white-space:nowrap;">비밀번호 변경/찾기</span>
-            </div>
-
-            <button type="button" class="btn-submit" onclick="processLogin()" style="margin-top: 15px;">로그인</button>
+            <label style="display:flex; align-items:center; gap:8px; color:#ccc; font-size:0.85rem; margin-top:10px; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><input type="checkbox" id="login-keep" checked style="width:auto; margin:0;"> 항상 로그인 상태 유지 (앱 접속 시 자동 적용)</label>
+            <button type="button" class="btn-submit" onclick="processLogin()">로그인</button>
         </div>
         
         <div id="form-signup" class="login-form">
-            <label style="color:#ff7675; font-size: 0.8rem; margin-top:0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display:block;">* 사용할 아이디(영문+숫자)를 입력하세요.</label>
+            <label style="color:#ff7675; font-size: 0.8rem; margin-top:0;">* 사용할 아이디(영문+숫자)를 입력하세요.</label>
             <div style="display: flex; gap: 5px;">
                 <input type="text" id="signup-userid" placeholder="아이디 입력 (예: boxer123)" 
                     oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9]/g, ''); isDuplicateChecked = false;" 
                     style="flex: 1; margin: 0;">
-                <button type="button" class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555; white-space:nowrap;" onclick="checkDuplicateId()">중복조회</button>
+                <button type="button" class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555;" onclick="checkDuplicateId()">중복조회</button>
             </div>
             
-            <label style="margin-top: 10px; display:block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">실명 (실제 이름)</label>
+            <label style="margin-top: 10px; display:block;">실명 (실제 이름)</label>
             <input type="text" id="signup-realname" placeholder="실명을 입력하세요 (예: 홍길동)" style="margin-top: 5px;">
             
-            <label style="margin-top: 10px; display:block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">가입 이메일 <span style="font-size:0.75rem; color:#ff7675;">(필수, 비밀번호 찾기 시 필요)</span></label>
-            <input type="email" id="signup-email" placeholder="실제 사용하시는 이메일을 입력해주세요" style="margin-top: 5px;">
-
-            <label style="margin-top: 10px; display:block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">비밀번호 <span style="font-size:0.75rem; color:#ff7675;">(6자 이상 필수)</span></label>
+<label style="margin-top: 10px; display:block;">비밀번호 <span style="font-size:0.75rem; color:#ff7675;">(6자 이상 필수)</span></label>
             <input type="password" id="signup-pw" placeholder="비밀번호를 6자 이상 적어주세요" onblur="window.checkSignupPwLength(this)">
-            <label style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display:block;">주 활동 지역</label>
+            <label>주 활동 지역</label>
             <select id="signup-region">
                 <option value="" disabled selected>지역 선택</option>
                 <optgroup label="특별시/광역시">
@@ -661,11 +646,11 @@ window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
             </select>
 
 
-            <label style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display:block;">소속 체육관 (반드시 검색하여 선택하세요)</label>
+            <label>소속 체육관 (반드시 검색하여 선택하세요)</label>
             <div style="display: flex; flex-direction: column; gap: 5px;">
                 <div style="display: flex; gap: 5px;">
                     <input type="text" id="signup-gym-keyword" placeholder="체육관명 검색 (영문은 대문자로)" style="flex: 1; margin: 0; text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()" onkeydown="if(event.key === 'Enter') searchGym()">
-                    <button type="button" class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555; white-space:nowrap;" onclick="searchGym()">조회</button>
+                    <button type="button" class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555;" onclick="searchGym()">조회</button>
                 </div>
                 <div id="gym-search-results" style="display: none; background: #222; border: 1px solid #444; border-radius: 4px; padding: 8px; font-size: 0.85rem; max-height: 150px; overflow-y: auto;"></div>
                 
@@ -674,7 +659,7 @@ window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
             </div>
             
             <div>
-                <label style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display:block;">신체 정보 및 스타일</label>
+                <label>신체 정보 및 스타일</label>
                 <div style="display: flex; gap: 5px; margin-bottom: 10px;">
                     <select id="signup-weight" style="flex: 1;">
                         <option value="">-- 체급 --</option>
@@ -692,7 +677,7 @@ window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
                     </select>
                 </div>
 
-                <label style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display:block;">현재 실력 티어</label>
+                <label>현재 실력 티어</label>
                 <select id="signup-tier">
                     <option value="1">전적 없음 (Tier 1)</option>
                     <option value="2">생활체육 대회 입상 (Tier 2)</option>
@@ -709,10 +694,10 @@ window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
             </div>
             
             <div style="margin-top: 15px; padding: 12px; border: 1px solid #444; border-radius: 8px; background: rgba(255, 255, 255, 0.03);">
-                <label style="color: var(--gold); font-size: 0.95rem; font-weight: bold; margin-top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display:block;">📸 프로필 사진 설정 (선택)</label>
+                <label style="color: var(--gold); font-size: 0.95rem; font-weight: bold; margin-top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📸 프로필 사진 설정 (선택)</label>
                 <div style="font-size: 0.75rem; color: #aaa; margin-top: 6px; margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">비워두면 기본 실루엣으로 설정됩니다.</div>
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <button type="button" onclick="document.getElementById('signup-profile-pic').click()" style="flex:1; background:#333; color:#fff; border:1px solid #555; padding:10px; border-radius:8px; font-size:0.85rem; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📷 사진 선택 및 영역 조절</button>
+                    <button type="button" onclick="document.getElementById('signup-profile-pic').click()" style="flex:1; background:#333; color:#fff; border:1px solid #555; padding:10px; border-radius:8px; font-size:0.85rem; cursor:pointer;">📷 사진 선택 및 영역 조절</button>
                     <input type="file" accept="image/*" id="signup-profile-pic" style="display:none;" onchange="window.openSignupCropper(event)">
                     <div id="preview-signup-profile" style="width: 40px; height: 40px; border-radius: 50%; background: #333 url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23777%22><path d=%22M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z%22/></svg>') center/cover; border: 1px solid #555; flex-shrink: 0;"></div>
                 </div>
@@ -726,7 +711,7 @@ window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
                 </label>
             </div>
 
-            <button type="button" id="btn-signup-submit" class="btn-submit" onclick="submitSignup()" disabled style="background: #555; cursor: not-allowed; transition: all 0.3s; margin-top: 20px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">10초 만에 즉시 시작하기</button>
+            <button type="button" id="btn-signup-submit" class="btn-submit" onclick="submitSignup()" disabled style="background: #555; cursor: not-allowed; transition: all 0.3s; margin-top: 20px;">10초 만에 즉시 시작하기</button>
         </div>
     </div>
 </div>
@@ -1022,10 +1007,24 @@ window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
                 <div id="gp-location" style="font-size: 0.85rem; color: #aaa; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center;">지역 정보</div>
             </div>
 
-            <div class="stat-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-                <div class="stat-box"><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">체육관 승점</span><b id="gp-total-pt" style="color:var(--gold); font-size:0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">0 P</b></div>
-                <div class="stat-box"><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">소속 인원</span><b id="gp-member-count" style="font-size:0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">0명</b></div>
-                <div class="stat-box"><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">누적 스파링</span><b id="gp-match-count" style="color:var(--tier2); font-size:0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">0전</b></div>
+            <div class="stat-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px;">
+                <div class="stat-box"><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">체육관 승점</span><b id="gp-total-pt" style="color:var(--gold); font-size:0.9rem; display: block;">0 P</b></div>
+                <div class="stat-box"><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">소속 인원</span><b id="gp-member-count" style="font-size:0.9rem; display: block;">0명</b></div>
+                <div class="stat-box"><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">누적 스파링</span><b id="gp-match-count" style="color:var(--tier2); font-size:0.9rem; display: block;">0전</b></div>
+            </div>
+
+            <div id="gp-info-panel" style="background:rgba(255,255,255,0.03); border:1px solid #444; padding:12px; border-radius:8px; margin-bottom:20px; font-size:0.85rem;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                    <b style="color:var(--gold);">📌 체육관 정보</b>
+                    <span id="gp-info-edit-btn" style="display:none; color:#74b9ff; cursor:pointer; text-decoration:underline; font-size:0.8rem;" onclick="editGymDetails()">정보 수정</span>
+                </div>
+                <div style="color:#ccc; margin-bottom:4px;">📞 연락처: <span id="gp-phone" style="color:white;">미등록</span></div>
+                <div style="color:#ccc; margin-bottom:4px;">📍 위 치: <span id="gp-address" style="color:white;">미등록</span></div>
+                <div style="background:rgba(253, 203, 110, 0.1); padding:8px; border-radius:6px; margin-top:8px;">
+                    <div style="color:var(--gold); font-weight:bold; margin-bottom:4px;">🎫 원데이 스파링 패스 (일일권)</div>
+                    <div style="color:#ccc; margin-bottom:2px;">비용 안내: <span id="gp-daypass-fee" style="color:white; font-weight:bold;">미등록</span></div>
+                    <div style="color:#ccc;">이용 시간: <span id="gp-daypass-time" style="color:white;">미등록</span></div>
+                </div>
             </div>
 
             <div style="margin-top: 20px;">
@@ -1196,7 +1195,7 @@ window.onload = async function() {
     localStorage.removeItem('sparring_deleted_users');
 
     // 🔥 [신규] 모바일 환경에서 과거 권한 에러 시절 저장된 '빈 화면' 캐시 강제 삭제 (버전 컨트롤)
-    const currentAppVersion = "20260309_v9";
+    const currentAppVersion = "20260309_v7";
     if (localStorage.getItem('sparring_app_version') !== currentAppVersion) {
         localStorage.removeItem('sparring_approved_users');
         localStorage.setItem('sparring_app_version', currentAppVersion);
@@ -2303,11 +2302,23 @@ async function applyRecordToStats(record) {
                 else { let p1TagsUpdate = p1Data.tags || {}; record.givenTags.forEach(t => { p1TagsUpdate[t] = (p1TagsUpdate[t] || 0) + 1; }); p1Updates.tags = p1TagsUpdate; }
             }
 
+            // 상위 티어 도장깨기(업셋) 뱃지 획득
+            if (record.matchType === 'rank') {
+                if (record.resultValue === 'win' && parseInt(p1Data.tier) < parseInt(p2Data.tier)) {
+                    let p1Badges = p1Data.badges || [];
+                    if (!p1Badges.includes('upset')) { p1Badges.push('upset'); p1Updates.badges = p1Badges; }
+                } else if (record.resultValue === 'loss' && parseInt(p2Data.tier) < parseInt(p1Data.tier)) {
+                    let p2Badges = p2Data.badges || [];
+                    if (!p2Badges.includes('upset')) { p2Badges.push('upset'); p2Updates.badges = p2Badges; }
+                }
+            }
+
             transaction.update(p1Ref, { ...p1Updates, pt: Math.max(0, (p1Data.pt || 0) + p1Gain), tPt: Math.max(0, (p1Data.tPt || 0) + p1Gain) });
             transaction.update(p2Ref, { ...p2Updates, pt: Math.max(0, (p2Data.pt || 0) + p2Gain), tPt: Math.max(0, (p2Data.tPt || 0) + p2Gain) });
 
-            if (p1Data.gymId) transaction.update(window.doc(window.db, "gyms_registry", p1Data.gymId), { totalPt: window.increment(p1Gain) });
-            if (p2Data.gymId) transaction.update(window.doc(window.db, "gyms_registry", p2Data.gymId), { totalPt: window.increment(p2Gain) });
+            // 체육관 랭킹 통산/시즌 분리 대비 (tPt 추가)
+            if (p1Data.gymId) transaction.update(window.doc(window.db, "gyms_registry", p1Data.gymId), { totalPt: window.increment(p1Gain), tPt: window.increment(p1Gain) });
+            if (p2Data.gymId) transaction.update(window.doc(window.db, "gyms_registry", p2Data.gymId), { totalPt: window.increment(p2Gain), tPt: window.increment(p2Gain) });
         });
     }
 
@@ -2973,17 +2984,12 @@ async function processLogin() {
     try {
         const isApp = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
         const keepLogin = isApp || (keepEl && keepEl.checked);
-        
-        // 🔥 [버그 원인 삭제] V10에서 TypeError를 발생시켜 로그인을 튕기게 만들던 setPersistence 문법 완전 제거
-        // (세션 유지는 스크립트 상단 초기화 단계에서 이미 완벽히 적용되어 있으므로 안심하셔도 됩니다.)
+        await window.auth.setPersistence(keepLogin ? window.browserLocalPersistence : window.browserSessionPersistence);
 
         let docId = inputId;
         const koreanRegex = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/;
         if (koreanRegex.test(inputId)) { docId = btoa(encodeURIComponent(inputId)).replace(/=/g, ""); }
         
-        // 🔥 [세션 안정화] 백그라운드가 올바른 유저를 찾도록 로컬 스토리지에 유저 아이디 기록
-        localStorage.setItem('sparring_login_id', docId);
-
         let authEmail = `${docId}@sparringclub.kr`;
         try {
             let userSnap = await window.getDoc(window.doc(window.db, "users", docId));
@@ -3043,14 +3049,7 @@ async function processLogin() {
     } catch (e) {
         window.updateUploadProgress(100);
         console.error("로그인 에러:", e);
-        // 🔥 무조건 일치하지 않는다고 하지 않고, 실제 Firebase의 코드에 맞춰 에러 세분화
-        if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-email' || e.code === 'auth/invalid-credential') {
-            alert("존재하지 않는 아이디거나 비밀번호가 일치하지 않습니다. 다시 확인해주세요.");
-        } else if (e.code === 'auth/wrong-password') {
-            alert("비밀번호가 일치하지 않습니다. 다시 확인해주세요.");
-        } else {
-            alert("서버 연결에 실패했습니다. 네트워크 상태를 확인해주세요.");
-        }
+        alert("아이디 또는 비밀번호가 일치하지 않거나 서버 연결에 실패했습니다.");
     }
 }
 
@@ -3067,7 +3066,6 @@ async function logout() {
             // 브라우저 메모리와 저장소에 남은 사용자 흔적을 지웁니다.
             currentUser = null;
             localStorage.removeItem('sparring_session');
-            localStorage.removeItem('sparring_login_id'); // 🔥 아이디 저장 캐시도 완벽히 비움
             
             // 3. UI 즉시 갱신
             alert('로그아웃 되었습니다. 다음에 또 뵙겠습니다!');
@@ -3142,10 +3140,28 @@ async function openProfile(id) {
             }
         }
 
-        // 3. 레이아웃 기반 정보 세팅
+        // 3. 레이아웃 기반 정보 및 미션 엠블럼(뱃지) 세팅
         const nameEl = document.getElementById('pm-name');
         
-        if(nameEl) nameEl.innerText = p.name || p.rawName;
+        if(nameEl) {
+            let badgeHtml = '';
+            let tWins = (p.tW || 0) + (p.sW || 0); // 통산 + 시즌 승수
+            
+            // 승수 미션 뱃지
+            if (tWins >= 100) badgeHtml += `<span title="100승 달성" style="background:linear-gradient(135deg, #ff9a9e, #d63031); color:white; font-size:0.65rem; padding:2px 6px; border-radius:12px; margin-left:6px; vertical-align:middle; font-weight:bold;">🔥 100승</span>`;
+            else if (tWins >= 50) badgeHtml += `<span title="50승 달성" style="background:linear-gradient(135deg, #fdcb6e, #e17055); color:#000; font-size:0.65rem; padding:2px 6px; border-radius:12px; margin-left:6px; vertical-align:middle; font-weight:bold;">👑 50승</span>`;
+            else if (tWins >= 30) badgeHtml += `<span title="30승 달성" style="background:#a29bfe; color:white; font-size:0.65rem; padding:2px 6px; border-radius:12px; margin-left:6px; vertical-align:middle; font-weight:bold;">💎 30승</span>`;
+            else if (tWins >= 10) badgeHtml += `<span title="10승 달성" style="background:#74b9ff; color:white; font-size:0.65rem; padding:2px 6px; border-radius:12px; margin-left:6px; vertical-align:middle; font-weight:bold;">🥇 10승</span>`;
+            else if (tWins >= 5) badgeHtml += `<span title="5승 달성" style="background:#b2bec3; color:#000; font-size:0.65rem; padding:2px 6px; border-radius:12px; margin-left:6px; vertical-align:middle; font-weight:bold;">🥈 5승</span>`;
+            else if (tWins >= 1) badgeHtml += `<span title="첫 승 달성" style="background:#636e72; color:white; font-size:0.65rem; padding:2px 6px; border-radius:12px; margin-left:6px; vertical-align:middle; font-weight:bold;">🥉 1승</span>`;
+            
+            // 상위 티어 승리 뱃지
+            if ((p.badges || []).includes('upset')) {
+                badgeHtml += `<span title="상위 티어 도장깨기 성공" style="background:#2d3436; color:var(--gold); border:1px solid var(--gold); font-size:0.65rem; padding:2px 6px; border-radius:12px; margin-left:4px; vertical-align:middle; font-weight:bold;">⚡ 자이언트킬러</span>`;
+            }
+
+            nameEl.innerHTML = `${p.name || p.rawName} ${badgeHtml}`;
+        }
         
         // 가입 시 입력한 활동지역, 티어, 스탠스 정보 프로필 출력 로직 동기화
         const physicalEl = document.getElementById('pm-physical-info');
@@ -3882,7 +3898,19 @@ window.addEventListener('popstate', function(event) {
     }
 });
 
+// 🔥 [신규] 모든 재생 중인 미디어 정지 함수
+function stopAllIframes() {
+    document.querySelectorAll('iframe').forEach(iframe => {
+        let currentSrc = iframe.src;
+        if (currentSrc && (currentSrc.includes('youtube.com') || currentSrc.includes('youtu.be'))) {
+            iframe.src = ''; 
+            iframe.src = currentSrc; // src 재할당으로 재생 강제 정지
+        }
+    });
+}
+
 function showPage(pageId, pushHistory = true) {
+    stopAllIframes(); // 탭 전환 시 유튜브 백그라운드 재생 차단
     if (typeof clearAllInputs === 'function') clearAllInputs(); // 폼 초기화 연동
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     if(document.getElementById('main-nav').style.display !== 'none') {
@@ -3909,9 +3937,6 @@ function showPage(pageId, pushHistory = true) {
 }
 
 function openModal(modalId) { 
-    if (modalId !== 'cropperModal' && modalId !== 'uploadProgressModal' && modalId !== 'picZoomModal') {
-        if (typeof clearAllInputs === 'function') clearAllInputs(); // 모달 오픈 시 초기화 연동
-    }
     document.getElementById(modalId).style.display = 'flex'; 
     // 모달 열 때 가짜 히스토리 추가 (뒤로가기 시 모달만 닫히게 유도)
     history.pushState({ modalId: modalId }, "", "#modal-" + modalId);
@@ -3919,14 +3944,11 @@ function openModal(modalId) {
 }
 
 function closeModal(modalId) { 
+    stopAllIframes(); // 모달 종료 시 유튜브 백그라운드 재생 차단
     if (modalId !== 'cropperModal' && modalId !== 'uploadProgressModal' && modalId !== 'picZoomModal') {
         if (typeof clearAllInputs === 'function') clearAllInputs(); // 모달 종료 시 초기화 연동
     }
-    document.getElementById(modalId).style.display = 'none'; 
-    // 모달 닫기 버튼을 직접 눌렀을 때, 현재 해시가 모달이면 히스토리 하나 뒤로 뺌
-    if (location.hash === "#modal-" + modalId) {
-        history.back();
-    }
+    document.getElementById(modalId).style.display = 'none';
 }
 
 function toggleTier(tierId) { const el = document.getElementById(tierId); el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
@@ -3934,9 +3956,6 @@ function toggleTier(tierId) { const el = document.getElementById(tierId); el.sty
 // 프로필 창 포함, 모든 모달의 외부(배경 오버레이) 클릭 시 자동으로 창이 닫히는 전역 이벤트
 window.onclick = function(event) {
     if (event.target.classList.contains('modal')) {
-        if (event.target.id !== 'cropperModal' && event.target.id !== 'uploadProgressModal' && event.target.id !== 'picZoomModal') {
-            if (typeof clearAllInputs === 'function') clearAllInputs(); // 배경 클릭 종료 시 초기화 연동
-        }
         event.target.style.display = 'none';
         // 모달 ID를 찾아 히스토리 정리
         const modalId = event.target.id;
@@ -3947,7 +3966,6 @@ window.onclick = function(event) {
 };
 
 function switchAuthTab(tabName) {
-    if (typeof clearAllInputs === 'function') clearAllInputs(); // 가입, 로그인 탭 전환 시 초기화 연동
     document.querySelectorAll('.login-tabs div').forEach(d => d.classList.remove('active'));
     document.querySelectorAll('.login-form').forEach(f => f.classList.remove('active'));
     document.getElementById('tab-' + tabName).classList.add('active');
@@ -4599,15 +4617,18 @@ function renderChatMessages() {
 }
 
 function goToRecordPage(matchId) {
-    closeModal('matchStatusModal'); 
+    // 폼 초기화 꼬임 방지를 위해 모달을 직접 숨기고 라우팅
+    document.getElementById('matchStatusModal').style.display = 'none';
+    if (location.hash === "#modal-matchStatusModal") history.back();
+    
     showPage('record'); 
     setTimeout(() => {
         const select = document.getElementById('record-match-select');
         if (select) {
             select.value = String(matchId);
-            autoSetMatchType(); // 진입 시 해당 매칭의 타입 자동 반영
+            autoSetMatchType(); 
         }
-    }, 300);
+    }, 350); // 렌더링 후 값 바인딩 보장
 }
 
 function renderRecordMatchSelect() {
@@ -5372,15 +5393,24 @@ function openGymProfile(gymIdentifier) {
         managerBadge.style.display = 'none';
     }
 
+    const infoEditBtn = document.getElementById('gp-info-edit-btn');
     if (isMyManager) {
         logoEditBtn.style.display = 'flex';
         if (bgEditBtn) bgEditBtn.style.display = 'block';
         if (bgYoutubeEditBtn) bgYoutubeEditBtn.style.display = 'block';
+        if (infoEditBtn) infoEditBtn.style.display = 'block';
     } else {
         logoEditBtn.style.display = 'none';
         if (bgEditBtn) bgEditBtn.style.display = 'none';
         if (bgYoutubeEditBtn) bgYoutubeEditBtn.style.display = 'none';
+        if (infoEditBtn) infoEditBtn.style.display = 'none';
     }
+
+    // 상세 정보 세팅
+    document.getElementById('gp-phone').innerText = gymInfo.phone || '미등록';
+    document.getElementById('gp-address').innerText = gymInfo.address || '미등록';
+    document.getElementById('gp-daypass-fee').innerText = gymInfo.dayPassFee || '미등록';
+    document.getElementById('gp-daypass-time').innerText = gymInfo.dayPassTime || '미등록';
 
     logoPreview.style.backgroundImage = gymInfo.logo ? `url(${gymInfo.logo})` : '';
     
@@ -5415,7 +5445,8 @@ function openGymProfile(gymIdentifier) {
         const tierMembers = playerMembers.filter(p => p.tier == t);
         if(tierMembers.length > 0) {
             let htmlMembers = tierMembers.map(m => {
-                return `<span onclick="closeModal('gymProfileModal'); openProfile('${m.id}')" style="cursor:pointer; text-decoration:underline; color:#fff; transition: color 0.2s; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#fff'">${m.rawName}</span>`;
+                // 직접 스타일을 변경하여 모달 충돌 버그 원천 차단
+                return `<span onclick="document.getElementById('gymProfileModal').style.display='none'; setTimeout(() => openProfile('${m.id}'), 100);" style="cursor:pointer; text-decoration:underline; color:#fff; transition: color 0.2s; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#fff'">${m.rawName}</span>`;
             }).join('<span style="color:#555; margin:0 5px;">|</span>');
             
             rosterContainer.innerHTML += `
@@ -6086,6 +6117,9 @@ function toggleNotiSettings() {
             document.getElementById('push-setting-remind').checked = currentUser.pushSettings.remind !== false;
             document.getElementById('push-setting-comment').checked = currentUser.pushSettings.comment !== false;
             document.getElementById('push-setting-trust').checked = currentUser.pushSettings.trust !== false;
+            if (document.getElementById('push-setting-suggest')) {
+                document.getElementById('push-setting-suggest').checked = currentUser.pushSettings.suggest !== false;
+            }
         }
     }
 }
@@ -6096,11 +6130,13 @@ function toggleNotiSettings() {
 async function saveNotiSettings() {
     if (!currentUser) { alert("로그인이 필요합니다."); return; }
     
+    const suggestEl = document.getElementById('push-setting-suggest');
     const settings = {
         match: document.getElementById('push-setting-match').checked,
         remind: document.getElementById('push-setting-remind').checked,
         comment: document.getElementById('push-setting-comment').checked,
         trust: document.getElementById('push-setting-trust').checked,
+        suggest: suggestEl ? suggestEl.checked : true,
         updatedAt: Date.now()
     };
     
@@ -6153,7 +6189,7 @@ document.addEventListener('focusin', function(e) {
 // 🔥 [수정] 새로고침 시 이용하던 탭 화면 유지 기능 (기존 window.onload 교체)
 window.onload = async function() {
     localStorage.removeItem('sparring_deleted_users');
-    const currentAppVersion = "20260309_v9";
+    const currentAppVersion = "20260309_v7";
     if (localStorage.getItem('sparring_app_version') !== currentAppVersion) {
         localStorage.removeItem('sparring_approved_users');
         localStorage.setItem('sparring_app_version', currentAppVersion);
@@ -6176,6 +6212,8 @@ window.onload = async function() {
 
     renderFeed(); renderPlayers(); renderNewMembers(); renderCommunity();
     startNoticeSlider(); setInterval(updateMatchBadge, 2000); initBackground(); initFirebaseRealtime(); autoRejectSystem(); 
+    
+    setTimeout(() => { if(typeof generateDailySuggestions === 'function') generateDailySuggestions(); }, 3000); // 3초 뒤 추천 알림 발동
 
     const hash = window.location.hash.replace('#', '');
     
@@ -6297,19 +6335,7 @@ function initFirebaseRealtime() {
         authenticatedListeners = [];
 
         if (user) {
-            // 🔥 [버그 원인 제거] 이메일 분리 방식을 버리고 우리가 저장한 정확한 아이디를 불러옵니다.
-            let encodedId = localStorage.getItem('sparring_login_id');
-            if (!encodedId) {
-                const sessionStr = localStorage.getItem('sparring_session');
-                if (sessionStr) {
-                    try {
-                        const sessionData = JSON.parse(sessionStr);
-                        encodedId = sessionData.userId || sessionData.rawName;
-                    } catch(e) {}
-                }
-            }
-            if (!encodedId) encodedId = user.email.split('@')[0];
-
+            const encodedId = user.email.split('@')[0];
             updateLoginStateUI(); subscribeUsers();
 
             const userUnsub = window.onSnapshot(window.doc(window.db, "users", encodedId), (doc) => {
@@ -6350,16 +6376,13 @@ function initFirebaseRealtime() {
     });
 }
 
-// 🔥 [수정] 회원가입 제출 함수 (권한 에러 우회, 이메일 필수 적용, 신분증 연동)
+// 🔥 [수정] 회원가입 제출 함수 (권한 에러 우회, 이메일 중복 방지, 신분증 연동)
 async function submitSignup() {
     if (!isDuplicateChecked) { alert('아이디 중복조회를 먼저 해주세요.'); return; }
     
     const userId = document.getElementById('signup-userid').value.trim();
     const realName = document.getElementById('signup-realname').value.trim();
-    const inputEmail = document.getElementById('signup-email') ? document.getElementById('signup-email').value.trim() : "";
     const inputPw = document.getElementById('signup-pw').value.trim();
-    
-    if(!inputEmail || !inputEmail.includes('@')) { alert('유효한 이메일을 필수로 입력해야 합니다.'); return; }
     if(inputPw.length < 6) { alert('비밀번호는 6자 이상이어야 합니다.'); return; }
     
     let gymName = document.getElementById('signup-gym').value.trim().toUpperCase();
@@ -6381,7 +6404,7 @@ async function submitSignup() {
     } catch(e) { console.warn("설정 읽기 우회 완료"); }
 
     try {
-        let authEmail = inputEmail; // 실제 이메일을 인증 정보로 사용
+        let authEmail = `${userId}@sparringclub.kr`;
         let userCredential;
         let uid;
         
@@ -6389,14 +6412,11 @@ async function submitSignup() {
             userCredential = await window.createUserWithEmailAndPassword(window.auth, authEmail, inputPw);
             uid = userCredential.user.uid;
         } catch (authErr) {
+            // 과거 삭제된 데이터 등으로 인해 이메일 중복 에러 발생 시, 타임스탬프를 붙여 고유 이메일로 회피
             if (authErr.code === 'auth/email-already-in-use') {
-                alert("이미 등록된 이메일입니다. 비밀번호 찾기를 이용하시거나 다른 이메일을 입력해주세요.");
-                window.updateUploadProgress(100);
-                return;
-            } else if (authErr.code === 'auth/invalid-email') {
-                alert("이메일 형식이 올바르지 않습니다.");
-                window.updateUploadProgress(100);
-                return;
+                authEmail = `${userId}_${Date.now()}@sparringclub.kr`;
+                userCredential = await window.createUserWithEmailAndPassword(window.auth, authEmail, inputPw);
+                uid = userCredential.user.uid;
             } else {
                 throw authErr;
             }
@@ -6431,21 +6451,13 @@ async function submitSignup() {
         demoPlayers.push(userData); localStorage.setItem('sparring_approved_users', JSON.stringify(demoPlayers));
         renderPlayers(); renderNewMembers(); 
         
-        // 🔥 [버그 해결] 회원가입 후에는 이미 Firebase Auth로 로그인된 상태입니다! 
-        // 에러를 유발하던 processLogin() 중복 호출을 지우고, 바로 세션을 연동시켜 대시보드로 이동시킵니다.
-        localStorage.setItem('sparring_login_id', userId);
-        document.getElementById('login-id').value = userId;
-        document.getElementById('login-pw').value = inputPw;
-        
-        currentUser = userData;
-        localStorage.setItem('sparring_session', JSON.stringify(currentUser));
-        updateLoginStateUI();
-        
         window.updateUploadProgress(100); closeModal('loginModal');
         alert(`🎉 ${realName}님, 가입이 완료되었습니다!\n이제 스파링클럽을 자유롭게 이용해 보세요.`);
         
-        showPage('dashboard');
-        setTimeout(() => { renderFeed(); }, 300);
+        // 자동 로그인 실행
+        document.getElementById('login-id').value = userId;
+        document.getElementById('login-pw').value = inputPw;
+        processLogin();
     } catch (e) { window.updateUploadProgress(100); alert(`가입 실패: ${e.message}`); }
 }
 
@@ -6744,6 +6756,10 @@ function renderGyms(filterRegion = 'all') {
                 <span>⚖️ 신뢰도 변동 알림</span>
                 <input type="checkbox" id="push-setting-trust" checked style="width: auto;">
             </label>
+            <label style="display: flex; justify-content: space-between; align-items: center; color: white; cursor: pointer; border-top: 1px solid #444; padding-top: 10px; margin-top: 5px;">
+                <span>💡 추천 스파링 & 인기글 자동 제안</span>
+                <input type="checkbox" id="push-setting-suggest" checked style="width: auto;">
+            </label>
 
             <button class="btn-submit" onclick="saveNotiSettings()" style="margin-top: auto;">설정 저장 및 권한 허용</button>
         </div>
@@ -6959,133 +6975,73 @@ async function exportFightPoster(matchId) {
     } catch(err) { window.updateUploadProgress(100); alert("포스터 생성 실패"); }
 }
 
-// 🔥 [신규] 페이지/탭/모달 전환 시 작성 폼 일괄 초기화 기능
-function clearAllInputs() {
-    // 텍스트, 이메일, 패스워드, 숫자, URL, 날짜 등 입력창 비우기 (필터 검색창 예외 처리)
-    document.querySelectorAll('input[type="text"]:not(#search-input):not(#admin-member-search):not(#matching-region-filter), input[type="email"], input[type="password"], input[type="number"], input[type="url"], input[type="date"], input[type="time"], textarea').forEach(el => {
-        el.value = '';
-    });
+// [신규] 체육관 매니저용 상세 정보 입력창
+window.editGymDetails = async function() {
+    if (!currentViewingGymId) return;
+    let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
+    const gymInfo = registeredGyms.find(g => g.id === currentViewingGymId);
+    if (!gymInfo) return;
 
-    // select 박스 초기화 (검색 필터류 제외)
-    document.querySelectorAll('select:not(#search-type):not(#matching-region-filter)').forEach(el => {
-        if (el.options.length > 0) el.selectedIndex = 0;
-    });
-
-    // 에디터 작성글 초기화
-    document.querySelectorAll('.rich-editor').forEach(el => el.innerHTML = '');
-
-    // 임시 변수 초기화
-    if(typeof isDuplicateChecked !== 'undefined') isDuplicateChecked = false;
-    if(typeof tempSelectedGymId !== 'undefined') tempSelectedGymId = null;
-
-    // 숨겨진 검색결과 및 미리보기 창 초기화
-    const hiddenWraps = ['gym-search-results', 'match-gym-search-wrap', 'modify-gym-search-wrap', 'edit-gym-results'];
-    hiddenWraps.forEach(id => {
-        const el = document.getElementById(id);
-        if(el) { el.style.display = 'none'; el.innerHTML = ''; }
-    });
-
-    const displayInput = document.getElementById('signup-gym-display');
-    if(displayInput) displayInput.value = '';
-    
-    const hiddenGymInput = document.getElementById('signup-gym');
-    if(hiddenGymInput) hiddenGymInput.value = '';
-    
-    const pledgeCheck = document.getElementById('pledge-manner');
-    if(pledgeCheck) { pledgeCheck.checked = false; checkSignupAgreements(); }
-    
-    // 사진 미리보기 실루엣 복구
-    const profilePreview = document.getElementById('preview-signup-profile');
-    if(profilePreview) profilePreview.style.backgroundImage = `url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23777%22><path d=%22M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z%22/></svg>')`;
-}
-
-// 🔥 [신규] 비밀번호 재설정 이메일 발송 기능
-window.resetPassword = async function() {
-    const email = prompt("가입 시 등록하신 이메일 주소를 정확히 입력해주세요.\n비밀번호 재설정 링크를 발송해 드립니다.");
-    if (!email || !email.includes('@')) {
-        if(email !== null) alert("올바른 이메일 형식이 아닙니다.");
-        return;
-    }
-    
-    if (email.includes('@sparringclub.kr')) {
-        alert("이전 버전의 초기 임시 계정입니다. 비밀번호 변경은 관리자에게 문의하세요.");
-        return;
-    }
+    const phone = prompt("체육관 연락처를 입력하세요:", gymInfo.phone || "");
+    if (phone === null) return;
+    const address = prompt("체육관 위치를 입력하세요:", gymInfo.address || "");
+    if (address === null) return;
+    const dayPassFee = prompt("원데이 스파링 패스(일일권) 비용을 알려주세요.\n(예: 15,000원 / 무료)", gymInfo.dayPassFee || "");
+    if (dayPassFee === null) return;
+    const dayPassTime = prompt("일일권 이용 가능 시간 등을 적어주세요.\n(예: 평일 14:00~21:00)", gymInfo.dayPassTime || "");
+    if (dayPassTime === null) return;
 
     try {
-        await window.sendPasswordResetEmail(window.auth, email.trim());
-        alert("요청하신 이메일로 비밀번호 변경 링크가 전송되었습니다.\n이메일을 확인하고 새 비밀번호로 로그인해주세요.");
-    } catch (e) {
-        console.error("비밀번호 재설정 발송 실패:", e);
-        if (e.code === 'auth/user-not-found') {
-            alert("입력하신 이메일로 가입된 계정을 찾을 수 없습니다.");
-        } else {
-            alert("이메일 발송 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-        }
-    }
+        await window.updateDoc(window.doc(window.db, "gyms_registry", currentViewingGymId), {
+            phone: phone, address: address, dayPassFee: dayPassFee, dayPassTime: dayPassTime
+        });
+        gymInfo.phone = phone; gymInfo.address = address; gymInfo.dayPassFee = dayPassFee; gymInfo.dayPassTime = dayPassTime;
+        localStorage.setItem('sparring_gyms_registry', JSON.stringify(registeredGyms));
+        alert("체육관 상세 정보가 성공적으로 반영되었습니다.");
+        openGymProfile(currentViewingGymId); // 화면 새로고침
+    } catch(e) { alert("정보 수정 중 에러가 발생했습니다."); }
 };
 
-// 🔥 [신규] 시즌 전적 초기화 (통산 기록 유지)
-window.resetSeasonRecords = async function() {
-    if (!currentUser || !currentUser.isAdmin) {
-        alert("관리자 권한이 필요합니다.");
-        return;
+// [신규] 1일 1회 맞춤형 자동 추천 알림 시스템 (스팸성)
+window.generateDailySuggestions = function() {
+    if (!currentUser || currentUser.isAdmin || currentUser.role === 'manager') return;
+    if (currentUser.pushSettings && currentUser.pushSettings.suggest === false) return; // 설정에서 끈 경우 패스
+
+    const todayStr = new Date().toLocaleDateString();
+    const lastSuggest = localStorage.getItem('sparring_last_suggest_date');
+    if (lastSuggest === todayStr) return; // 오늘 이미 띄웠다면 패스
+
+    let msgs = [];
+    
+    // 1. 비슷한 실력, 같은 지역의 다른 체육관 선수 추천
+    let candidates = demoPlayers.filter(p => 
+        p.id !== currentUser.id && p.role !== 'manager' && !p.isAdmin && 
+        p.tier == currentUser.tier && p.region === currentUser.region
+    );
+
+    if (candidates.length > 0) {
+        let target = candidates[Math.floor(Math.random() * candidates.length)];
+        msgs.push(`💡 [스파링 제안] 비슷한 실력의 '${target.rawName}' 선수가 근처에 있습니다! 도전해보세요.`);
     }
 
-    if (!confirm("⚠️ 경고: 모든 회원의 '시즌 승무패 전적(sW, sD, sL)'과 '시즌 포인트(pt)', 그리고 체육관 승점이 0으로 리셋됩니다.\n(누적 통산 기록은 안전하게 보존됩니다.)\n\n정말로 시즌 기록을 초기화하시겠습니까?")) return;
+    // 2. 아레나 투표 제안 또는 인기 게시글 추천
+    let allPosts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
+    let arenaPosts = allPosts.filter(p => p.type === 'judge' && p.judgeData && p.judgeData.status === 'voting');
     
-    let adminInput = prompt("실수 방지를 위해 '시즌초기화' 라고 정확히 입력해주세요.");
-    if (adminInput !== "시즌초기화") {
-        alert("입력이 일치하지 않아 안전하게 취소되었습니다.");
-        return;
+    if (arenaPosts.length > 0) {
+        msgs.push(`⚖️ [아레나 요청] '${arenaPosts[0].title}' 판정을 기다리고 있습니다. 지금 투표해주세요!`);
+    } else {
+        let hotPosts = allPosts.filter(p => p.type !== 'notice' && (p.likes || []).length >= 1).sort((a,b) => b.likes.length - a.likes.length);
+        if (hotPosts.length > 0) {
+            msgs.push(`🔥 [핫 트렌드] 커뮤니티에서 '${hotPosts[0].title}' 글이 화제입니다.`);
+        }
     }
 
-    window.updateUploadProgress(10, "시즌 기록 일괄 초기화 중...");
-    
-    try {
-        const usersSnap = await window.getDocs(window.collection(window.db, "users"));
-        const updatePromises = [];
-        
-        // 1. 유저 시즌 전적 0으로 초기화
-        usersSnap.forEach((uDoc) => {
-            updatePromises.push(window.updateDoc(window.doc(window.db, "users", uDoc.id), {
-                sW: 0, sD: 0, sL: 0, pt: 0, seasonRejectCount: 0
-            }));
-        });
-        
-        // 2. 체육관 누적 승점(시즌 포인트) 초기화
-        const gymsSnap = await window.getDocs(window.collection(window.db, "gyms_registry"));
-        gymsSnap.forEach((gDoc) => {
-            updatePromises.push(window.updateDoc(window.doc(window.db, "gyms_registry", gDoc.id), {
-                totalPt: 0
-            }));
-        });
-        
-        await Promise.all(updatePromises);
-        
-        window.updateUploadProgress(100);
-        setTimeout(() => {
-            const modal = document.getElementById('uploadProgressModal');
-            if(modal) modal.style.display = 'none';
-        }, 1000);
-        
-        alert("✅ 성공적으로 모든 시즌 기록이 0으로 리셋되었습니다! 새로운 시즌을 시작하세요.");
-        
-        // 로컬 데이터 즉시 동기화
-        demoPlayers.forEach(p => { p.sW = 0; p.sD = 0; p.sL = 0; p.pt = 0; p.seasonRejectCount = 0; });
-        localStorage.setItem('sparring_approved_users', JSON.stringify(demoPlayers));
-        
-        let registeredGyms = JSON.parse(localStorage.getItem('sparring_gyms_registry')) || [];
-        registeredGyms.forEach(g => { g.totalPt = 0; });
-        localStorage.setItem('sparring_gyms_registry', JSON.stringify(registeredGyms));
-        
-        if(typeof renderPlayers === 'function') renderPlayers();
-        if(typeof renderGyms === 'function') renderGyms();
-
-    } catch(e) {
-        window.updateUploadProgress(100);
-        console.error("시즌 초기화 오류:", e); 
-        alert("초기화 진행 중 서버 오류가 발생했습니다.");
+    if (msgs.length > 0) {
+        let randomMsg = msgs[Math.floor(Math.random() * msgs.length)];
+        // 화면 하단에 알림 토스트를 부드럽게 표시
+        showToast(randomMsg);
+        localStorage.setItem('sparring_last_suggest_date', todayStr);
     }
 };
 </script>
