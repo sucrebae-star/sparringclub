@@ -626,23 +626,23 @@ window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
         </div>
         
         <div id="form-signup" class="login-form">
-            <label style="color:#ff7675; font-size: 0.8rem; margin-top:0;">* 사용할 아이디(영문+숫자)를 입력하세요.</label>
+            <label style="color:#ff7675; font-size: 0.8rem; margin-top:0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display:block;">* 사용할 아이디(영문+숫자)를 입력하세요.</label>
             <div style="display: flex; gap: 5px;">
                 <input type="text" id="signup-userid" placeholder="아이디 입력 (예: boxer123)" 
                     oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9]/g, ''); isDuplicateChecked = false;" 
                     style="flex: 1; margin: 0;">
-                <button type="button" class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555;" onclick="checkDuplicateId()">중복조회</button>
+                <button type="button" class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555; white-space:nowrap;" onclick="checkDuplicateId()">중복조회</button>
             </div>
             
-            <label style="margin-top: 10px; display:block;">실명 (실제 이름)</label>
+            <label style="margin-top: 10px; display:block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">실명 (실제 이름)</label>
             <input type="text" id="signup-realname" placeholder="실명을 입력하세요 (예: 홍길동)" style="margin-top: 5px;">
             
-            <label style="margin-top: 10px; display:block;">가입 이메일 <span style="font-size:0.75rem; color:#ff7675;">(필수, 비밀번호 찾기 시 필요)</span></label>
+            <label style="margin-top: 10px; display:block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">가입 이메일 <span style="font-size:0.75rem; color:#ff7675;">(필수, 비밀번호 찾기 시 필요)</span></label>
             <input type="email" id="signup-email" placeholder="실제 사용하시는 이메일을 입력해주세요" style="margin-top: 5px;">
 
-            <label style="margin-top: 10px; display:block;">비밀번호 <span style="font-size:0.75rem; color:#ff7675;">(6자 이상 필수)</span></label>
+            <label style="margin-top: 10px; display:block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">비밀번호 <span style="font-size:0.75rem; color:#ff7675;">(6자 이상 필수)</span></label>
             <input type="password" id="signup-pw" placeholder="비밀번호를 6자 이상 적어주세요" onblur="window.checkSignupPwLength(this)">
-            <label>주 활동 지역</label>
+            <label style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display:block;">주 활동 지역</label>
             <select id="signup-region">
                 <option value="" disabled selected>지역 선택</option>
                 <optgroup label="특별시/광역시">
@@ -661,11 +661,11 @@ window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
             </select>
 
 
-            <label>소속 체육관 (반드시 검색하여 선택하세요)</label>
+            <label style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display:block;">소속 체육관 (반드시 검색하여 선택하세요)</label>
             <div style="display: flex; flex-direction: column; gap: 5px;">
                 <div style="display: flex; gap: 5px;">
                     <input type="text" id="signup-gym-keyword" placeholder="체육관명 검색 (영문은 대문자로)" style="flex: 1; margin: 0; text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()" onkeydown="if(event.key === 'Enter') searchGym()">
-                    <button type="button" class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555;" onclick="searchGym()">조회</button>
+                    <button type="button" class="btn-submit" style="width: auto; margin: 0; padding: 0 15px; background: #555; white-space:nowrap;" onclick="searchGym()">조회</button>
                 </div>
                 <div id="gym-search-results" style="display: none; background: #222; border: 1px solid #444; border-radius: 4px; padding: 8px; font-size: 0.85rem; max-height: 150px; overflow-y: auto;"></div>
                 
@@ -674,7 +674,7 @@ window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
             </div>
             
             <div>
-                <label>신체 정보 및 스타일</label>
+                <label style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display:block;">신체 정보 및 스타일</label>
                 <div style="display: flex; gap: 5px; margin-bottom: 10px;">
                     <select id="signup-weight" style="flex: 1;">
                         <option value="">-- 체급 --</option>
@@ -692,7 +692,7 @@ window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
                     </select>
                 </div>
 
-                <label>현재 실력 티어</label>
+                <label style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display:block;">현재 실력 티어</label>
                 <select id="signup-tier">
                     <option value="1">전적 없음 (Tier 1)</option>
                     <option value="2">생활체육 대회 입상 (Tier 2)</option>
@@ -709,10 +709,10 @@ window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
             </div>
             
             <div style="margin-top: 15px; padding: 12px; border: 1px solid #444; border-radius: 8px; background: rgba(255, 255, 255, 0.03);">
-                <label style="color: var(--gold); font-size: 0.95rem; font-weight: bold; margin-top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📸 프로필 사진 설정 (선택)</label>
+                <label style="color: var(--gold); font-size: 0.95rem; font-weight: bold; margin-top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display:block;">📸 프로필 사진 설정 (선택)</label>
                 <div style="font-size: 0.75rem; color: #aaa; margin-top: 6px; margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">비워두면 기본 실루엣으로 설정됩니다.</div>
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <button type="button" onclick="document.getElementById('signup-profile-pic').click()" style="flex:1; background:#333; color:#fff; border:1px solid #555; padding:10px; border-radius:8px; font-size:0.85rem; cursor:pointer;">📷 사진 선택 및 영역 조절</button>
+                    <button type="button" onclick="document.getElementById('signup-profile-pic').click()" style="flex:1; background:#333; color:#fff; border:1px solid #555; padding:10px; border-radius:8px; font-size:0.85rem; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📷 사진 선택 및 영역 조절</button>
                     <input type="file" accept="image/*" id="signup-profile-pic" style="display:none;" onchange="window.openSignupCropper(event)">
                     <div id="preview-signup-profile" style="width: 40px; height: 40px; border-radius: 50%; background: #333 url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23777%22><path d=%22M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z%22/></svg>') center/cover; border: 1px solid #555; flex-shrink: 0;"></div>
                 </div>
@@ -726,7 +726,7 @@ window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
                 </label>
             </div>
 
-            <button type="button" id="btn-signup-submit" class="btn-submit" onclick="submitSignup()" disabled style="background: #555; cursor: not-allowed; transition: all 0.3s; margin-top: 20px;">10초 만에 즉시 시작하기</button>
+            <button type="button" id="btn-signup-submit" class="btn-submit" onclick="submitSignup()" disabled style="background: #555; cursor: not-allowed; transition: all 0.3s; margin-top: 20px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">10초 만에 즉시 시작하기</button>
         </div>
     </div>
 </div>
@@ -1196,7 +1196,7 @@ window.onload = async function() {
     localStorage.removeItem('sparring_deleted_users');
 
     // 🔥 [신규] 모바일 환경에서 과거 권한 에러 시절 저장된 '빈 화면' 캐시 강제 삭제 (버전 컨트롤)
-    const currentAppVersion = "20260309_v8";
+    const currentAppVersion = "20260309_v9";
     if (localStorage.getItem('sparring_app_version') !== currentAppVersion) {
         localStorage.removeItem('sparring_approved_users');
         localStorage.setItem('sparring_app_version', currentAppVersion);
@@ -2973,12 +2973,17 @@ async function processLogin() {
     try {
         const isApp = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
         const keepLogin = isApp || (keepEl && keepEl.checked);
-        await window.auth.setPersistence(keepLogin ? window.browserLocalPersistence : window.browserSessionPersistence);
+        
+        // 🔥 [버그 원인 삭제] V10에서 TypeError를 발생시켜 로그인을 튕기게 만들던 setPersistence 문법 완전 제거
+        // (세션 유지는 스크립트 상단 초기화 단계에서 이미 완벽히 적용되어 있으므로 안심하셔도 됩니다.)
 
         let docId = inputId;
         const koreanRegex = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/;
         if (koreanRegex.test(inputId)) { docId = btoa(encodeURIComponent(inputId)).replace(/=/g, ""); }
         
+        // 🔥 [세션 안정화] 백그라운드가 올바른 유저를 찾도록 로컬 스토리지에 유저 아이디 기록
+        localStorage.setItem('sparring_login_id', docId);
+
         let authEmail = `${docId}@sparringclub.kr`;
         try {
             let userSnap = await window.getDoc(window.doc(window.db, "users", docId));
@@ -3038,7 +3043,14 @@ async function processLogin() {
     } catch (e) {
         window.updateUploadProgress(100);
         console.error("로그인 에러:", e);
-        alert("아이디 또는 비밀번호가 일치하지 않거나 서버 연결에 실패했습니다.");
+        // 🔥 무조건 일치하지 않는다고 하지 않고, 실제 Firebase의 코드에 맞춰 에러 세분화
+        if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-email' || e.code === 'auth/invalid-credential') {
+            alert("존재하지 않는 아이디거나 비밀번호가 일치하지 않습니다. 다시 확인해주세요.");
+        } else if (e.code === 'auth/wrong-password') {
+            alert("비밀번호가 일치하지 않습니다. 다시 확인해주세요.");
+        } else {
+            alert("서버 연결에 실패했습니다. 네트워크 상태를 확인해주세요.");
+        }
     }
 }
 
@@ -3055,6 +3067,7 @@ async function logout() {
             // 브라우저 메모리와 저장소에 남은 사용자 흔적을 지웁니다.
             currentUser = null;
             localStorage.removeItem('sparring_session');
+            localStorage.removeItem('sparring_login_id'); // 🔥 아이디 저장 캐시도 완벽히 비움
             
             // 3. UI 즉시 갱신
             alert('로그아웃 되었습니다. 다음에 또 뵙겠습니다!');
@@ -6140,7 +6153,7 @@ document.addEventListener('focusin', function(e) {
 // 🔥 [수정] 새로고침 시 이용하던 탭 화면 유지 기능 (기존 window.onload 교체)
 window.onload = async function() {
     localStorage.removeItem('sparring_deleted_users');
-    const currentAppVersion = "20260309_v8";
+    const currentAppVersion = "20260309_v9";
     if (localStorage.getItem('sparring_app_version') !== currentAppVersion) {
         localStorage.removeItem('sparring_approved_users');
         localStorage.setItem('sparring_app_version', currentAppVersion);
@@ -6284,7 +6297,19 @@ function initFirebaseRealtime() {
         authenticatedListeners = [];
 
         if (user) {
-            const encodedId = user.email.split('@')[0];
+            // 🔥 [버그 원인 제거] 이메일 분리 방식을 버리고 우리가 저장한 정확한 아이디를 불러옵니다.
+            let encodedId = localStorage.getItem('sparring_login_id');
+            if (!encodedId) {
+                const sessionStr = localStorage.getItem('sparring_session');
+                if (sessionStr) {
+                    try {
+                        const sessionData = JSON.parse(sessionStr);
+                        encodedId = sessionData.userId || sessionData.rawName;
+                    } catch(e) {}
+                }
+            }
+            if (!encodedId) encodedId = user.email.split('@')[0];
+
             updateLoginStateUI(); subscribeUsers();
 
             const userUnsub = window.onSnapshot(window.doc(window.db, "users", encodedId), (doc) => {
@@ -6406,13 +6431,21 @@ async function submitSignup() {
         demoPlayers.push(userData); localStorage.setItem('sparring_approved_users', JSON.stringify(demoPlayers));
         renderPlayers(); renderNewMembers(); 
         
+        // 🔥 [버그 해결] 회원가입 후에는 이미 Firebase Auth로 로그인된 상태입니다! 
+        // 에러를 유발하던 processLogin() 중복 호출을 지우고, 바로 세션을 연동시켜 대시보드로 이동시킵니다.
+        localStorage.setItem('sparring_login_id', userId);
+        document.getElementById('login-id').value = userId;
+        document.getElementById('login-pw').value = inputPw;
+        
+        currentUser = userData;
+        localStorage.setItem('sparring_session', JSON.stringify(currentUser));
+        updateLoginStateUI();
+        
         window.updateUploadProgress(100); closeModal('loginModal');
         alert(`🎉 ${realName}님, 가입이 완료되었습니다!\n이제 스파링클럽을 자유롭게 이용해 보세요.`);
         
-        // 자동 로그인 실행
-        document.getElementById('login-id').value = userId;
-        document.getElementById('login-pw').value = inputPw;
-        processLogin();
+        showPage('dashboard');
+        setTimeout(() => { renderFeed(); }, 300);
     } catch (e) { window.updateUploadProgress(100); alert(`가입 실패: ${e.message}`); }
 }
 

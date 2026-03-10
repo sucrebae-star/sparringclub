@@ -1,6 +1,6 @@
 // 🔥 스파링클럽 통합 서비스 워커 파일 (캐싱 & 푸시 알림 완벽 지원)
 
-const CACHE_NAME = 'sparring-club-cache-v202603098';
+const CACHE_NAME = 'sparring-club-cache-v202603099';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
