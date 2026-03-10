@@ -248,6 +248,11 @@
                 </select>
             </div>
         </div>
+        
+        <div id="boxer-list-title-wrap" style="text-align: center; margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid #333;">
+            <div id="bl-title-cond" style="color: var(--gold); font-size: 0.9rem; font-weight: bold; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">P4P 통합</div>
+            <div style="color: white; font-size: 1.3rem; font-weight: 900; letter-spacing: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">랭킹 리스트</div>
+        </div>
 
         <div id="tier-container"></div>
     </div>
@@ -358,13 +363,13 @@
             <input type="text" id="record-match-type-display" value="매치를 선택하세요" readonly style="background: #222; color: #aaa; font-weight: bold; border-color: #444;">
             <input type="hidden" id="record-match-type" value="open">
             
-            <label>판정 방식 (인증 수단)</label>
+            <label style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">판정 방식 (합의/지도자는 즉시 전적 반영)</label>
             <select id="judge-select">
-                <option value="mutual">선수 상호 인정 (합의)</option>
-                <option value="referee">레프리 인정 (공식 심판 판정)</option>
-                <option value="community" style="color:var(--gold); font-weight:bold;">🏆 커뮤니티 영상 판정</option>
+                <option value="mutual">🤝 상호합의 판정 (즉시 반영)</option>
+                <option value="coach">🧑‍⚖️ 지도자 판정 (즉시 반영)</option>
+                <option value="arena" style="color:var(--gold); font-weight:bold;">🏆 아레나 판정 (커뮤니티 24시간 다수결)</option>
             </select>
-            <label>결과 (나의 관점)</label>
+            <label style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">결과 (우리가 합의한 승패)</label>
             <select id="record-result"><option value="win">내가 승리</option><option value="loss">상대방 승리</option><option value="draw">무승부</option></select>
             
             <label style="color: var(--gold); margin-top: 15px;">🤝 상대방 매너/스타일 리뷰 (다중 선택)</label>
@@ -601,9 +606,10 @@
         </div>
         
         <div id="form-login" class="login-form active">
-            <label style="color:#aaa; font-size: 0.8rem; margin-top:0;">* 관리자 접속: 아이디에 'admin' 입력</label>
+            <label style="color:#aaa; font-size: 0.8rem; margin-top:0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">* 관리자 접속: 아이디에 'admin' 입력</label>
             <input type="text" id="login-id" placeholder="아이디 입력" oninput="this.value = this.value.toLowerCase()" onkeydown="if(event.key === 'Enter') processLogin()">
             <input type="password" id="login-pw" placeholder="비밀번호 입력" onkeydown="if(event.key === 'Enter') processLogin()">
+            <label style="display:flex; align-items:center; gap:8px; color:#ccc; font-size:0.85rem; margin-top:10px; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><input type="checkbox" id="login-keep" checked style="width:auto; margin:0;"> 항상 로그인 상태 유지 (앱 접속 시 자동 적용)</label>
             <button type="button" class="btn-submit" onclick="processLogin()">로그인</button>
         </div>
         
@@ -688,8 +694,8 @@
             </div>
             
             <div style="margin-top: 15px; padding: 12px; border: 1px solid #444; border-radius: 8px; background: rgba(255, 255, 255, 0.03);">
-                <label style="color: var(--gold); font-size: 0.95rem; font-weight: bold; margin-top: 0;">📸 프로필 사진 설정 (선택)</label>
-                <div style="font-size: 0.75rem; color: #aaa; margin-top: 6px; margin-bottom: 12px;">비워두면 기본 실루엣으로 설정됩니다. <br>🚨 신분증 인증은 '공식 랭킹전' 신청 시에만 필요합니다.</div>
+                <label style="color: var(--gold); font-size: 0.95rem; font-weight: bold; margin-top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📸 프로필 사진 설정 (선택)</label>
+                <div style="font-size: 0.75rem; color: #aaa; margin-top: 6px; margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">비워두면 기본 실루엣으로 설정됩니다.</div>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <button type="button" onclick="document.getElementById('signup-profile-pic').click()" style="flex:1; background:#333; color:#fff; border:1px solid #555; padding:10px; border-radius:8px; font-size:0.85rem; cursor:pointer;">📷 사진 선택 및 영역 조절</button>
                     <input type="file" accept="image/*" id="signup-profile-pic" style="display:none;" onchange="window.openSignupCropper(event)">
@@ -812,11 +818,7 @@
             </div>
 
 
-            <div id="edit-id-verification-wrap" style="display:none; margin-top: 15px; padding: 12px; background: rgba(214, 48, 49, 0.05); border: 1px dashed var(--primary-red); border-radius: 8px;">
-                <label style="font-size: 0.85rem; color: var(--primary-red); margin-top: 0; font-weight: bold;">🚨 랭킹전 필수: 신분증 본인 인증</label>
-                <div style="font-size: 0.75rem; color: #aaa; margin-bottom: 8px;">랭킹전에 참여하려면 최초 1회 신분증 사본이 필요합니다. 주민번호 뒷자리와 주소는 가리고 올려주세요.</div>
-                <input type="file" id="edit-id-pic" accept="image/*" onchange="uploadIdVerification(event)" style="background: #222; border: 1px solid var(--primary-red); color: white; padding: 8px; border-radius: 8px; width: 100%;">
-            </div>
+            <div id="edit-id-verification-wrap" style="display:none;"></div>
 
             <label style="font-size: 0.8rem; color: #aaa; margin-top:15px;">소속 체육관 변경</label>
             <div style="display: flex; gap: 5px;">
@@ -1179,7 +1181,7 @@ window.onload = async function() {
     localStorage.removeItem('sparring_deleted_users');
 
     // 🔥 [신규] 모바일 환경에서 과거 권한 에러 시절 저장된 '빈 화면' 캐시 강제 삭제 (버전 컨트롤)
-    const currentAppVersion = "20260309_v6";
+    const currentAppVersion = "20260309_v7";
     if (localStorage.getItem('sparring_app_version') !== currentAppVersion) {
         localStorage.removeItem('sparring_approved_users');
         localStorage.setItem('sparring_app_version', currentAppVersion);
@@ -1620,6 +1622,19 @@ const container = document.getElementById('tier-container');
 if (!container) return;
 
 try {
+    const titleCond = document.getElementById('bl-title-cond');
+    if (titleCond) {
+        if (currentMatchingTier === 'all' && currentMatchingStance === 'all' && currentMatchingRegion === 'all') {
+            titleCond.innerText = 'P4P 통합';
+        } else {
+            let parts = [];
+            if (currentMatchingTier !== 'all') parts.push(`Tier ${currentMatchingTier}`);
+            if (currentMatchingStance !== 'all') parts.push(`${currentMatchingStance}`);
+            if (currentMatchingRegion !== 'all') parts.push(`${currentMatchingRegion}`);
+            titleCond.innerText = parts.map(p => `[${p}]`).join(' ');
+        }
+    }
+
     // 데이터가 비어있으면 로컬 스토리지에서 즉시 복원 시도
     if (!demoPlayers || demoPlayers.length === 0) {
         demoPlayers = JSON.parse(localStorage.getItem('sparring_approved_users')) || [];
@@ -2004,7 +2019,6 @@ async function submitVote(postId, choice) {
 
 async function closeVoting(postId, isManual = false) {
     let posts = JSON.parse(localStorage.getItem('sparring_community_posts')) || [];
-    
     let post = posts.find(p => String(p.id) === String(postId));
     if(!post) return;
 
@@ -2012,15 +2026,15 @@ async function closeVoting(postId, isManual = false) {
     let v1 = jd.votes.p1.length; let vDraw = jd.votes.draw.length; let v2 = jd.votes.p2.length;
     let winnerId = null; let resultValue = 'draw'; let winnerName = '무승부'; let winningVoters = jd.votes.draw;
 
-    if(v1 > v2 && v1 > vDraw) { resultValue = 'win'; winnerName = jd.p1Name; winningVoters = jd.votes.p1; }
-    else if(v2 > v1 && v2 > vDraw) { resultValue = 'loss'; winnerName = jd.p2Name; winningVoters = jd.votes.p2; }
+    if (vDraw > 0 || v1 === v2) { resultValue = 'draw'; winnerName = '무승부'; winningVoters = jd.votes.draw; }
+    else if (v1 > v2) { resultValue = 'win'; winnerName = jd.p1Name; winningVoters = jd.votes.p1; }
+    else if (v2 > v1) { resultValue = 'loss'; winnerName = jd.p2Name; winningVoters = jd.votes.p2; }
 
     jd.status = 'closed';
-    const newTitle = `[판정결과: ${winnerName} 승리] ${jd.p1Name} vs ${jd.p2Name}`;
+    const newTitle = `[판정결과: ${winnerName} ${winnerName !== '무승부' ? '승리' : ''}] ${jd.p1Name} vs ${jd.p2Name}`;
 
     try {
         await window.updateDoc(window.doc(window.db, "community_posts", postId.toString()), { title: newTitle, judgeData: jd });
-        
         for (let voterId of winningVoters) {
             await window.updateDoc(window.doc(window.db, "users", voterId.toString()), { decisionTrust: window.increment(10) });
         }
@@ -2154,41 +2168,28 @@ async function submitSparringRecord() {
             givenTags: selectedTags
         };
 
-        if (judgeMethod === 'community') {
+if (judgeMethod === 'arena') {
             const postRef = window.doc(window.collection(window.db, "community_posts"), recordId.toString());
             const post = {
-                id: recordId, 
-                matchId: matchId,
-                prefix: '[판정요청]',
-                title: `[판정대기] ${currentUser.rawName} vs ${oppRawName} (커뮤니티 판정)`,
-                content: `승자 판별이 어려워 커뮤니티 여러분의 공정한 투표를 부탁드립니다.\n(투표 결과에 따라 전적이 실시간 승인됩니다.)`,
-                authorId: currentUser.id, authorName: currentUser.rawName, time: Date.now(),
-                comments: [], 
-                videoUrl: videoUrl, 
-                imageUrl: finalImageUrl, // [수정] URL 주소 저장
-                type: 'judge',
+                id: recordId, matchId: matchId, prefix: '[판정요청]',
+                title: `[판정대기] ${currentUser.rawName} vs ${oppRawName} (아레나 투표)`,
+                content: `승자 판별이 어려워 커뮤니티 투표를 요청합니다.\n(24시간 뒤 다수결 결과에 따라 전적이 실시간 승인됩니다.)`,
+                authorId: currentUser.id, authorName: currentUser.rawName, time: Date.now(), comments: [], 
+                videoUrl: videoUrl, imageUrl: finalImageUrl, type: 'judge',
                 judgeData: {
                     p1Id: currentUser.id, p1Name: currentUser.rawName, p2Id: oppId, p2Name: oppRawName,
-                    recordData: recordData, endTime: Date.now() + (48 * 60 * 60 * 1000), status: 'voting', 
+                    recordData: recordData, endTime: Date.now() + (24 * 60 * 60 * 1000), status: 'voting', 
                     votes: { p1: [], draw: [], p2: [] }
                 }
             };
             await window.setDoc(postRef, post);
             await window.updateDoc(window.doc(window.db, "matches", matchId.toString()), { status: '판정 대기' });
-            alert('커뮤니티 판정 아레나에 등록되었습니다!');
+            alert('아레나 판정에 등록되었습니다! 24시간 후 다수결로 최종 결정됩니다.');
         } else {
-            let autoApprove = localStorage.getItem('sparring_auto_approve') === 'true';
-            if (autoApprove) {
-                await applyRecordToStats(recordData);
-                alert('자동 승인 설정에 의해 즉시 전적이 반영되었습니다!');
-            } else {
-                await window.setDoc(window.doc(window.db, "record_requests", recordId.toString()), recordData);
-                await window.updateDoc(window.doc(window.db, "matches", matchId.toString()), { status: '판정 대기' });
-                alert('기록 요청이 완료되었습니다.');
-            }
+            await applyRecordToStats(recordData);
+            alert('상호합의 또는 지도자 판정으로 전적이 즉시 반영되었습니다!');
         }
         
-        // 입력 필드 초기화
         document.getElementById('cert-video-url').value = '';
         document.getElementById('cert-image-file').value = '';
         document.getElementById('record-match-select').value = '';
@@ -2253,13 +2254,12 @@ async function applyRecordToStats(record) {
 
     const matchCode = generateMatchCode(mData.matchSeq || 0, mData.isDummy);
 
-    if (record.matchType === 'rank') {
-        let p1 = demoPlayers.find(p => p.rawName === record.requesterRawName || p.name === record.requesterRawName || p.rawName === record.requester);
-let p2 = demoPlayers.find(p => p.rawName === record.opponentRawName || p.name === record.opponentRawName);
-        
-        const p1DocName = p1 ? (p1.userId || p1.rawName) : record.requesterRawName;
-        const p2DocName = p2 ? (p2.userId || p2.rawName) : record.opponentRawName;
-        
+    let p1 = demoPlayers.find(p => p.rawName === record.requesterRawName || p.name === record.requesterRawName || p.rawName === record.requester);
+    let p2 = demoPlayers.find(p => p.rawName === record.opponentRawName || p.name === record.opponentRawName);
+    
+    if (p1 && p2) {
+        const p1DocName = p1.userId || p1.rawName;
+        const p2DocName = p2.userId || p2.rawName;
         const p1Ref = window.doc(window.db, "users", p1DocName);
         const p2Ref = window.doc(window.db, "users", p2DocName);
         
@@ -2272,43 +2272,24 @@ let p2 = demoPlayers.find(p => p.rawName === record.opponentRawName || p.name ==
             let p1Gain = 0, p2Gain = 0;
             let p1Updates = {}, p2Updates = {};
 
-            if (record.resultValue === 'win') {
-                p1Gain = 100; p2Gain = -50;
-                p1Updates = { sW: (p1Data.sW || 0) + 1, tW: (p1Data.tW || 0) + 1 };
-                p2Updates = { sL: (p2Data.sL || 0) + 1, tL: (p2Data.tL || 0) + 1 };
-            } else if (record.resultValue === 'loss') {
-                p1Gain = -50; p2Gain = 100;
-                p1Updates = { sL: (p1Data.sL || 0) + 1, tL: (p1Data.tL || 0) + 1 };
-                p2Updates = { sW: (p2Data.sW || 0) + 1, tW: (p2Data.tW || 0) + 1 };
+            if (record.matchType === 'rank') {
+                if (record.resultValue === 'win') { p1Gain = 100; p2Gain = -50; p1Updates = { sW: (p1Data.sW || 0) + 1, tW: (p1Data.tW || 0) + 1 }; p2Updates = { sL: (p2Data.sL || 0) + 1, tL: (p2Data.tL || 0) + 1 }; } 
+                else if (record.resultValue === 'loss') { p1Gain = -50; p2Gain = 100; p1Updates = { sL: (p1Data.sL || 0) + 1, tL: (p1Data.tL || 0) + 1 }; p2Updates = { sW: (p2Data.sW || 0) + 1, tW: (p2Data.tW || 0) + 1 }; } 
+                else { p1Gain = 10; p2Gain = 10; p1Updates = { sD: (p1Data.sD || 0) + 1, tD: (p1Data.tD || 0) + 1 }; p2Updates = { sD: (p2Data.sD || 0) + 1, tD: (p2Data.tD || 0) + 1 }; }
             } else {
                 p1Gain = 10; p2Gain = 10;
-                p1Updates = { sD: (p1Data.sD || 0) + 1, tD: (p1Data.tD || 0) + 1 };
-                p2Updates = { sD: (p2Data.sD || 0) + 1, tD: (p2Data.tD || 0) + 1 };
+                if (record.resultValue === 'win') { p1Updates = { sW: (p1Data.sW || 0) + 1, tW: (p1Data.tW || 0) + 1 }; p2Updates = { sL: (p2Data.sL || 0) + 1, tL: (p2Data.tL || 0) + 1 }; } 
+                else if (record.resultValue === 'loss') { p1Updates = { sL: (p1Data.sL || 0) + 1, tL: (p1Data.tL || 0) + 1 }; p2Updates = { sW: (p2Data.sW || 0) + 1, tW: (p2Data.tW || 0) + 1 }; } 
+                else { p1Updates = { sD: (p1Data.sD || 0) + 1, tD: (p1Data.tD || 0) + 1 }; p2Updates = { sD: (p2Data.sD || 0) + 1, tD: (p2Data.tD || 0) + 1 }; }
             }
 
-            // 매너/스타일 태그 업데이트 로직 추가
             if (record.givenTags && record.givenTags.length > 0) {
-                if (record.requesterRawName === p1DocName) {
-                    let p2TagsUpdate = p2Data.tags || {};
-                    record.givenTags.forEach(t => { p2TagsUpdate[t] = (p2TagsUpdate[t] || 0) + 1; });
-                    p2Updates.tags = p2TagsUpdate;
-                } else {
-                    let p1TagsUpdate = p1Data.tags || {};
-                    record.givenTags.forEach(t => { p1TagsUpdate[t] = (p1TagsUpdate[t] || 0) + 1; });
-                    p1Updates.tags = p1TagsUpdate;
-                }
+                if (record.requesterRawName === p1DocName) { let p2TagsUpdate = p2Data.tags || {}; record.givenTags.forEach(t => { p2TagsUpdate[t] = (p2TagsUpdate[t] || 0) + 1; }); p2Updates.tags = p2TagsUpdate; } 
+                else { let p1TagsUpdate = p1Data.tags || {}; record.givenTags.forEach(t => { p1TagsUpdate[t] = (p1TagsUpdate[t] || 0) + 1; }); p1Updates.tags = p1TagsUpdate; }
             }
 
-            transaction.update(p1Ref, {
-                ...p1Updates,
-                pt: Math.max(0, (p1Data.pt || 0) + p1Gain),
-                tPt: Math.max(0, (p1Data.tPt || 0) + p1Gain)
-            });
-            transaction.update(p2Ref, {
-                ...p2Updates,
-                pt: Math.max(0, (p2Data.pt || 0) + p2Gain),
-                tPt: Math.max(0, (p2Data.tPt || 0) + p2Gain)
-            });
+            transaction.update(p1Ref, { ...p1Updates, pt: Math.max(0, (p1Data.pt || 0) + p1Gain), tPt: Math.max(0, (p1Data.tPt || 0) + p1Gain) });
+            transaction.update(p2Ref, { ...p2Updates, pt: Math.max(0, (p2Data.pt || 0) + p2Gain), tPt: Math.max(0, (p2Data.tPt || 0) + p2Gain) });
 
             if (p1Data.gymId) transaction.update(window.doc(window.db, "gyms_registry", p1Data.gymId), { totalPt: window.increment(p1Gain) });
             if (p2Data.gymId) transaction.update(window.doc(window.db, "gyms_registry", p2Data.gymId), { totalPt: window.increment(p2Gain) });
@@ -2321,7 +2302,7 @@ let p2 = demoPlayers.find(p => p.rawName === record.opponentRawName || p.name ==
 
     await window.setDoc(postRef, {
         id: record.id, prefix: '[경기결과]', title: titleStr,
-        content: `<b>공식 전적 승인 안내</b><br>유형: ${record.matchType === 'rank' ? '랭킹전' : '친선전'}<br>일시: ${record.time}`,
+        content: `<b>공식 전적 승인 안내</b><br>유형: ${record.matchType === 'rank' ? '랭킹전' : '친선전(오픈매치)'}<br>일시: ${record.time}`,
         authorId: 0, authorName: '관리자', time: Date.now(), comments: [], 
         videoUrl: record.videoUrl || "", imageUrl: record.imageUrl || "", type: 'normal'
     });
@@ -2335,28 +2316,19 @@ let p2 = demoPlayers.find(p => p.rawName === record.opponentRawName || p.name ==
 async function approveRecord(id) {
     if(!confirm('이 기록을 승인하고 전적을 실시간 반영하시겠습니까?')) return;
     
-    // 서버와 동기화된 대기 목록에서 해당 기록 데이터 확보
     let reqs = JSON.parse(localStorage.getItem('sparring_record_requests')) || [];
     let record = reqs.find(r => r.id == id); 
     
     if(record) {
         try {
-            // 1. 전적 업데이트 및 커뮤니티 공식 게시물 자동 등록 실행
             await applyRecordToStats(record); 
-
-            // 2. 처리 완료된 요청은 서버 대기목록에서 삭제
             await window.deleteDoc(window.doc(window.db, "record_requests", id.toString()));
-
             alert('전적이 실시간 반영되었으며, 커뮤니티에 공식 결과가 게시되었습니다! 🏆');
-            // 관리자 화면 리스트 즉시 갱신
             renderAdmin(); 
         } catch (e) {
-            console.error("승인 처리 에러:", e);
-            alert('승인 처리 실패: ' + e.message);
+            console.error("승인 처리 에러:", e); alert('승인 처리 실패: ' + e.message);
         }
-    } else {
-        alert("해당 기록 요청을 찾을 수 없습니다.");
-    }
+    } else { alert("해당 기록 요청을 찾을 수 없습니다."); }
 }
 
 async function rejectRecord(id) {
@@ -2372,84 +2344,49 @@ function savePlayersData() {
     demoPlayers.forEach(dp => {
         let idx = approved.findIndex(a => a.id === dp.id);
         if (idx > -1) {
-            approved[idx].sW = dp.sW;
-            approved[idx].sD = dp.sD;
-            approved[idx].sL = dp.sL;
-            approved[idx].pt = dp.pt;
-            approved[idx].matchingTrust = dp.matchingTrust;
-            approved[idx].decisionTrust = dp.decisionTrust;
-            approved[idx].region = dp.region;
+            approved[idx].sW = dp.sW; approved[idx].sD = dp.sD; approved[idx].sL = dp.sL;
+            approved[idx].pt = dp.pt; approved[idx].matchingTrust = dp.matchingTrust;
+            approved[idx].decisionTrust = dp.decisionTrust; approved[idx].region = dp.region;
         }
     });
     localStorage.setItem('sparring_approved_users', JSON.stringify(approved));
 }
 
 // --- 관리자 기능 ---
-// 기록 자동 승인 토글 (기록 승인 탭 전용)
 function toggleAutoApprove() {
     const isChecked = document.getElementById('admin-auto-approve-toggle').checked;
     localStorage.setItem('sparring_auto_approve', isChecked);
     alert(isChecked ? "기록이 자동으로 승인되도록 설정되었습니다." : "이제 관장님이 수동으로 승인해야 기록이 반영됩니다.");
 }
 
-// 가입 자동 승인 토글 (가입 관리 탭 전용)
 function toggleAutoJoinApprove() {
     const isChecked = document.getElementById('admin-auto-join-toggle').checked;
     localStorage.setItem('sparring_auto_join', isChecked);
     alert(isChecked ? "신규 가입이 즉시 승인되도록 설정되었습니다." : "이제 가입 신청 시 관장님의 승인이 필요합니다.");
 }
 
-
 function switchAdminTab(tab) {
-    // 1. 상단 탭 버튼 활성화 스타일 제어
     document.getElementById('admin-tab-auth').classList.toggle('active', tab === 'auth');
     document.getElementById('admin-tab-record').classList.toggle('active', tab === 'record');
     document.getElementById('admin-tab-match').classList.toggle('active', tab === 'match');
     document.getElementById('admin-tab-notice').classList.toggle('active', tab === 'notice');
     document.getElementById('admin-tab-ui').classList.toggle('active', tab === 'ui');
-    
-    // 2. 각 탭에 해당하는 본문 섹션 표시/숨김
     document.getElementById('admin-auth-section').style.display = (tab === 'auth') ? 'block' : 'none';
     document.getElementById('admin-record-section').style.display = (tab === 'record') ? 'block' : 'none';
     document.getElementById('admin-match-section').style.display = (tab === 'match') ? 'block' : 'none';
     document.getElementById('admin-notice-mgmt-section').style.display = (tab === 'notice') ? 'block' : 'none';
     document.getElementById('admin-ui-mgmt-section').style.display = (tab === 'ui') ? 'block' : 'none';
-
-    // 3. 탭별 전용 자동 승인 스위치 표시 제어 (완전 교체 방식)
     const joinToggle = document.getElementById('admin-join-toggle-wrap');
     const recordToggle = document.getElementById('admin-record-toggle-wrap');
-
     if (joinToggle && recordToggle) {
-        // '가입 관리' 탭일 때만 가입 자동 승인 스위치 노출
-        if (tab === 'auth') {
-            joinToggle.style.display = 'flex';
-            recordToggle.style.display = 'none';
-        } 
-        // '기록 승인' 탭일 때만 기록 자동 승인 스위치 노출
-        else if (tab === 'record') {
-            joinToggle.style.display = 'none';
-            recordToggle.style.display = 'flex';
-        } 
-        // 나머지 관리 탭에서는 모든 스위치 숨김
-        else {
-            joinToggle.style.display = 'none';
-            recordToggle.style.display = 'none';
-        }
+        if (tab === 'auth') { joinToggle.style.display = 'flex'; recordToggle.style.display = 'none'; } 
+        else if (tab === 'record') { joinToggle.style.display = 'none'; recordToggle.style.display = 'flex'; } 
+        else { joinToggle.style.display = 'none'; recordToggle.style.display = 'none'; }
     }
-
-    // 4. 각 탭별 데이터 렌더링 호출
-    if (tab === 'notice') {
-        renderAdminNoticeList();
-    }
-    if (tab === 'match') {
-        renderAdminMatchManagement();
-        renderAdminGymManagement(); // 🔥 [추가] 체육관 관리 리스트 렌더링 호출
-    }
-    if (tab === 'record' || tab === 'auth') {
-        renderAdmin(); 
-    }
+    if (tab === 'notice') renderAdminNoticeList();
+    if (tab === 'match') { renderAdminMatchManagement(); renderAdminGymManagement(); }
+    if (tab === 'record' || tab === 'auth') renderAdmin(); 
 }
-
 // 관리자용 전체 매치 리스트 렌더링 (종료된 경기 포함 권한 강화 버전)
 function renderAdminMatchManagement() {
 const container = document.getElementById('admin-all-match-list');
@@ -3007,6 +2944,7 @@ function handleTitleClick() {
 async function processLogin() {
     const idEl = document.getElementById('login-id');
     const pwEl = document.getElementById('login-pw');
+    const keepEl = document.getElementById('login-keep');
     
     if (!idEl || !pwEl) return;
 
@@ -3018,36 +2956,26 @@ async function processLogin() {
     window.updateUploadProgress(20, "보안 서버 인증 확인 중...");
 
     try {
+        const isApp = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        const keepLogin = isApp || (keepEl && keepEl.checked);
+        await window.auth.setPersistence(keepLogin ? window.browserLocalPersistence : window.browserSessionPersistence);
+
         let docId = inputId;
-        
-        // 기존 한글 실명 로그인(레거시) 유저를 위한 인코딩 지원
         const koreanRegex = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/;
-        if (koreanRegex.test(inputId)) {
-            docId = btoa(encodeURIComponent(inputId)).replace(/=/g, "");
-        }
+        if (koreanRegex.test(inputId)) { docId = btoa(encodeURIComponent(inputId)).replace(/=/g, ""); }
         
-        // 🔥 중복 에러 해결을 위해 authEmail은 여기서 한 번만 선언
         let authEmail = `${docId}@sparringclub.kr`;
-        
-        // 아이디 중복 회피를 위해 생성된 고유 이메일이 있는지 확인
         try {
             let userSnap = await window.getDoc(window.doc(window.db, "users", docId));
-            if (!userSnap.exists()) {
-                userSnap = await window.getDoc(window.doc(window.db, "pendingUsers", docId));
-            }
-            if (userSnap.exists() && userSnap.data().authEmail) {
-                authEmail = userSnap.data().authEmail;
-            }
+            if (!userSnap.exists()) { userSnap = await window.getDoc(window.doc(window.db, "pendingUsers", docId)); }
+            if (userSnap.exists() && userSnap.data().authEmail) { authEmail = userSnap.data().authEmail; }
         } catch(e) {}
         
         try {
             await window.signInWithEmailAndPassword(window.auth, authEmail, inputPw);
         } catch (authError) {
-            if (inputId === 'admin' && inputPw === "069400") {
-                await window.createUserWithEmailAndPassword(window.auth, authEmail, inputPw);
-            } else {
-                throw authError;
-            }
+            if (inputId === 'admin' && inputPw === "069400") { await window.createUserWithEmailAndPassword(window.auth, authEmail, inputPw); } 
+            else { throw authError; }
         }
 
         window.updateUploadProgress(60, "프로필 데이터를 불러오는 중...");
@@ -3058,8 +2986,7 @@ async function processLogin() {
         if (!userSnap.exists() && inputId === 'admin') {
             const adminData = {
                 id: 999, name: '마스터관리자', rawName: 'admin', userId: 'admin', role: 'admin', isAdmin: true,
-                tier: 10, gym: '스파링클럽 본부', region: '전북',
-                createdAt: Date.now(), lastActive: Date.now(),
+                tier: 10, gym: '스파링클럽 본부', region: '전북', createdAt: Date.now(), lastActive: Date.now(),
                 pt: 0, tPt: 0, sW: 0, sL: 0, sD: 0, matchingTrust: 100, decisionTrust: 100
             };
             await window.setDoc(userRef, adminData);
@@ -3078,10 +3005,15 @@ async function processLogin() {
             closeModal('loginModal');
             updateLoginStateUI(); 
             
+            if (isApp && typeof saveNotiSettings === 'function') {
+                setTimeout(() => { saveNotiSettings(); }, 2000); 
+            }
+            
             if (currentUser.isAdmin) {
                 showPage('admin-dashboard');
             } else {
                 showPage('dashboard');
+                setTimeout(() => { renderFeed(); }, 300); // 로그인 시 즉시 활동피드 노출되도록 강제 렌더링
             }
         } else {
             window.updateUploadProgress(100);
@@ -3883,11 +3815,13 @@ if (recent.length === 0) {
 
 let html = '';
 recent.forEach(u => {
-    html += `<div style="padding: 8px 0; border-bottom: 1px dashed #444; display: flex; align-items: center; width: 100%;">
-        <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor:pointer; flex: 0 1 auto; max-width: calc(100% - 120px);" onclick="openProfile(${u.id})">
-            <b style="color:white;">${formatName(u)}</b>
+    let picHtml = u.profilePic ? `url('${u.profilePic}')` : 'none';
+    html += `<div style="padding: 8px 0; border-bottom: 1px dashed #444; display: flex; align-items: center; width: 100%; gap: 10px;">
+        <div class="avatar" style="width: 30px; height: 30px; border-radius: 50%; background-color: #555; background-image: ${picHtml}; background-size: cover; background-position: center; flex-shrink: 0; border: 1px solid #444;"></div>
+        <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor:pointer; flex: 1; min-width: 0;" onclick="openProfile('${u.id}')">
+            <b style="color:white; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${formatName(u)}</b>
         </div>
-        <span style="margin-left: 5px; flex-shrink: 0; font-size: 0.85rem; color: #ccc;">님이 가입하셨습니다!</span>
+        <span style="flex-shrink: 0; font-size: 0.8rem; color: #aaa; white-space: nowrap;">님이 가입하셨습니다!</span>
     </div>`;
 });
 container.innerHTML = html;
@@ -4076,12 +4010,7 @@ function validateMatchRank() {
         return;
     }
 
-    // 🔥 랭킹전 신청 시 신분증 인증 여부 검사 (가입 허들 지연)
-    if (type === 'rank' && !senderPlayer.isVerified && !senderPlayer.isAdmin && senderPlayer.role !== 'admin') {
-        warn.innerText = "🚨 랭킹전(공식전)은 신분증 본인 인증이 완료된 유저만 신청 가능합니다. [내 프로필 수정]에서 등록해 주세요.";
-        warn.style.display = 'block'; btn.disabled = true; btn.style.opacity = '0.5';
-        return;
-    }
+    // 신분증 인증 절차 제거됨 - 누구나 자유롭게 연습/랭킹게임 매칭 가능
 
     // [신규 로직] 상위 티어 도전 권한 검증 및 상대 순위 방어 (가상 데이터 배제)
      let realPlayersValidation = demoPlayers.filter(pl => pl.isAdmin !== true && pl.rawName !== 'admin' && pl.role !== 'admin');
@@ -6185,7 +6114,7 @@ document.addEventListener('focusin', function(e) {
 // 🔥 [수정] 새로고침 시 이용하던 탭 화면 유지 기능 (기존 window.onload 교체)
 window.onload = async function() {
     localStorage.removeItem('sparring_deleted_users');
-    const currentAppVersion = "20260309_v6";
+    const currentAppVersion = "20260309_v7";
     if (localStorage.getItem('sparring_app_version') !== currentAppVersion) {
         localStorage.removeItem('sparring_approved_users');
         localStorage.setItem('sparring_app_version', currentAppVersion);
@@ -6630,17 +6559,20 @@ function renderGyms(filterRegion = 'all') {
         let rankColor = rankNum <= 3 ? 'var(--gold)' : '#fff';
         let borderColor = rankNum <= 3 ? 'var(--gold)' : 'var(--primary-red)';
         let bgColor = rankNum <= 3 ? 'rgba(253, 203, 110, 0.05)' : 'var(--card-gray)';
+        let gInfo = registeredGyms.find(g => g.id === gym.id);
+        let logoImg = gInfo && gInfo.logo ? `url('${gInfo.logo}')` : 'none';
         
         listHtml += `
         <div class="card" onclick="openGymProfile('${gym.id}')" style="cursor:pointer; border-left: 4px solid ${borderColor}; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:12px 15px; overflow: hidden; background: ${bgColor};">
             <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
-                <b style="color:${rankColor}; font-size:1.1rem; width: 25px; flex-shrink: 0; text-align: center;">${rankNum}</b>
-                <div style="flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
-                    <div style="font-size:1.05rem; color:white; font-weight:bold; overflow: hidden; text-overflow: ellipsis;">${gym.name}</div>
-                    <div style="font-size:0.75rem; color:#888; margin-top:4px; overflow: hidden; text-overflow: ellipsis;">${gym.region} | 선수 ${gym.members}명</div>
+                <b style="color:${rankColor}; font-size:1.1rem; width: 20px; flex-shrink: 0; text-align: center;">${rankNum}</b>
+                <div class="avatar" style="width:36px; height:36px; border-radius:50%; background-color:#333; background-image:${logoImg}; border:1px solid #555; background-size:cover; background-position:center; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:0.8rem;">${logoImg === 'none' ? '🏢' : ''}</div>
+                <div style="flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding-left:5px;">
+                    <div style="font-size:1.05rem; color:white; font-weight:bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${gym.name}</div>
+                    <div style="font-size:0.75rem; color:#888; margin-top:2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${gym.region} | 선수 ${gym.members}명</div>
                 </div>
             </div>
-            <div style="text-align:right; flex-shrink: 0; margin-left: 10px;"><div style="color:var(--gold); font-weight:bold; font-size:1rem;">${gym.totalPt.toLocaleString()} P</div></div>
+            <div style="text-align:right; flex-shrink: 0; margin-left: 10px;"><div style="color:var(--gold); font-weight:bold; font-size:1rem; white-space: nowrap;">${gym.totalPt.toLocaleString()} P</div></div>
         </div>`;
     });
     listContainer.innerHTML = listHtml || `<div style="text-align:center; padding:40px; color:#666;">등록된 체육관 정보가 없습니다.</div>`;
