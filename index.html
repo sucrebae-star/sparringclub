@@ -405,10 +405,12 @@
                 <label style="background:#222; border:1px solid #444; padding:6px 12px; border-radius:20px; font-size:0.8rem; cursor:pointer; color:#ccc; margin:0;"><input type="checkbox" value="인파이터" style="display:none;" onchange="this.parentElement.style.borderColor = this.checked ? 'var(--gold)' : '#444'; this.parentElement.style.color = this.checked ? 'var(--gold)' : '#ccc'; this.parentElement.style.background = this.checked ? 'rgba(253, 203, 110, 0.1)' : '#222';">🔥 인파이터</label>
             </div>
 
-            <label>인증 자료 첨부</label>
-            <input type="url" id="cert-video-url" placeholder="유튜브 링크">
+<label style="color:var(--primary-red); font-weight:bold;">📺 유튜브 영상 링크 첨부 (필수)</label>
+            <p style="font-size: 0.75rem; color: #888; margin-top: 0; margin-bottom: 8px; line-height: 1.4;">스파링 종료를 위해 본인 유튜브에 영상을 업로드하고 공유 URL을 반드시 입력해야 합니다.</p>
+            <input type="url" id="cert-video-url" placeholder="유튜브 공유 링크 입력 (예: https://youtu.be/...)">
+            <label style="margin-top: 10px;">추가 인증 사진 (선택)</label>
             <input type="file" id="cert-image-file" accept=".jpg,.jpeg,.png" style="background: #222; margin-top: 5px;">
-            <button class="btn-submit" id="btn-record-submit" onclick="submitSparringRecord()">기록 업로드 요청</button>
+            <button class="btn-submit" id="btn-record-submit" onclick="submitSparringRecord()">기록 업로드 및 스파링 종료</button>
         </div>
     </div>
 
@@ -1235,7 +1237,7 @@ window.onload = async function() {
     localStorage.removeItem('sparring_deleted_users');
 
     // 🔥 [신규] 모바일 환경에서 과거 권한 에러 시절 저장된 '빈 화면' 캐시 강제 삭제 (버전 컨트롤)
-    const currentAppVersion = "20260310_v2";
+    const currentAppVersion = "20260310_v3";
     if (localStorage.getItem('sparring_app_version') !== currentAppVersion) {
         localStorage.removeItem('sparring_approved_users');
         localStorage.setItem('sparring_app_version', currentAppVersion);
@@ -1313,6 +1315,21 @@ function initFirebaseRealtime() {
         renderGyms();
     }, (error) => {});
 
+    // 🔥 [권한 개방] 로그인, 비로그인 상태와 무관하게 매치 기록 및 상황이 노출되도록 밖으로 배치
+    const matchesQuery = window.query(window.collection(window.db, "matches"), window.orderBy("createdAt", "desc"), window.limit(300));
+    window.onSnapshot(matchesQuery, (snapshot) => {
+        let matches = []; snapshot.forEach((doc) => matches.push(doc.data()));
+        localStorage.setItem('sparring_matches', JSON.stringify(matches));
+        renderFeed(); if (document.getElementById('matchStatusModal') && document.getElementById('matchStatusModal').style.display === 'flex') { if(typeof renderMatchList === 'function') renderMatchList(); }
+    }, (error) => { console.warn("매치 데이터 접근 거부:", error); });
+
+    const recordsQuery = window.query(window.collection(window.db, "record_requests"), window.limit(100));
+    window.onSnapshot(recordsQuery, (snapshot) => {
+        let reqs = []; snapshot.forEach((doc) => reqs.push(doc.data()));
+        localStorage.setItem('sparring_record_requests', JSON.stringify(reqs));
+        if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
+    }, (error) => { console.warn("기록 데이터 접근 거부:", error); });
+
     // [기능수정] users 구독을 함수화하여 권한 획득 시 재시도할 수 있도록 처리
     const subscribeUsers = () => {
         if (usersUnsub) usersUnsub();
@@ -1372,23 +1389,6 @@ function initFirebaseRealtime() {
                 }
             });
             authenticatedListeners.push(userUnsub);
-
-            // 🔥 [요금 폭탄 방지] 매치 기록도 최근 300개로 제한
-            const matchesQuery = window.query(window.collection(window.db, "matches"), window.orderBy("createdAt", "desc"), window.limit(300));
-            const matchesUnsub = window.onSnapshot(matchesQuery, (snapshot) => {
-                let matches = []; snapshot.forEach((doc) => matches.push(doc.data()));
-                localStorage.setItem('sparring_matches', JSON.stringify(matches));
-                renderFeed(); if (document.getElementById('matchStatusModal').style.display === 'flex') renderMatchList();
-            });
-            authenticatedListeners.push(matchesUnsub);
-
-            const recordsQuery = window.query(window.collection(window.db, "record_requests"), window.limit(100));
-            const recordsUnsub = window.onSnapshot(recordsQuery, (snapshot) => {
-                let reqs = []; snapshot.forEach((doc) => reqs.push(doc.data()));
-                localStorage.setItem('sparring_record_requests', JSON.stringify(reqs));
-                if (document.getElementById('admin-dashboard')?.classList.contains('active')) renderAdmin();
-            });
-            authenticatedListeners.push(recordsUnsub);
         } else {
             if (!localStorage.getItem('sparring_session')) { currentUser = null; updateLoginStateUI(); }
         }
@@ -1866,7 +1866,7 @@ function insertEditorVideo() {
     if (!url) return;
     const embedUrl = getYoutubeEmbedUrl(url);
     if (embedUrl) {
-        const html = `<br><iframe width="100%" height="315" src="${embedUrl}" frameborder="0" allowfullscreen style="border-radius:8px; margin:10px 0;"></iframe><br>`;
+        const html = `<br><iframe width="100%" src="${embedUrl}" frameborder="0" allowfullscreen style="aspect-ratio: 16/9; height: auto; border-radius:8px; margin:10px 0; border:none; background:#000;"></iframe><br>`;
         document.execCommand('insertHTML', false, html);
     } else {
         alert("올바른 유튜브 주소가 아닙니다.");
@@ -1978,6 +1978,7 @@ function openPostDetail(postId, fromProfileId = null) {
     <div class="post-content-view" style="font-size:0.95rem; line-height:1.6; color:#ccc; margin-bottom:30px; word-break: break-all;">
         <style>
             .post-content-view img { max-width: 100% !important; height: auto !important; border-radius: 8px; display: block; margin: 15px auto; }
+            .post-content-view iframe, .post-content-view video { width: 100% !important; aspect-ratio: 16 / 9 !important; height: auto !important; border-radius: 8px; margin: 15px 0; border: none; background: #000; }
         </style>
         ${cleanContent}
     </div>`;
@@ -2140,17 +2141,29 @@ function renderComments() {
 async function submitSparringRecord() {
     const matchId = document.getElementById('record-match-select').value;
     const videoUrl = document.getElementById('cert-video-url').value.trim();
-    const imageFile = document.getElementById('cert-image-file').files[0];
+    const imgFileEl = document.getElementById('cert-image-file');
+    const imageFile = imgFileEl ? imgFileEl.files[0] : null;
     const matchType = document.getElementById('record-match-type').value;
     const judgeMethod = document.getElementById('judge-select').value;
     const resultValue = document.getElementById('record-result').value;
 
     if (!matchId) { alert('기록을 등록할 매칭 대상을 먼저 선택해주세요.'); return; }
-    if (!videoUrl && !imageFile) { alert('인증 자료(영상 또는 사진)가 반드시 필요합니다.'); return; }
+    
+    // 🔥 스파링 종료 시 반드시 유튜브 영상 공유 URL을 입력하도록 규칙 강제
+    if (!videoUrl) { 
+        alert('스파링을 종료하려면 본인 유튜브에 영상을 업로드하고 공유 URL 주소를 반드시 입력해야 합니다.'); 
+        document.getElementById('cert-video-url').focus();
+        return; 
+    }
+    if (!getYoutubeEmbedUrl(videoUrl)) {
+        alert('올바른 유튜브 링크 형식이 아닙니다. 공유 주소를 다시 확인해주세요.');
+        document.getElementById('cert-video-url').focus();
+        return;
+    }
 
     // 매치 데이터 조회를 통해 누락되었던 상대방 정보 추출
     let allMatches = JSON.parse(localStorage.getItem('sparring_matches')) || [];
-    let m = allMatches.find(x => x.id == matchId);
+    let m = allMatches.find(x => String(x.id) === String(matchId));
     if (!m) { alert('매칭 데이터를 찾을 수 없습니다.'); return; }
 
     let oppRawName = (m.senderRawName === currentUser.rawName) ? m.receiverRawName : m.senderRawName;
@@ -4783,18 +4796,20 @@ function renderChatMessages() {
 }
 
 function goToRecordPage(matchId) {
-    // 폼 초기화 꼬임 방지를 위해 모달을 직접 숨기고 라우팅
-    document.getElementById('matchStatusModal').style.display = 'none';
-    if (location.hash === "#modal-matchStatusModal") history.back();
+    // 모달 닫기 시 history 충돌로 멈추는 현상 완벽 방지
+    closeModal('matchStatusModal');
     
-    showPage('record'); 
+    // 모달 애니메이션 종료 후 페이지 이동 및 셀렉트 박스 바인딩 보장
     setTimeout(() => {
-        const select = document.getElementById('record-match-select');
-        if (select) {
-            select.value = String(matchId);
-            autoSetMatchType(); 
-        }
-    }, 350); // 렌더링 후 값 바인딩 보장
+        showPage('record'); 
+        setTimeout(() => {
+            const select = document.getElementById('record-match-select');
+            if (select) {
+                select.value = String(matchId);
+                autoSetMatchType(); 
+            }
+        }, 100); 
+    }, 150);
 }
 
 function renderRecordMatchSelect() {
@@ -6371,7 +6386,7 @@ document.addEventListener('focusin', function(e) {
 // 🔥 [수정] 새로고침 시 이용하던 탭 화면 유지 기능 (기존 window.onload 교체)
 window.onload = async function() {
     localStorage.removeItem('sparring_deleted_users');
-    const currentAppVersion = "20260310_v2";
+    const currentAppVersion = "20260310_v3";
     if (localStorage.getItem('sparring_app_version') !== currentAppVersion) {
         localStorage.removeItem('sparring_approved_users');
         localStorage.setItem('sparring_app_version', currentAppVersion);
@@ -6611,7 +6626,7 @@ async function addCommunityPost() {
         const embedUrl = getYoutubeEmbedUrl(youtubeUrl);
         // iframe 중복 추가 방지
         if (embedUrl && !content.includes(embedUrl)) {
-            content += `<br><iframe width="100%" height="315" src="${embedUrl}" frameborder="0" allowfullscreen style="border-radius:8px; margin:10px 0;"></iframe>`;
+            content += `<br><iframe width="100%" src="${embedUrl}" frameborder="0" allowfullscreen style="aspect-ratio: 16/9; height: auto; border-radius:8px; margin:10px 0; border:none; background:#000;"></iframe>`;
         }
     }
 
