@@ -17,3 +17,29 @@
 @media(max-width:760px){.club-app header .header-center{flex:0 0 36px!important}.club-app header .header-center:not(:has(button)){display:none}.club-app header #install-app-btn{width:36px!important;min-width:36px!important;padding:0!important;font-size:0!important;overflow:hidden}.club-app header #install-app-btn::after{content:'↓';font-size:20px;line-height:1}.club-app header{gap:8px}}
 @media(max-width:360px){.club-app header{gap:4px;padding-left:16px!important;padding-right:16px!important}.club-app header h1{font-size:17px!important}}
 @media(max-width:760px){.club-app header .header-center:has(button){display:flex!important}.club-app header #install-app-btn{margin-right:0!important}}
+
+/* A persistent partner offer that stays clear of the club's bottom navigation. */
+.club-app .boxraw-offer{position:fixed;right:0;top:42%;z-index:5100}
+.club-app.has-club-modal .boxraw-offer{visibility:hidden}
+.club-app .boxraw-offer-toggle{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:47px;min-height:158px;padding:14px 8px;border:1px solid #d0d2ad;border-right:0;border-radius:10px 0 0 10px;background:#d4d7af;color:#181d19;box-shadow:0 8px 30px #0008;cursor:pointer}
+.club-app .boxraw-offer-toggle span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:15px;font-weight:900;letter-spacing:.15em}
+.club-app .boxraw-offer-toggle strong{font-size:10px;line-height:1.1;white-space:nowrap}
+.club-app .boxraw-offer.is-open .boxraw-offer-toggle{background:#f0eee4}
+.club-app .boxraw-offer-panel{position:absolute;right:calc(100% + 8px);top:-67px;width:min(370px,calc(100vw - 78px));max-height:calc(100dvh - 130px);overflow-y:auto;box-sizing:border-box;padding:24px;border:1px solid #6b7059;border-radius:16px;background:#171b17;color:#f5f3e9;box-shadow:0 18px 55px #000b}
+.club-app .boxraw-offer-panel[hidden]{display:none}
+.club-app .boxraw-offer-top{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#c4c8ad;font-size:11px;font-weight:800;letter-spacing:.16em}
+.club-app .boxraw-offer-top button{width:44px;height:44px;padding:0;border:1px solid #484d40;border-radius:50%;background:transparent;color:#fff;font-size:28px;line-height:1;cursor:pointer}
+.club-app .boxraw-offer-kicker{margin:27px 0 10px;color:#d2d5b3;font-size:11px;font-weight:800;letter-spacing:.14em}
+.club-app .boxraw-offer-panel h2{margin:0;font-size:clamp(26px,2.5vw,33px);line-height:1.18;letter-spacing:-.055em}
+.club-app .boxraw-offer-panel h2 em{font-style:normal;color:#d4d7af}
+.club-app .boxraw-offer-description{margin:16px 0 20px;color:#c8cbc1;font-size:14px;line-height:1.6}
+.club-app .boxraw-offer-discount{padding:16px;border:1px solid #646950;border-radius:10px;background:#222820}
+.club-app .boxraw-offer-discount>span{display:block;margin-bottom:9px;color:#d7dab9;font-size:12px;font-weight:700}
+.club-app .boxraw-offer-discount>div{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.club-app .boxraw-offer-discount code{font-family:inherit;font-size:16px;font-weight:800;letter-spacing:-.02em;overflow-wrap:anywhere}
+.club-app .boxraw-offer-discount button{flex:none;padding:8px 10px;border:1px solid #d2d5b3;border-radius:6px;background:transparent;color:#eef0d4;font-size:11px;font-weight:700;cursor:pointer}
+.club-app .boxraw-offer-status{min-height:18px;margin:7px 0 10px;color:#d4d7af;font-size:12px}
+.club-app .boxraw-offer-link{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:50px;padding:0 15px;border-radius:7px;background:#d7dab9;color:#171b17;text-decoration:none;font-size:14px;font-weight:800}
+.club-app .boxraw-offer-link:hover,.club-app .boxraw-offer-link:focus-visible{background:#f0f1d4}
+@media(max-width:760px){.club-app .boxraw-offer{top:41%}.club-app .boxraw-offer-toggle{width:38px;min-height:128px;gap:7px;padding:11px 5px}.club-app .boxraw-offer-toggle span{font-size:12px}.club-app .boxraw-offer-toggle strong{font-size:8px}.club-app .boxraw-offer-panel{position:fixed;top:max(96px,calc(50dvh - 200px));right:44px;width:min(360px,calc(100vw - 72px));max-height:calc(100dvh - 240px);padding:18px}.club-app .boxraw-offer-kicker{margin-top:15px}.club-app .boxraw-offer-panel h2{font-size:26px}.club-app .boxraw-offer-description{margin:12px 0 14px}}
+@media(max-width:760px) and (max-height:650px){.club-app .boxraw-offer-panel{padding:14px}.club-app .boxraw-offer-kicker{margin:9px 0 6px}.club-app .boxraw-offer-panel h2{font-size:22px}.club-app .boxraw-offer-description{margin:9px 0}.club-app .boxraw-offer-discount{padding:10px}.club-app .boxraw-offer-status{margin:4px 0}}

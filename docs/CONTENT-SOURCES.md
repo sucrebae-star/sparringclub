@@ -26,7 +26,7 @@
 
 `assets/boxing-wide.webp`와 `assets/boxing-mobile.webp`는 여러 성인 복서가 샌드백·미트를 훈련하는 단체 장면입니다. `assets/academy-training.webp`는 성인들이 코치와 함께 체력운동하는 장면입니다. 모두 ChatGPT 내장 이미지 생성 도구로 만들었습니다. 실제 영상의 붉은 천장·LED·검은 샌드백 분위기를 참고했으며 실제 회원의 동일성을 사용하지 않았습니다. 홈페이지에 AI 브랜드 연출 이미지로 표시합니다. [최종 생성 프롬프트](IMAGE-PROMPT.md)를 보관했습니다.
 
-사용자는 BOXRAW 앰배서더이며 BOXRAW 의상·로고·이미지 사용을 허용했습니다. [BOXRAW Korea 공식 홈페이지](https://kr.boxraw.com/)에서 ‘복싱용’ 사진을 후보로 확인했습니다. `assets/boxraw-training.avif`는 그 원본 후보이며 현재 메인에는 생성 이미지를 사용합니다. 기존 클럽 BOXRAW 아이콘·할인 안내는 유지했습니다.
+사용자는 BOXRAW 앰배서더이며 BOXRAW 의상·로고·이미지 사용을 허용했습니다. [BOXRAW Korea 공식 홈페이지](https://kr.boxraw.com/)에서 ‘복싱용’ 사진을 후보로 확인했습니다. `assets/boxraw-training.avif`는 그 원본 후보이며 현재 메인에는 생성 이미지를 사용합니다. 클럽의 오른쪽 BOXRAW 안내 탭과 기존 할인 안내에는 사용자가 제공한 [쇼핑 링크](https://kr.boxraw.com/summersale?utm_source=htboxing.school&utm_medium=ig)와 할인코드 `htboxing.school10`을 사용합니다. 10% 할인 안내는 사용자 제공 정보이며 실제 적용 여부는 결제 단계에서 결정됩니다.
 
 ## 글꼴
 

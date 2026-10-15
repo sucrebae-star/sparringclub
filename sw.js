@@ -1,5 +1,5 @@
 // Shared public shell for the academy and existing Sparring Club PWA.
-const CACHE_NAME = 'sparring-club-cache-v20261015-ui5';
+const CACHE_NAME = 'sparring-club-cache-v20261015-ui6';
 const STATIC_ASSETS = [
   '/', '/index.html', '/club.html', '/style.css', '/club.css', '/club-ui.js',
   '/academy.css', '/academy.js', '/booking.js', '/manifest.json', '/icon-192.png', '/icon-512.png',

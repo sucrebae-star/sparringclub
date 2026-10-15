@@ -56,4 +56,40 @@
     const label = previous?.tagName === 'LABEL' ? previous.textContent.trim() : input.placeholder || input.title || input.id;
     if (label) input.setAttribute('aria-label',label);
   });
+
+  const offer = document.querySelector('#boxraw-offer');
+  const offerToggle = document.querySelector('#boxraw-offer-toggle');
+  const offerPanel = document.querySelector('#boxraw-offer-panel');
+  const offerClose = document.querySelector('#boxraw-offer-close');
+  const offerCopy = document.querySelector('#boxraw-offer-copy');
+  const offerStatus = document.querySelector('#boxraw-offer-status');
+  const discountCode = 'htboxing.school10';
+  function closeOffer(restoreFocus = false) {
+    offerPanel.hidden = true;
+    offerToggle.setAttribute('aria-expanded', 'false');
+    offer.classList.remove('is-open');
+    if (restoreFocus) offerToggle.focus();
+  }
+  offerToggle.addEventListener('click', () => {
+    if (!offerPanel.hidden) return closeOffer();
+    offerPanel.hidden = false;
+    offerToggle.setAttribute('aria-expanded', 'true');
+    offer.classList.add('is-open');
+    offerClose.focus();
+  });
+  offerClose.addEventListener('click', () => closeOffer(true));
+  document.addEventListener('pointerdown', event => {
+    if (!offerPanel.hidden && !offer.contains(event.target)) closeOffer();
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !offerPanel.hidden) closeOffer(true);
+  });
+  offerCopy.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(discountCode);
+      offerStatus.textContent = '할인코드가 복사되었습니다.';
+    } catch {
+      offerStatus.textContent = '복사할 수 없습니다. 표시된 코드를 직접 입력해 주세요.';
+    }
+  });
 })();
