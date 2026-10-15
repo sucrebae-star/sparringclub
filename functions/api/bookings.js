@@ -1,5 +1,5 @@
 const json=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
-const programs=['성인 복싱 GX','피지컬 GX','키즈복싱','복귀회원 상담','아직 고민 중이에요'];
+const programs=['성인·학생복싱','성인 복싱 GX','피지컬 트레이닝','피지컬 GX','키즈복싱','복귀회원 상담','아직 고민 중이에요'];
 const times=['오전 10:00–11:00','오후 15:00–18:00','저녁 18:00–22:00'];
 const hex=bytes=>[...new Uint8Array(bytes)].map(v=>v.toString(16).padStart(2,'0')).join('');
 async function hmac(secret,value){const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);return hex(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(value)));}
@@ -9,7 +9,7 @@ export async function sendSms(env,booking,fetcher=fetch){
   const date=new Date().toISOString(),salt=crypto.randomUUID().replaceAll('-','');
   const signature=await hmac(env.SOLAPI_API_SECRET,date+salt);
   // Keep the Korean alert short; visitor contact details remain in the private database.
-  const codes={'성인 복싱 GX':'BOXING','피지컬 GX':'PHYSICAL','키즈복싱':'KIDS','복귀회원 상담':'RETURN','아직 고민 중이에요':'CONSULT'};
+  const codes={'성인·학생복싱':'BOXING','성인 복싱 GX':'BOXING','피지컬 트레이닝':'PHYSICAL','피지컬 GX':'PHYSICAL','키즈복싱':'KIDS','복귀회원 상담':'RETURN','아직 고민 중이에요':'CONSULT'};
   const slots=booking.preferred_time.startsWith('오전')?'10-11':booking.preferred_time.startsWith('오후')?'15-18':'18-22';
   const text=`[복싱사관학교] 새 예약\n${booking.preferred_date.slice(5)} ${slots} ${codes[booking.program]}\n${booking.id}`;
   const response=await fetcher('https://api.solapi.com/messages/v4/send-many/detail',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`HMAC-SHA256 apiKey=${env.SOLAPI_API_KEY}, date=${date}, salt=${salt}, signature=${signature}`},body:JSON.stringify({messages:[{to:env.SMS_TO,from:env.SMS_FROM,type:'SMS',text}] ,allowDuplicates:false,showMessageList:true}),signal:AbortSignal.timeout(8000)});
