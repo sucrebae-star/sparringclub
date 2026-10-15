@@ -1,0 +1,138 @@
+[
+  {
+    "clientWidth": 305,
+    "cta": "grid",
+    "galleryImage": {
+      "bottom": 2364.34375,
+      "height": 146.734375,
+      "left": 22,
+      "right": 283,
+      "top": 2217.609375,
+      "width": 261,
+      "x": 22,
+      "y": 2217.609375
+    },
+    "height": 1000,
+    "scrollWidth": 305,
+    "width": 320
+  },
+  {
+    "clientWidth": 375,
+    "cta": "grid",
+    "galleryImage": {
+      "bottom": 2276.5,
+      "height": 186.078125,
+      "left": 22,
+      "right": 353,
+      "top": 2090.421875,
+      "width": 331,
+      "x": 22,
+      "y": 2090.421875
+    },
+    "height": 1000,
+    "scrollWidth": 375,
+    "width": 390
+  },
+  {
+    "clientWidth": 585,
+    "cta": "grid",
+    "galleryImage": {
+      "bottom": 2396.859375,
+      "height": 293.8125,
+      "left": 31.1875,
+      "right": 553.8125,
+      "top": 2103.046875,
+      "width": 522.625,
+      "x": 31.1875,
+      "y": 2103.046875
+    },
+    "height": 1000,
+    "scrollWidth": 585,
+    "width": 600
+  },
+  {
+    "clientWidth": 753,
+    "cta": "none",
+    "galleryImage": {
+      "bottom": 2299.96875,
+      "height": 378.4375,
+      "left": 39.921875,
+      "right": 713.078125,
+      "top": 1921.53125,
+      "width": 673.15625,
+      "x": 39.921875,
+      "y": 1921.53125
+    },
+    "height": 1000,
+    "scrollWidth": 753,
+    "width": 768
+  },
+  {
+    "clientWidth": 1009,
+    "cta": "none",
+    "galleryImage": {
+      "bottom": 2404.484375,
+      "height": 507.390625,
+      "left": 53.234375,
+      "right": 955.765625,
+      "top": 1897.09375,
+      "width": 902.53125,
+      "x": 53.234375,
+      "y": 1897.09375
+    },
+    "height": 1000,
+    "scrollWidth": 1009,
+    "width": 1024
+  },
+  {
+    "clientWidth": 1425,
+    "cta": "none",
+    "galleryImage": {
+      "bottom": 2518.609375,
+      "height": 680,
+      "left": 74.875,
+      "right": 1350.125,
+      "top": 1838.609375,
+      "width": 1275.25,
+      "x": 74.875,
+      "y": 1838.609375
+    },
+    "height": 1000,
+    "scrollWidth": 1425,
+    "width": 1440
+  },
+  {
+    "clientWidth": 1905,
+    "cta": "none",
+    "galleryImage": {
+      "bottom": 2546.140625,
+      "height": 680,
+      "left": 99.828125,
+      "right": 1805.171875,
+      "top": 1866.140625,
+      "width": 1705.34375,
+      "x": 99.828125,
+      "y": 1866.140625
+    },
+    "height": 1000,
+    "scrollWidth": 1905,
+    "width": 1920
+  },
+  {
+    "clientWidth": 2545,
+    "cta": "none",
+    "galleryImage": {
+      "bottom": 2546.140625,
+      "height": 680,
+      "left": 412.5,
+      "right": 2132.5,
+      "top": 1866.140625,
+      "width": 1720,
+      "x": 412.5,
+      "y": 1866.140625
+    },
+    "height": 1000,
+    "scrollWidth": 2545,
+    "width": 2560
+  }
+]

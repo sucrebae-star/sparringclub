@@ -1,0 +1,130 @@
+[
+  {
+    "clientWidth": 265,
+    "dialog": {
+      "bottom": 820,
+      "height": 796,
+      "left": 19,
+      "right": 301,
+      "top": 24,
+      "width": 282,
+      "x": 19,
+      "y": 24
+    },
+    "focus": "상담 안내 닫기",
+    "scrollWidth": 265,
+    "width": 320
+  },
+  {
+    "clientWidth": 335,
+    "dialog": {
+      "bottom": 820,
+      "height": 796,
+      "left": 19,
+      "right": 371,
+      "top": 24,
+      "width": 352,
+      "x": 19,
+      "y": 24
+    },
+    "focus": "상담 안내 닫기",
+    "scrollWidth": 335,
+    "width": 390
+  },
+  {
+    "clientWidth": 545,
+    "dialog": {
+      "bottom": 820,
+      "height": 796,
+      "left": 19,
+      "right": 581,
+      "top": 24,
+      "width": 562,
+      "x": 19,
+      "y": 24
+    },
+    "focus": "상담 안내 닫기",
+    "scrollWidth": 545,
+    "width": 600
+  },
+  {
+    "clientWidth": 553,
+    "dialog": {
+      "bottom": 820,
+      "height": 796,
+      "left": 99,
+      "right": 669,
+      "top": 24,
+      "width": 570,
+      "x": 99,
+      "y": 24
+    },
+    "focus": "상담 안내 닫기",
+    "scrollWidth": 553,
+    "width": 768
+  },
+  {
+    "clientWidth": 553,
+    "dialog": {
+      "bottom": 820,
+      "height": 796,
+      "left": 227,
+      "right": 797,
+      "top": 24,
+      "width": 570,
+      "x": 227,
+      "y": 24
+    },
+    "focus": "상담 안내 닫기",
+    "scrollWidth": 553,
+    "width": 1024
+  },
+  {
+    "clientWidth": 553,
+    "dialog": {
+      "bottom": 820,
+      "height": 796,
+      "left": 435,
+      "right": 1005,
+      "top": 24,
+      "width": 570,
+      "x": 435,
+      "y": 24
+    },
+    "focus": "상담 안내 닫기",
+    "scrollWidth": 553,
+    "width": 1440
+  },
+  {
+    "clientWidth": 553,
+    "dialog": {
+      "bottom": 820,
+      "height": 796,
+      "left": 675,
+      "right": 1245,
+      "top": 24,
+      "width": 570,
+      "x": 675,
+      "y": 24
+    },
+    "focus": "상담 안내 닫기",
+    "scrollWidth": 553,
+    "width": 1920
+  },
+  {
+    "clientWidth": 553,
+    "dialog": {
+      "bottom": 820,
+      "height": 796,
+      "left": 995,
+      "right": 1565,
+      "top": 24,
+      "width": 570,
+      "x": 995,
+      "y": 24
+    },
+    "focus": "상담 안내 닫기",
+    "scrollWidth": 553,
+    "width": 2560
+  }
+]

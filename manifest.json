@@ -1,10 +1,10 @@
 {
   "name": "스파링클럽",
   "short_name": "스파링클럽",
-  "start_url": "/index.html",
+  "start_url": "/club.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "background_color": "#111310",
+  "theme_color": "#111310",
   "icons": [
     {
       "src": "icon-192.png",
