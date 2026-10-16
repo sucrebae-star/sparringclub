@@ -1,10 +1,12 @@
 // Shared public shell for the academy and existing Sparring Club PWA.
 const CACHE_NAME = 'sparring-club-cache-v20261016-kakao';
+const APP_ROOT = new URL('.', self.location.href).pathname;
+const inScope = path => APP_ROOT + path.replace(/^\//, '');
 const STATIC_ASSETS = [
   '/', '/index.html', '/club.html', '/style.css', '/club.css', '/club-ui.js',
   '/academy.css', '/academy.js', '/manifest.json', '/icon-192.png', '/icon-512.png',
   '/assets/academy-logo.png', '/assets/first-round-concept.jpg', '/assets/academy-training.webp', '/assets/boxing-mobile.webp', '/assets/boxing-wide.webp', '/assets/pretendard-variable.woff2'
-];
+].map(inScope);
 const PUBLIC_ASSETS = new Set(STATIC_ASSETS);
 self.addEventListener('install', event => {
   self.skipWaiting();
@@ -20,8 +22,8 @@ self.addEventListener('fetch', event => {
   // Never cache API, auth, uploads, Firebase or non-GET requests.
   if (url.origin !== self.location.origin || event.request.method !== 'GET') return;
   if (event.request.mode === 'navigate') {
-    const shell = url.pathname === '/' || url.pathname === '/index.html' ? '/index.html'
-      : ['/club.html', '/club'].includes(url.pathname) ? '/club.html' : null;
+    const shell = url.pathname === APP_ROOT || url.pathname === inScope('/index.html') ? inScope('/index.html')
+      : [inScope('/club.html'), inScope('/club')].includes(url.pathname) ? inScope('/club.html') : null;
     if (!shell) return;
     event.respondWith(fetch(event.request).then(response => {
       if (response.ok) {
@@ -42,8 +44,8 @@ self.addEventListener('push', function(event) {
         const data = event.data.json();
         const options = {
             body: data.body || '새로운 알림이 도착했습니다.',
-            icon: '/icon-192.png',
-            badge: '/icon-192.png',
+            icon: inScope('/icon-192.png'),
+            badge: inScope('/icon-192.png'),
             vibrate: [200, 100, 200]
         };
         event.waitUntil(self.registration.showNotification(data.title || '스파링클럽', options));
@@ -64,7 +66,7 @@ self.addEventListener('notificationclick', function(event) {
                 }
                 return client.focus();
             }
-            return clients.openWindow('/club.html');
+            return clients.openWindow(inScope('/club.html'));
         })
     );
 });

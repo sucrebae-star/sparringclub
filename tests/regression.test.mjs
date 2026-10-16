@@ -47,7 +47,7 @@ test('all academy marks use the supplied artwork instead of the temporary BA emb
 });
 test('PWA precache only lists available public files and retains push events',()=>{
   const callbacks={};let assets;
-  vm.runInNewContext(read('sw.js'),{self:{addEventListener:(name,cb)=>callbacks[name]=cb,skipWaiting(){},location:{origin:'https://example.test'},clients:{claim(){}}},caches:{open:async()=>({addAll:files=>{assets=files;return Promise.resolve();}})},URL,Set});
+  vm.runInNewContext(read('sw.js'),{self:{addEventListener:(name,cb)=>callbacks[name]=cb,skipWaiting(){},location:{origin:'https://example.test',href:'https://example.test/sw.js'},clients:{claim(){}}},caches:{open:async()=>({addAll:files=>{assets=files;return Promise.resolve();}})},URL,Set});
   return new Promise(resolve=>callbacks.install({waitUntil:async task=>{await task;resolve();}})).then(()=>{
     assert.ok(assets.every(file=>file==='/' || existsSync('.'+file)),assets?.join(', '));
     assert.ok(assets.includes('/club.html'));assert.ok(assets.includes('/academy.js'));
@@ -56,7 +56,7 @@ test('PWA precache only lists available public files and retains push events',()
 });
 test('PWA navigation fallback uses the correct page and excludes remote or private requests',async()=>{
   const callbacks={}, matched=[];
-  vm.runInNewContext(read('sw.js'),{self:{addEventListener:(name,cb)=>callbacks[name]=cb,location:{origin:'https://example.test'}},caches:{match:async key=>{matched.push(key);return key;}},fetch:async()=>{throw Error('offline');},URL,Set});
+  vm.runInNewContext(read('sw.js'),{self:{addEventListener:(name,cb)=>callbacks[name]=cb,location:{origin:'https://example.test',href:'https://example.test/sw.js'}},caches:{match:async key=>{matched.push(key);return key;}},fetch:async()=>{throw Error('offline');},URL,Set});
   let response;
   callbacks.fetch({request:{url:'https://example.test/club.html?postId=9',method:'GET',mode:'navigate'},respondWith:p=>response=p});
   assert.equal(await response,'/club.html');
@@ -67,4 +67,14 @@ test('PWA navigation fallback uses the correct page and excludes remote or priva
   for(const url of ['https://firestore.googleapis.com/x','https://example.test/api/private','https://example.test/club-ui.js?private=yes']) callbacks.fetch({request:{url,method:'GET',mode:'cors'},respondWith(){throw Error('must not cache');}});
   callbacks.fetch({request:{url:'https://example.test/club.html',method:'POST',mode:'navigate'},respondWith(){throw Error('must not cache POST');}});
   assert.deepEqual(matched,['/club.html','/club.html','/index.html']);
+});
+test('PWA shell stays within a GitHub Pages project path',async()=>{
+  const callbacks={}, matched=[];let assets;
+  vm.runInNewContext(read('sw.js'),{self:{addEventListener:(name,cb)=>callbacks[name]=cb,skipWaiting(){},location:{origin:'https://example.test',href:'https://example.test/sparringclub/sw.js'},clients:{claim(){}}},caches:{open:async()=>({addAll:files=>{assets=files;return Promise.resolve();}}),match:async key=>{matched.push(key);return key;}},fetch:async()=>{throw Error('offline');},URL,Set});
+  await new Promise(resolve=>callbacks.install({waitUntil:async task=>{await task;resolve();}}));
+  assert.ok(assets.every(path=>path.startsWith('/sparringclub/')));
+  let response;
+  callbacks.fetch({request:{url:'https://example.test/sparringclub/club.html',method:'GET',mode:'navigate'},respondWith:p=>response=p});
+  assert.equal(await response,'/sparringclub/club.html');
+  assert.deepEqual(matched,['/sparringclub/club.html']);
 });

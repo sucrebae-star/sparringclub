@@ -1,7 +1,8 @@
 {
   "name": "스파링클럽",
   "short_name": "스파링클럽",
-  "start_url": "/club.html",
+  "start_url": "club.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#111310",
   "theme_color": "#111310",

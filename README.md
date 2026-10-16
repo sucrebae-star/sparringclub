@@ -30,7 +30,7 @@ QA 서버는 가상 회원 데이터로 Firebase를 대체하고 원격 쓰기�
 
 ## 운영 준비
 
-[Cloudflare Pages 배포](docs/CLOUDFLARE-PAGES.md), [카카오 예약 운영](docs/KAKAO-BOOKING.md), [검증 결과](docs/VERIFICATION.md)를 참고하세요. 기존 Firebase 프로젝트와 데이터는 변경하지 않습니다. 자체 예약·SMS 구현은 [보존된 설계 문서](docs/BOOKING-SMS.md)에만 남아 있고 운영하지 않습니다.
+[GitHub Pages 배포](docs/GITHUB-PAGES.md), [카카오 예약 운영](docs/KAKAO-BOOKING.md), [검증 결과](docs/VERIFICATION.md)를 참고하세요. 기존 Firebase 프로젝트와 데이터는 변경하지 않습니다. 자체 예약·SMS 구현은 [보존된 설계 문서](docs/BOOKING-SMS.md)에만 남아 있고 운영하지 않습니다.
 
 `CNAME`, 호스팅케이알 DNS·네임서버·도메인은 이 변경에서 수정하지 않았습니다. 무료 호스팅 범위를 우선합니다. 카카오 예약 전환에 따라 유료 SMS 발송은 설정하지 않았습니다.
 
