@@ -27,12 +27,12 @@ export async function handleBooking({request,env,waitUntil},sms=sendSms){
   let body;try{body=JSON.parse(text);}catch{return json({error:'입력 내용을 확인해 주세요.'},400);}
   if(!body||typeof body!=='object'||Array.isArray(body))return json({error:'입력 내용을 확인해 주세요.'},400);
   if(body.website)return json({error:'요청을 확인할 수 없습니다.'},400);
-  const name=String(body.name||'').trim(),phone=String(body.phone||'').replace(/[\s-]/g,''),program=String(body.program||''),preferred_date=String(body.date||''),preferred_time=String(body.time||'');
+  const name=String(body.name||'').trim(),phone=String(body.phone||'').replace(/[\s-]/g,''),program=String(body.program||''),preferred_date=String(body.date||''),preferred_time=String(body.time||''),message=String(body.message||'').trim();
   const date=new Date(preferred_date+'T00:00:00Z'),today=new Date(Date.now()+9*3600000).toISOString().slice(0,10),max=new Date(Date.now()+61*86400000+9*3600000).toISOString().slice(0,10);
-  if(!/^[\p{L} .'-]{2,40}$/u.test(name)||!/^01[016789]\d{7,8}$/.test(phone)||!programs.includes(program)||!times.includes(preferred_time)||!/^\d{4}-\d{2}-\d{2}$/.test(preferred_date)||Number.isNaN(+date)||date.toISOString().slice(0,10)!==preferred_date||preferred_date<=today||preferred_date>=max||[0,6].includes(new Date(preferred_date+'T00:00:00Z').getUTCDay())||body.consent!==true)return json({error:'이름, 휴대폰, 희망 일정과 개인정보 수집 동의를 확인해 주세요. 다음날부터 60일 이내 평일로 신청할 수 있습니다.'},400);
+  if(!/^[\p{L} .'-]{2,40}$/u.test(name)||!/^01[016789]\d{7,8}$/.test(phone)||!programs.includes(program)||!times.includes(preferred_time)||message.length>500||!/^\d{4}-\d{2}-\d{2}$/.test(preferred_date)||Number.isNaN(+date)||date.toISOString().slice(0,10)!==preferred_date||preferred_date<=today||preferred_date>=max||[0,6].includes(new Date(preferred_date+'T00:00:00Z').getUTCDay())||body.consent!==true)return json({error:'이름, 휴대폰, 희망 일정과 개인정보 수집 동의를 확인해 주세요. 다음날부터 60일 이내 평일로 신청할 수 있습니다.'},400);
   const request_key=request.headers.get('Idempotency-Key')||'';
   if(!/^[a-zA-Z0-9-]{16,80}$/.test(request_key))return json({error:'요청 정보를 다시 확인해 주세요.'},400);
-  const booking={name,phone,program,preferred_date,preferred_time};
+  const booking={name,phone,program,preferred_date,preferred_time,message};
   const payload_hash=await hmac(env.BOOKING_RATE_SECRET,JSON.stringify(booking));
   try{
     const existing=await env.BOOKING_DB.prepare('SELECT id, payload_hash FROM academy_bookings WHERE request_key = ?').bind(request_key).first();
@@ -42,7 +42,7 @@ export async function handleBooking({request,env,waitUntil},sms=sendSms){
     const rate=await env.BOOKING_DB.prepare('INSERT INTO booking_rate_limits(key,count,expires_at) VALUES(?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count').bind(rateKey,now+15*60000).first();
     if(rate.count>5)return json({error:'잠시 후 다시 신청하거나 전화로 문의해 주세요.'},429);
     booking.id='BA-'+preferred_date.replaceAll('-','').slice(2)+'-'+crypto.randomUUID().slice(0,6).toUpperCase();
-    const saved=await env.BOOKING_DB.prepare('INSERT OR IGNORE INTO academy_bookings(id,request_key,payload_hash,name,phone,program,preferred_date,preferred_time,created_at) VALUES(?,?,?,?,?,?,?,?,?)').bind(booking.id,request_key,payload_hash,name,phone,program,preferred_date,preferred_time,now).run();
+    const saved=await env.BOOKING_DB.prepare('INSERT OR IGNORE INTO academy_bookings(id,request_key,payload_hash,name,phone,program,preferred_date,preferred_time,message,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)').bind(booking.id,request_key,payload_hash,name,phone,program,preferred_date,preferred_time,message,now).run();
     if(!saved.meta.changes){const duplicate=await env.BOOKING_DB.prepare('SELECT id, payload_hash FROM academy_bookings WHERE request_key = ?').bind(request_key).first();return duplicate?.payload_hash===payload_hash?json({id:duplicate.id,status:'requested'}):json({error:'다시 신청해 주세요.'},409);}
     waitUntil((async()=>{let status;try{status=await sms(env,booking);}catch{status='failed';}await env.BOOKING_DB.prepare('UPDATE academy_bookings SET notification_status=? WHERE id=?').bind(status,booking.id).run();})());
     // Only this application's own request records are subject to the disclosed 30 day retention.

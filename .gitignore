@@ -1,6 +1,7 @@
 dist/
 node_modules/
 .wrangler/
+.taste-skill/
 .env
 .env.*
 artifacts/

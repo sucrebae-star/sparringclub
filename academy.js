@@ -24,10 +24,23 @@ document.addEventListener('keydown', (event) => { if (event.key === 'Escape') cl
 
 const dialog = document.querySelector('#consult-dialog');
 let consultTrigger;
+let selectedPurpose = '';
+document.querySelectorAll('[data-purpose]').forEach((option) => {
+  option.addEventListener('click', () => {
+    selectedPurpose = option.dataset.purpose;
+    document.querySelectorAll('[data-purpose]').forEach((item) => {
+      item.setAttribute('aria-pressed', String(item === option));
+    });
+  });
+});
 document.querySelectorAll('[data-consult]').forEach((button) => {
   button.addEventListener('click', () => {
     consultTrigger = button;
-    document.querySelector('#consult-program').value = button.dataset.program || '아직 고민 중이에요';
+    const suggestedProgram = selectedPurpose === '복싱 배우기' ? '성인·학생복싱' :
+      selectedPurpose === '체력 기르기' ? '피지컬 트레이닝' : '아직 고민 중이에요';
+    document.querySelector('#consult-program').value = button.dataset.program || suggestedProgram;
+    const message = document.querySelector('#booking-message');
+    if (selectedPurpose && !message.value.trim()) message.value = `관심사: ${selectedPurpose}`;
     closeMenu();
     dialog.showModal();
     window.dispatchEvent(new Event("academy:consult-open"));
@@ -40,14 +53,6 @@ dialog.addEventListener('click', (event) => { if (event.target === dialog) {
 }});
 dialog.addEventListener('close', () => consultTrigger?.focus());
 
-document.querySelectorAll('[data-day]').forEach((button) => {
-  button.addEventListener('click', () => {
-    document.querySelectorAll('[data-day]').forEach((day) => day.setAttribute('aria-pressed', String(day === button)));
-    document.querySelector('#day-schedule').innerHTML = Number(button.dataset.day) >= 5
-      ? '<div class="schedule-closed"><span>REST & RECOVER</span><strong>정기휴무</strong><p>토요일·일요일은 쉬어갑니다.</p></div>'
-      : '<div class="schedule-row"><strong>10:00—11:00</strong><span>오전 운영</span></div><div class="schedule-row break"><strong>11:00—15:00</strong><span>휴게시간</span></div><div class="schedule-row"><strong>15:00—22:00</strong><span>오후 운영</span></div>';
-  });
-});
 document.querySelector('#copy-address').addEventListener('click', async () => {
   const address = '전북특별자치도 전주시 완산구 효천중앙로 57 모악빌딩 3층';
   try {
@@ -58,5 +63,24 @@ document.querySelector('#copy-address').addEventListener('click', async () => {
   }
 });
 document.querySelector('#year').textContent = new Date().getFullYear();
+// Content is visible by default; the observer only adds a brief entrance when supported.
+if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  const revealItems = document.querySelectorAll(
+    'main section:not(.hero) h2, main section:not(.hero) h3, .program-feature .feature-media, .program-row-media, .guide-steps > div, .record-points > div, .space-gallery figure, .faq-list details'
+  );
+  revealItems.forEach((item, index) => {
+    item.dataset.reveal = '';
+    item.style.transitionDelay = `${(index % 4) * 65}ms`;
+  });
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('in-view');
+      observer.unobserve(entry.target);
+    });
+  }, {threshold: 0.05, rootMargin: '0px 0px 70px 0px'});
+  revealItems.forEach((item) => observer.observe(item));
+  document.body.classList.add('can-animate');
+}
 // Register the same worker on both entry points so existing installations receive updates.
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});

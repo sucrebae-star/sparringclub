@@ -9,7 +9,7 @@ export async function onRequest({request,env}){
   if(!env.BOOKING_DB||!await authorized(request,env))return json({error:'예약 관리 인증이 필요합니다.'},401);
   try{
     if(request.method==='GET'){
-      const {results}=await env.BOOKING_DB.prepare('SELECT id,name,phone,program,preferred_date,preferred_time,status,notification_status,created_at FROM academy_bookings WHERE created_at >= ? ORDER BY created_at DESC LIMIT 100').bind(Date.now()-30*86400000).all();
+      const {results}=await env.BOOKING_DB.prepare('SELECT id,name,phone,program,preferred_date,preferred_time,message,status,notification_status,created_at FROM academy_bookings WHERE created_at >= ? ORDER BY created_at DESC LIMIT 100').bind(Date.now()-30*86400000).all();
       return json({bookings:results});
     }
     if(request.method!=='POST')return json({error:'지원하지 않는 요청입니다.'},405);
