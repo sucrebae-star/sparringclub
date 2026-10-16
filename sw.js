@@ -1,11 +1,13 @@
 // Shared public shell for the academy and existing Sparring Club PWA.
-const CACHE_NAME = 'sparring-club-cache-v20261016-kakao';
+const CACHE_NAME = 'sparring-club-cache-academy-local-build';
 const APP_ROOT = new URL('.', self.location.href).pathname;
 const inScope = path => APP_ROOT + path.replace(/^\//, '');
 const STATIC_ASSETS = [
   '/', '/index.html', '/club.html', '/style.css', '/club.css', '/club-ui.js',
-  '/academy.css', '/academy.js', '/manifest.json', '/icon-192.png', '/icon-512.png',
-  '/assets/academy-logo.png', '/assets/first-round-concept.jpg', '/assets/academy-training.webp', '/assets/boxing-mobile.webp', '/assets/boxing-wide.webp', '/assets/pretendard-variable.woff2'
+  '/academy.css', '/academy.js', /* ACADEMY_BUNDLE */ '/manifest.json', '/icon-192.png', '/icon-512.png',
+  '/assets/academy-logo.png', '/assets/academy-generated-v1/boxing-logo-original.png',
+  '/assets/academy-generated-v1/hero-desktop.webp', '/assets/academy-generated-v1/hero-mobile.webp',
+  '/assets/pretendard-variable.woff2'
 ].map(inScope);
 const PUBLIC_ASSETS = new Set(STATIC_ASSETS);
 self.addEventListener('install', event => {

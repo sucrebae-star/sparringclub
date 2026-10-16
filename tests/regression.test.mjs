@@ -21,7 +21,7 @@ test('classic scripts parse; all prior pages and hooks remain available',()=>{
   assert.equal([...club.matchAll(/id="cb-youtube-link"/g)].length,1);
 });
 test('root bookmarks and post shares route to the retained club entry',()=>{
-  const routing = read('academy.js').split('const menuToggle')[0];
+  const routing = read('academy.js');
   const browser = {window:{matchMedia:()=>({matches:false})},navigator:{}};
   for(const [hash,search] of [['#players',''],['#board',''],['#record',''],['#modal-loginModal',''],['','?postId=901']]){
     let result;
@@ -31,18 +31,14 @@ test('root bookmarks and post shares route to the retained club entry',()=>{
   let result; vm.runInNewContext(routing,{...browser,location:{hash:'#programs',search:'',replace:value=>result=value},URLSearchParams});assert.equal(result,undefined);
   vm.runInNewContext(routing,{window:{matchMedia:()=>({matches:true})},navigator:{},location:{hash:'',search:'',replace:value=>result=value},URLSearchParams});assert.equal(result,'club.html');
 });
-test('official contact override is applied to every academy telephone link',()=>{
-  const html=read('index.html');
-  const phones=[...html.matchAll(/href="(tel:[^"]+)"/g)].map(match=>match[1]);
-  assert.ok(phones.length>=4);assert.ok(phones.every(phone=>phone==='tel:0637176433'));
-  assert.ok(!html.includes('0507-1393-6433'));
-});
-test('all academy marks use the supplied artwork instead of the temporary BA emblem',()=>{
-  const html=read('index.html');
-  assert.equal([...html.matchAll(/class="academy-logo"/g)].length,3);
-  assert.ok(!html.includes('class="brand-emblem"'));
-  assert.ok(html.includes('href="assets/academy-logo.png"'));
-  assert.ok(!html.includes('Unsplash'));
+test('academy contact and assets preserve verified sources',async()=>{
+  const {contact,programs,schedule}=await import('../src/academy/content.mjs');
+  assert.equal(contact.telephone,'tel:0637176433');
+  assert.equal(contact.booking,'https://booking.kakao.com/detail/ticket/752726');
+  assert.deepEqual(programs.map(p=>p.name),['피지컬 트레이닝','모두의 복싱','키즈복싱']);
+  assert.deepEqual(schedule.map(row=>row[0]),['10:00','15:00','17:00','19:00','20:00','21:00']);
+  for(const p of programs) assert.ok(existsSync('assets/academy-generated-v1/'+p.image));
+  assert.ok(existsSync('assets/academy-generated-v1/boxing-logo-original.png'));
   assert.ok(club.includes('assets/academy-logo.png'));
 });
 test('PWA precache only lists available public files and retains push events',()=>{

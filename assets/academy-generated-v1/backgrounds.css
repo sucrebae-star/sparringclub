@@ -1,0 +1,6 @@
+:root { --academy-charcoal: #171a1b; --academy-ivory: #f2f1ed; --academy-red: #d30a1b; }
+.academy-dark { background-color: var(--academy-charcoal); color: var(--academy-ivory); }
+.academy-light { background-color: var(--academy-ivory); color: var(--academy-charcoal); }
+.academy-photo { display: block; width: 100%; height: auto; }
+/* 실제 사이트에서는 제목과 버튼을 HTML로 따로 배치하세요. */
+/* 시설 안내는 사진 없이 "샤워실 · 탈의실 구비" 텍스트만 사용합니다. */
