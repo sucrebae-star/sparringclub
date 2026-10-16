@@ -4,6 +4,7 @@
 
 - 사용자가 무료 호스팅으로 GitHub Pages를 선택했습니다. 기존 Pages 설정은 `main` 루트와 사용자 지정 도메인 `sparringclub.kr`로 이미 구성되어 있습니다. 도메인의 현재 DNS는 다른 서버를 가리킵니다.
 - 정적 빌드·테스트를 수행하는 GitHub Pages 배포 워크플로를 추가하고, 프로젝트 하위 경로에서도 설치형 앱이 동작하도록 서비스 워커 경로를 조정했습니다.
+- [GitHub Actions 배포 실행](https://github.com/sucrebae-star/sparringclub/actions/runs/38883154711)에서 17개 검사·빌드·Pages 게시가 통과했습니다. GitHub Pages 서버에 직접 요청하여 홈페이지, `club.html`, 공식 로고와 `sw.js`가 모두 HTTP 200으로 응답하고 새 상담예약 링크·요금 문구가 포함된 것을 확인했습니다. 기본 `github.io` 주소는 등록된 사용자 지정 도메인으로 이동하며, 공개 도메인의 DNS는 아직 기존 서버를 가리킵니다.
 - `sparringclub.kr` DNS·네임서버 변경은 사용자 사전 확인 전 진행하지 않습니다.
 
 ## 2026-10-16 카카오 예약 전환
