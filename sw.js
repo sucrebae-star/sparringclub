@@ -1,8 +1,8 @@
 // Shared public shell for the academy and existing Sparring Club PWA.
-const CACHE_NAME = 'sparring-club-cache-v20261016-editorial';
+const CACHE_NAME = 'sparring-club-cache-v20261016-kakao';
 const STATIC_ASSETS = [
   '/', '/index.html', '/club.html', '/style.css', '/club.css', '/club-ui.js',
-  '/academy.css', '/academy.js', '/booking.js', '/manifest.json', '/icon-192.png', '/icon-512.png',
+  '/academy.css', '/academy.js', '/manifest.json', '/icon-192.png', '/icon-512.png',
   '/assets/academy-logo.png', '/assets/first-round-concept.jpg', '/assets/academy-training.webp', '/assets/boxing-mobile.webp', '/assets/boxing-wide.webp', '/assets/pretendard-variable.woff2'
 ];
 const PUBLIC_ASSETS = new Set(STATIC_ASSETS);

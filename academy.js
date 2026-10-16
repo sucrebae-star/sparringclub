@@ -36,14 +36,12 @@ document.querySelectorAll('[data-purpose]').forEach((option) => {
 document.querySelectorAll('[data-consult]').forEach((button) => {
   button.addEventListener('click', () => {
     consultTrigger = button;
-    const suggestedProgram = selectedPurpose === '복싱 배우기' ? '성인·학생복싱' :
-      selectedPurpose === '체력 기르기' ? '피지컬 트레이닝' : '아직 고민 중이에요';
-    document.querySelector('#consult-program').value = button.dataset.program || suggestedProgram;
-    const message = document.querySelector('#booking-message');
-    if (selectedPurpose && !message.value.trim()) message.value = `관심사: ${selectedPurpose}`;
+    const interest = button.dataset.program || selectedPurpose;
+    const note = document.querySelector('#consult-interest');
+    note.textContent = interest ? `관심 있는 운동: ${interest}. 카카오에서 예약할 때 이 내용을 알려주세요.` :
+      '어떤 수업이 맞을지 몰라도 괜찮습니다. 상담에서 함께 살펴보세요.';
     closeMenu();
     dialog.showModal();
-    window.dispatchEvent(new Event("academy:consult-open"));
   });
 });
 dialog.querySelector('.dialog-close').addEventListener('click', () => dialog.close());
