@@ -31,6 +31,8 @@ const files = [
   "club.css",
   "club-ui.js",
   "manifest.json",
+  "robots.txt",
+  "sitemap.xml",
   "icon-192.png",
   "icon-512.png",
   "assets",
