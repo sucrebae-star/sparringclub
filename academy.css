@@ -1,0 +1,1252 @@
+@import "tailwindcss" source(none);
+@source "./src/academy/App.jsx";
+
+@font-face {
+  font-family: Pretendard;
+  src: url("assets/pretendard-variable.woff2") format("woff2");
+  font-display: swap;
+  font-weight: 100 900;
+}
+@theme {
+  --font-sans: Pretendard, Arial, sans-serif;
+  --color-charcoal: #171a1b;
+  --color-ivory: #f2f1ed;
+  --color-academy-red: #d30a1b;
+}
+@layer base {
+  :root {
+    color-scheme: dark;
+    --paper: #f2f1ed;
+    --ink: #171a1b;
+    --red: #d30a1b;
+  }
+  html {
+    scroll-padding-top: 24px;
+  }
+  body {
+    margin: 0;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: Pretendard, Arial, sans-serif;
+    font-size: 18px;
+    line-height: 1.65;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  p,
+  figure {
+    margin: 0;
+  }
+  h1,
+  h2,
+  h3 {
+    line-height: 1.2;
+    letter-spacing: -0.045em;
+    font-weight: 750;
+  }
+  h2 {
+    font-size: clamp(32px, 2.5vw, 48px);
+  }
+  h3 {
+    font-size: 28px;
+  }
+  img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  button,
+  summary {
+    font: inherit;
+  }
+  a,
+  button,
+  summary {
+    -webkit-tap-highlight-color: transparent;
+  }
+  a:focus-visible,
+  button:focus-visible,
+  summary:focus-visible {
+    outline: 3px solid #f6bd67;
+    outline-offset: 6px;
+  }
+  .light a:focus-visible,
+  .light summary:focus-visible {
+    outline-color: #9d0714;
+  }
+  ::selection {
+    background: #b70919;
+    color: white;
+  }
+  summary {
+    cursor: pointer;
+  }
+  address {
+    font-style: normal;
+  }
+}
+@layer components {
+  .shell {
+    width: calc(100% - 80px);
+    max-width: 1440px;
+    margin-inline: auto;
+  }
+  .light {
+    background: var(--paper);
+    color: var(--ink);
+    color-scheme: light;
+  }
+  .section-pad {
+    padding-block: 88px;
+  }
+  .eyebrow {
+    font-size: 14px;
+    font-weight: 650;
+    letter-spacing: 0.12em;
+    margin-bottom: 15px;
+    line-height: 1.4;
+    color: #c7c9c8;
+  }
+  .light .eyebrow {
+    color: #474b4b;
+  }
+  .english {
+    font-size: 15px;
+    line-height: 1.45;
+    font-weight: 650;
+    letter-spacing: 0.13em;
+  }
+  .display-english {
+    font-size: clamp(36px, 3.15vw, 60px);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.06;
+  }
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    min-height: 56px;
+    padding: 14px 28px;
+    background: var(--red);
+    color: #fff;
+    font-size: 17px;
+    font-weight: 650;
+    line-height: 1.4;
+    text-align: center;
+    transition: background-color 0.15s;
+  }
+  .button:hover {
+    background: #b80817;
+  }
+  .button-outline {
+    background: rgba(23, 26, 27, 0.35);
+    border: 1px solid #dadbd6;
+  }
+  .button-outline:hover {
+    background: var(--ink);
+  }
+  .skip-link {
+    opacity: 0;
+    pointer-events: none;
+    position: fixed;
+    left: 20px;
+    top: -100px;
+    z-index: 100;
+    padding: 14px 20px;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .skip-link:focus {
+    opacity: 1;
+    pointer-events: auto;
+    top: 14px;
+  }
+  .site-header {
+    position: relative;
+    z-index: 20;
+    background: #141718;
+  }
+  .header-inner {
+    min-height: 112px;
+    gap: 24px;
+  }
+  .brand {
+    flex-shrink: 0;
+    gap: 16px;
+    line-height: 1.25;
+    font-size: 21px;
+    letter-spacing: -0.04em;
+    font-weight: 750;
+  }
+  .academy-logo {
+    width: 104px;
+    height: 71px;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .desktop-nav {
+    gap: 22px;
+    margin-left: auto;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 550;
+  }
+  .desktop-nav a {
+    padding-block: 20px;
+  }
+  .desktop-nav a:hover,
+  .footer-link:hover {
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 6px;
+  }
+  .header-cta {
+    min-height: 46px;
+    font-size: 14px;
+    padding: 12px 17px;
+    gap: 8px;
+    white-space: nowrap;
+  }
+  .mobile-menu {
+    display: none;
+  }
+  .hero {
+    position: relative;
+    isolation: isolate;
+    height: clamp(680px, 47vw, 904px);
+    background: #111516;
+  }
+  .hero-photo {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    display: block;
+  }
+  .hero-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 35% 100%;
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+      linear-gradient(90deg, transparent 42%, rgba(0, 0, 0, 0.48) 78%),
+      linear-gradient(0deg, rgba(0, 0, 0, 0.35), transparent 55%);
+  }
+  .hero-inner {
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding-block: 70px;
+  }
+  .hero-copy {
+    width: 620px;
+    max-width: 49%;
+  }
+  .hero h1 {
+    font-size: clamp(52px, 4.15vw, 80px);
+    line-height: 1.08;
+    letter-spacing: -0.055em;
+    font-weight: 850;
+  }
+  .hero h1 span {
+    color: var(--red);
+  }
+  .hero-description {
+    margin-top: 25px;
+    font-size: 18px;
+    color: #f1f0ed;
+    line-height: 1.75;
+  }
+  .hero-motto {
+    margin-top: 19px;
+  }
+  .hero-actions {
+    margin-top: 28px;
+  }
+  .philosophy {
+    overflow: hidden;
+  }
+  .philosophy-grid {
+    grid-template-columns: 43% 57%;
+    min-height: 550px;
+  }
+  .philosophy-copy {
+    position: relative;
+    z-index: 1;
+    padding-block: 62px;
+    padding-right: 35px;
+  }
+  .philosophy-copy h2 {
+    margin-bottom: 28px;
+  }
+  .philosophy-copy > p:not(.eyebrow):not(.english) {
+    font-size: 18px;
+    line-height: 1.8;
+    margin-top: 10px;
+    color: #404445;
+  }
+  .philosophy-motto {
+    margin-top: 28px;
+    padding-top: 20px;
+    position: relative;
+    color: #5b5f60;
+  }
+  .philosophy-motto::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 42px;
+    height: 3px;
+    background: var(--red);
+  }
+  .philosophy-photo {
+    height: 100%;
+    width: calc(100% + max(40px, (100vw - 1440px)/2));
+    max-width: none;
+    object-fit: cover;
+    object-position: 65% 50%;
+    mask-image: linear-gradient(90deg, transparent, #000 12%);
+  }
+  .section-intro {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-bottom: 40px;
+  }
+  .section-intro > p {
+    justify-self: end;
+    color: #c7c9c8;
+    font-size: 18px;
+  }
+  .program img {
+    aspect-ratio: 1672/941;
+    width: 100%;
+    object-fit: cover;
+  }
+  .program h3 {
+    margin-top: 22px;
+    margin-bottom: 12px;
+  }
+  .program > p {
+    color: #c7c9c8;
+    font-size: 17px;
+    line-height: 1.65;
+    max-width: 42ch;
+  }
+  .program-details {
+    margin-top: 22px;
+    font-size: 16px;
+    color: #dddeda;
+  }
+  .program-details summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+    border-top: 1px solid #444747;
+    padding-top: 10px;
+    list-style: none;
+  }
+  .program-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .program-details[open] summary span {
+    transform: rotate(45deg);
+  }
+  .program-details > p {
+    padding-block: 15px;
+  }
+  .program-details > a {
+    display: inline-block;
+    min-height: 44px;
+    padding-block: 8px;
+    text-decoration: underline;
+    text-underline-offset: 5px;
+  }
+  .photo-banner {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+  .photo-banner > img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -2;
+  }
+  .photo-banner::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.86),
+      rgba(0, 0, 0, 0.65) 30%,
+      transparent 60%
+    );
+  }
+  .banner-inner {
+    height: 100%;
+    display: flex;
+    align-items: center;
+  }
+  .banner-copy {
+    padding-block: 48px;
+    max-width: 640px;
+  }
+  .banner-subtitle {
+    font-size: 25px;
+    font-weight: 550;
+    margin-top: 20px;
+  }
+  .morning {
+    height: 560px;
+  }
+  .morning > img {
+    left: 26%;
+    width: 74%;
+    object-position: 60% 90%;
+    mask-image: linear-gradient(90deg, transparent, #000 18%);
+  }
+  .accent-note {
+    margin-top: 25px;
+    line-height: 1.3;
+    border-left: 4px solid var(--red);
+    padding-left: 18px;
+    font-size: 22px;
+  }
+  .facilities {
+    padding-block: 48px;
+  }
+  .facilities .shell {
+    gap: 90px;
+  }
+  .facilities .eyebrow {
+    margin-bottom: 8px;
+  }
+  .facilities h2 {
+    font-size: 38px;
+  }
+  .facilities .shell > p {
+    border-left: 1px solid #767b7c;
+    padding: 15px 0 15px 90px;
+    font-size: 26px;
+    font-weight: 650;
+  }
+  .schedule-grid {
+    grid-template-columns: 1fr 1.12fr 1fr;
+    gap: 65px;
+  }
+  .schedule .display-english {
+    font-size: clamp(32px, 2.6vw, 50px);
+  }
+  .schedule-message {
+    font-size: 25px;
+    margin-top: 25px;
+    line-height: 1.45;
+  }
+  .schedule table {
+    border-collapse: collapse;
+    width: 100%;
+    align-self: start;
+    font-size: 20px;
+  }
+  .schedule th,
+  .schedule td {
+    border-bottom: 1px solid #444747;
+    padding: 9px 12px;
+    text-align: left;
+    line-height: 1.5;
+  }
+  .schedule th {
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    width: 32%;
+  }
+  .schedule tr:last-child > * {
+    border-bottom: 0;
+  }
+  .schedule-info {
+    border-left: 1px solid #555959;
+    padding-left: 50px;
+    font-size: 19px;
+    align-self: stretch;
+  }
+  .schedule-info > p {
+    margin-bottom: 12px;
+  }
+  .schedule-info strong {
+    font-weight: 550;
+  }
+  .schedule-motto {
+    margin-top: 37px !important;
+    padding-top: 25px;
+    color: #c7c9c8;
+    position: relative;
+  }
+  .schedule-motto::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 42px;
+    height: 3px;
+    background: var(--red);
+  }
+  .first-visit {
+    padding-block: 52px;
+  }
+  .first-visit-grid {
+    grid-template-columns: 1fr 1.12fr;
+    gap: 60px;
+  }
+  .first-visit h2 {
+    font-size: 38px;
+    margin-bottom: 20px;
+  }
+  .tablet-break {
+    display: none;
+  }
+  .first-visit .english {
+    color: #5a5f5f;
+    font-size: 14px;
+  }
+  .equipment {
+    max-width: 570px;
+    width: 100%;
+    margin-inline: auto;
+  }
+  .equipment img {
+    width: 100%;
+    height: 250px;
+    object-fit: contain;
+    mix-blend-mode: multiply;
+  }
+  .equipment ul {
+    list-style: none;
+    gap: 18px;
+    margin: 10px 0 0;
+    padding: 0;
+    text-align: center;
+    font-weight: 650;
+    font-size: 16px;
+  }
+  .equipment > p {
+    text-align: center;
+    font-size: 16px;
+    margin-top: 26px;
+    color: #424747;
+  }
+  .reservation {
+    min-height: 450px;
+  }
+  .reservation > img {
+    object-position: 75% 50%;
+  }
+  .reservation .banner-copy {
+    max-width: 760px;
+  }
+  .reservation .display-english {
+    font-size: clamp(38px, 3.1vw, 60px);
+  }
+  .reservation .button {
+    margin-top: 26px;
+    min-width: 220px;
+  }
+  .booking-description {
+    margin-top: 20px;
+    font-size: 16px;
+    color: #e5e5e0;
+  }
+  .site-footer {
+    padding-top: 55px;
+    padding-bottom: 30px;
+  }
+  .footer-grid {
+    grid-template-columns: 1.3fr 1fr 1.6fr 1fr 0.8fr;
+    gap: 32px;
+  }
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    font-size: 18px;
+    font-weight: 650;
+  }
+  .footer-brand .academy-logo {
+    width: 135px;
+    height: 92px;
+  }
+  .footer-grid h2 {
+    font-size: 16px;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    margin-bottom: 18px;
+  }
+  .footer-grid > div {
+    font-size: 14px;
+    color: #c7c9c8;
+  }
+  .footer-grid > div > p {
+    margin-top: 12px;
+  }
+  .footer-grid address {
+    max-width: 28ch;
+  }
+  .footer-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    font-size: 14px;
+  }
+  .footer-bottom {
+    border-top: 1px solid #3c4141;
+    margin-top: 38px;
+    padding-top: 25px;
+    color: #aeb3b3;
+    font-size: 12px;
+  }
+  .footer-bottom .english {
+    font-size: 12px;
+  }
+  .footer-bottom > div {
+    text-align: right;
+  }
+  .mobile-booking {
+    display: none;
+  }
+}
+@media (min-width: 1200px) and (max-width: 1550px) {
+  .brand {
+    font-size: 18px;
+    gap: 12px;
+  }
+  .academy-logo {
+    width: 82px;
+    height: 56px;
+  }
+  .desktop-nav {
+    gap: 17px;
+    font-size: 13px;
+  }
+  .header-inner {
+    gap: 18px;
+  }
+  .schedule-grid {
+    gap: 40px;
+  }
+  .schedule-info {
+    padding-left: 35px;
+  }
+}
+@media (max-width: 1199px) {
+  .shell {
+    width: calc(100% - 64px);
+  }
+  .header-inner {
+    min-height: 92px;
+  }
+  .desktop-nav {
+    display: none;
+  }
+  .header-cta {
+    margin-left: auto;
+  }
+  .mobile-menu {
+    display: block;
+  }
+  .mobile-menu summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 66px;
+    min-height: 48px;
+    list-style: none;
+    font-size: 14px;
+  }
+  .mobile-menu summary::-webkit-details-marker {
+    display: none;
+  }
+  .menu-icon {
+    display: block;
+    position: relative;
+    width: 22px;
+    height: 14px;
+    border-top: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+  }
+  .mobile-menu[open] .menu-icon {
+    height: 2px;
+    border-bottom: 0;
+    transform: rotate(45deg);
+  }
+  .mobile-menu[open] .menu-icon::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-top: 2px solid currentColor;
+    transform: translateY(-2px) rotate(90deg);
+  }
+  .mobile-menu nav {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    background: #171a1b;
+    padding: 16px 32px 28px;
+    border-top: 1px solid #414747;
+    max-height: calc(100dvh - 92px);
+    overflow: auto;
+  }
+  .mobile-menu nav > a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 52px;
+    font-size: 18px;
+    padding: 12px 0;
+  }
+  .mobile-menu nav > .button {
+    padding: 14px 22px;
+    justify-content: center;
+    margin-top: 15px;
+  }
+  .hero {
+    height: 700px;
+  }
+  .hero-copy {
+    max-width: 55%;
+  }
+  .hero h1 {
+    font-size: 54px;
+  }
+  .hero-description {
+    font-size: 17px;
+  }
+  .hero .button {
+    padding: 14px 18px;
+    font-size: 16px;
+  }
+  .hero-inner {
+    padding-block: 50px;
+  }
+  .hero::after {
+    background:
+      linear-gradient(90deg, transparent 25%, rgba(0, 0, 0, 0.6)),
+      linear-gradient(0deg, rgba(0, 0, 0, 0.4), transparent 70%);
+  }
+  .philosophy-grid {
+    min-height: 500px;
+    grid-template-columns: 47% 53%;
+  }
+  .philosophy-copy {
+    padding-right: 15px;
+  }
+  .philosophy-copy > p:not(.eyebrow):not(.english) {
+    font-size: 16px;
+  }
+  .philosophy-photo {
+    width: calc(100% + 32px);
+  }
+  h2 {
+    font-size: 34px;
+  }
+  .section-pad {
+    padding-block: 64px;
+  }
+  .section-intro > p {
+    font-size: 16px;
+  }
+  .program h3 {
+    font-size: 25px;
+  }
+  .program > p {
+    font-size: 16px;
+  }
+  .program-grid {
+    gap: 22px;
+  }
+  .morning {
+    height: 430px;
+  }
+  .banner-subtitle {
+    font-size: 23px;
+  }
+  .schedule-grid {
+    grid-template-columns: 1fr 1.2fr;
+    gap: 35px;
+  }
+  .schedule-info {
+    grid-column: 1/-1;
+    border-left: 0;
+    border-top: 1px solid #444747;
+    padding: 28px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 35px;
+    font-size: 16px;
+  }
+  .schedule-info > p {
+    margin: 0;
+  }
+  .schedule-info .schedule-motto {
+    display: none;
+  }
+  .first-visit-grid {
+    gap: 30px;
+  }
+  .first-visit h2 {
+    font-size: 32px;
+  }
+  .tablet-break {
+    display: block;
+  }
+  .equipment img {
+    height: auto;
+  }
+  .equipment ul {
+    font-size: 14px;
+    gap: 8px;
+  }
+  .equipment > p {
+    font-size: 14px;
+  }
+  .footer-grid {
+    grid-template-columns: 1.2fr 1fr 1.6fr;
+    gap: 35px;
+  }
+  .footer-brand {
+    grid-row: span 2;
+  }
+  .footer-bottom > div {
+    text-align: left;
+  }
+}
+@media (min-width: 701px) and (max-width: 1000px) {
+  .hero {
+    height: auto;
+  }
+  .hero-photo {
+    position: relative;
+    z-index: auto;
+  }
+  .hero-photo img {
+    height: auto;
+    aspect-ratio: 1672/941;
+    object-fit: contain;
+  }
+  .hero::after {
+    display: none;
+  }
+  .hero-copy {
+    width: 100%;
+    max-width: none;
+  }
+  .hero-inner {
+    padding-block: 40px;
+  }
+  .hero h1 {
+    font-size: 56px;
+  }
+  .hero-description {
+    max-width: 640px;
+  }
+  .morning {
+    height: 440px;
+  }
+  .morning > img {
+    left: 0;
+    width: 100%;
+    object-position: 60% 90%;
+    mask-image: none;
+  }
+  .morning .banner-copy {
+    max-width: 340px;
+  }
+  .morning .display-english {
+    font-size: 34px;
+  }
+  .morning .banner-subtitle {
+    font-size: 19px;
+  }
+}
+@media (max-width: 700px) {
+  body {
+    font-size: 16px;
+  }
+  .shell {
+    width: calc(100% - 40px);
+  }
+  .header-inner {
+    min-height: 80px;
+    gap: 14px;
+  }
+  .brand {
+    font-size: 16px;
+    gap: 10px;
+  }
+  .brand .branch {
+    display: block;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    margin-top: 5px;
+    font-weight: 500;
+  }
+  .academy-logo {
+    width: 70px;
+    height: 48px;
+  }
+  .header-cta {
+    display: none;
+  }
+  .mobile-menu nav {
+    padding: 10px 20px 25px;
+    max-height: calc(100dvh - 80px);
+  }
+  .hero {
+    height: auto;
+  }
+  .hero-photo {
+    position: relative;
+    height: 430px;
+    z-index: auto;
+  }
+  .hero-photo img {
+    object-position: 50% 52%;
+    object-fit: cover;
+  }
+  .hero::after {
+    display: none;
+  }
+  .hero-inner {
+    padding-block: 30px 40px;
+    display: block;
+  }
+  .hero-copy {
+    max-width: none;
+    width: auto;
+  }
+  .hero h1 {
+    font-size: clamp(36px, 9.8vw, 54px);
+    line-height: 1.12;
+  }
+  .hero-description {
+    font-size: 16px;
+    margin-top: 20px;
+    line-height: 1.7;
+  }
+  .hero-motto {
+    font-size: 12px;
+    margin-top: 18px;
+    letter-spacing: 0.11em;
+  }
+  .hero-actions {
+    gap: 10px;
+    margin-top: 25px;
+    flex-wrap: nowrap;
+  }
+  .hero-actions .button {
+    flex: 1;
+    gap: 7px;
+    font-size: 14px;
+    padding: 14px 10px;
+    min-height: 52px;
+  }
+  .desktop-break {
+    display: none;
+  }
+  .eyebrow {
+    font-size: 12px;
+    margin-bottom: 12px;
+  }
+  h2 {
+    font-size: 31px;
+    line-height: 1.25;
+  }
+  .section-pad {
+    padding-block: 48px;
+  }
+  .philosophy-grid {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .philosophy-copy {
+    padding: 44px 0 32px;
+    width: 100%;
+  }
+  .philosophy-copy h2 {
+    margin-bottom: 22px;
+  }
+  .philosophy-copy > p:not(.eyebrow):not(.english) {
+    font-size: 16px;
+    line-height: 1.8;
+  }
+  .philosophy-motto {
+    margin-top: 22px;
+    font-size: 12px;
+  }
+  .philosophy-photo {
+    width: calc(100% + 40px);
+    max-width: none;
+    height: auto;
+    aspect-ratio: 1672/941;
+    object-fit: contain;
+    mask-image: none;
+  }
+  .section-intro {
+    display: block;
+    margin-bottom: 28px;
+  }
+  .section-intro > p {
+    justify-self: auto;
+    margin-top: 22px;
+    line-height: 1.7;
+  }
+  .program-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  .program h3 {
+    font-size: 27px;
+    margin-top: 20px;
+  }
+  .program > p {
+    max-width: none;
+    font-size: 16px;
+  }
+  .program-details {
+    margin-top: 16px;
+  }
+  .program-details summary {
+    min-height: 48px;
+  }
+  .photo-banner > img {
+    position: relative;
+    z-index: 0;
+    height: auto;
+    aspect-ratio: 1672/941;
+    object-fit: contain;
+  }
+  .photo-banner::after {
+    display: none;
+  }
+  .morning {
+    height: auto;
+  }
+  .morning > img {
+    left: 0;
+    width: 100%;
+    mask-image: none;
+  }
+  .banner-copy {
+    padding-block: 32px 40px;
+    max-width: none;
+  }
+  .display-english {
+    font-size: 38px;
+  }
+  .banner-subtitle {
+    font-size: 20px;
+    line-height: 1.5;
+    margin-top: 16px;
+  }
+  .accent-note {
+    font-size: 18px;
+    margin-top: 20px;
+    padding-left: 12px;
+  }
+  .facilities {
+    padding-block: 32px;
+  }
+  .facilities .shell {
+    gap: 24px;
+    justify-content: space-between;
+  }
+  .facilities h2 {
+    font-size: 26px;
+  }
+  .facilities .shell > p {
+    font-size: 17px;
+    padding: 8px 0 8px 22px;
+    max-width: 54%;
+  }
+  .facilities .eyebrow {
+    font-size: 10px;
+  }
+  .schedule-grid {
+    display: block;
+  }
+  .schedule .display-english {
+    font-size: 38px;
+  }
+  .schedule-message {
+    font-size: 19px;
+    margin-top: 20px;
+  }
+  .schedule table {
+    font-size: 19px;
+    margin-top: 30px;
+  }
+  .schedule th,
+  .schedule td {
+    padding: 12px 4px;
+  }
+  .schedule th {
+    width: 32%;
+  }
+  .schedule-info {
+    display: block;
+    margin-top: 28px;
+    padding-top: 24px;
+    font-size: 16px;
+  }
+  .schedule-info > p {
+    margin-bottom: 8px;
+  }
+  .first-visit {
+    padding-block: 40px;
+  }
+  .first-visit-grid {
+    display: block;
+  }
+  .first-visit h2 {
+    font-size: 29px;
+    margin-bottom: 16px;
+  }
+  .tablet-break {
+    display: none;
+  }
+  .first-visit .english {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+  }
+  .equipment {
+    margin-top: 22px;
+  }
+  .equipment img {
+    width: 100%;
+    height: auto;
+  }
+  .equipment ul {
+    font-size: 13px;
+    gap: 8px;
+    line-height: 1.5;
+  }
+  .equipment > p {
+    font-size: 14px;
+    margin-top: 24px;
+  }
+  .reservation {
+    min-height: 0;
+  }
+  .reservation .display-english {
+    font-size: clamp(30px, 8vw, 44px);
+    line-height: 1.1;
+  }
+  .reservation .banner-subtitle {
+    font-size: 20px;
+  }
+  .booking-description {
+    font-size: 15px;
+    line-height: 1.8;
+  }
+  .reservation .button {
+    width: 100%;
+    min-height: 54px;
+  }
+  .site-footer {
+    padding-top: 40px;
+    padding-bottom: 104px;
+  }
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 30px 20px;
+  }
+  .footer-brand {
+    grid-column: 1/-1;
+    grid-row: auto;
+    flex-direction: row;
+    align-items: center;
+    font-size: 16px;
+  }
+  .footer-brand .academy-logo {
+    width: 90px;
+    height: 62px;
+  }
+  .footer-grid > div#visit {
+    grid-row: span 2;
+  }
+  .footer-grid h2 {
+    font-size: 15px;
+    margin-bottom: 14px;
+  }
+  .footer-link {
+    font-size: 13px;
+    min-height: 44px;
+    gap: 7px;
+  }
+  .footer-grid > div {
+    font-size: 13px;
+  }
+  .footer-bottom {
+    margin-top: 30px;
+    padding-top: 24px;
+    font-size: 11px;
+    gap: 20px;
+  }
+  .footer-bottom .english {
+    font-size: 11px;
+  }
+  .footer-bottom > div > p + p {
+    margin-top: 8px;
+  }
+  .mobile-booking {
+    display: block;
+    position: fixed;
+    z-index: 15;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px 20px calc(10px + env(safe-area-inset-bottom));
+    background: #171a1b;
+    border-top: 1px solid #414747;
+  }
+  .mobile-booking .button {
+    width: 100%;
+    min-height: 48px;
+    padding-block: 12px;
+    font-size: 16px;
+  }
+  html {
+    scroll-padding-bottom: 90px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
