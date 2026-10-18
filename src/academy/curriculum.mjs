@@ -39,3 +39,20 @@ export const curricula = {
     ]),
   },
 };
+
+
+// Two actual RandomCut class highlights precede, rather than replace, the exercise photos.
+const videoPrograms = { 'physical-training': 'physical', 'adult-boxing': 'boxing', 'kids-boxing': 'kids' };
+for (const [id, stem] of Object.entries(videoPrograms)) {
+  const description = id === 'physical-training'
+    ? '크로스핏 수업에서 함께 전신을 움직이는 훈련 모습을 만나보세요.'
+    : id === 'adult-boxing'
+      ? '저녁 8시 모두의 복싱, 함께 기본기를 연습하는 수업 모습입니다.'
+      : '키즈복싱 수업에서 함께 배우고 움직이는 모습을 만나보세요.';
+  curricula[id].parts.unshift(...[1, 2].map(n => ({
+    image: `assets/curriculum-video-v1/${stem}-${n}.webp`,
+    video: `assets/curriculum-video-v1/${stem}-${n}.mp4`,
+    title: n === 1 ? '수업 하이라이트' : '함께하는 훈련',
+    description,
+  })));
+}

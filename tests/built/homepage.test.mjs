@@ -30,7 +30,7 @@ test("static HTML delivers every requested section without waiting for React", (
   assert.ok(!html.includes("연동 예정"));
   assert.ok(!html.includes("<form"));
   assert.ok(
-    html.includes("실제 회원이나 시설을 촬영한 사진이 아닌 AI 콘셉트 이미지"),
+    html.includes("수업·운동 사진은 AI 콘셉트 이미지입니다."),
   );
   assert.ok(!html.includes("<!--academy-root-->"));
 });

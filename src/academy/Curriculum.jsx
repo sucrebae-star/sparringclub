@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { curricula } from './curriculum.mjs';
 import { programs, contact } from './content.mjs';
+import LessonVideo from './LessonVideo.jsx';
 
 const motion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
 
@@ -47,7 +48,7 @@ function Lesson({ program }) {
     <div className="curriculum-exercises" role="group" aria-label={`${program.name} 운동 파트 선택`}>
       {lesson.parts.map((part, i) => <button key={part.image} type="button" aria-pressed={i === index}
         aria-controls="curriculum-carousel" onClick={() => select(i)}>
-        <span>{part.title}</span><span aria-hidden="true">↗</span>
+        <span>{part.title}{part.video && <small>영상</small>}</span><span aria-hidden="true">↗</span>
       </button>)}
     </div>
     <div className="curriculum-visual">
@@ -63,8 +64,10 @@ function Lesson({ program }) {
         }}>
         {lesson.parts.map((part, i) => <figure key={part.image} className="curriculum-slide" role="group"
           aria-roledescription="슬라이드" aria-label={`${i + 1} / ${lesson.parts.length}: ${part.title}`} aria-hidden={i !== index}>
-          <img src={part.image} width="1672" height="941" loading={i === 0 ? 'eager' : 'lazy'} decoding="async"
-            alt={`${program.name} ${part.title} 수업을 표현한 AI 콘셉트 이미지`} />
+          {part.video && i === index ? <LessonVideo key={part.video} part={part} /> :
+            <img src={part.image} width="1672" height="941" loading={i === 0 ? 'eager' : 'lazy'} decoding="async"
+              alt={part.video ? `${program.name} 실제 수업 영상 미리보기` : `${program.name} ${part.title} 수업을 표현한 AI 콘셉트 이미지`} />}
+
         </figure>)}
       </div>
       <div className="curriculum-caption-row">
@@ -85,7 +88,7 @@ function Lesson({ program }) {
         <p>상담은 수업 시작 10분 전에 진행합니다.</p>
       </div>
     </div>
-    <p className="curriculum-disclaimer">수업 이해를 돕기 위한 AI 콘셉트 이미지입니다.</p>
+    <p className="curriculum-disclaimer">영상은 실제 수업을 편집한 장면이며, 운동 파트별 사진은 이해를 돕기 위한 AI 콘셉트 이미지입니다.</p>
   </div>;
 }
 

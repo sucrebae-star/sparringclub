@@ -1335,3 +1335,10 @@
 @media (prefers-reduced-motion:reduce) {
   .curriculum-intro,.curriculum-exercises,.curriculum-visual { animation:none; }
 }
+
+.lesson-video video { display:block; width:100%; height:auto; aspect-ratio:16/9; object-fit:contain; background:#171a1b; }
+.lesson-video-actions { display:flex; justify-content:space-between; align-items:center; gap:12px; min-height:48px; font-size:14px; }
+.lesson-video-actions button { min-height:44px; padding:8px 12px; font-size:16px; font-weight:600; background:#e2e1dc; }
+.lesson-video-actions a { text-decoration:underline; }
+.curriculum-exercises small { font-size:12px; font-weight:500; margin-left:8px; }
+@media(max-width:600px) { .lesson-video-actions {font-size:12px;} .curriculum-exercises small {display:block;margin:2px 0 0;} }
