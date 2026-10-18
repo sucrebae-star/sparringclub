@@ -1,0 +1,115 @@
+{
+  "version": "academy-generated-v1",
+  "images": [
+    {
+      "key": "heroDesktop",
+      "section": "히어로 데스크톱",
+      "src": "assets/academy-generated-v1/hero-desktop.webp",
+      "width": 1672,
+      "height": 941,
+      "objectPosition": "35% 50%",
+      "original": "docs/design-assets/academy-generated-v1/originals/hero-desktop.png",
+      "generated": true,
+      "bytes": 242530
+    },
+    {
+      "key": "heroMobile",
+      "section": "히어로 모바일",
+      "src": "assets/academy-generated-v1/hero-mobile.webp",
+      "width": 941,
+      "height": 1672,
+      "objectPosition": "50% 50%",
+      "original": "docs/design-assets/academy-generated-v1/originals/hero-mobile.png",
+      "generated": true,
+      "bytes": 253302
+    },
+    {
+      "key": "philosophy",
+      "section": "철학 소개",
+      "src": "assets/academy-generated-v1/philosophy.webp",
+      "width": 1672,
+      "height": 941,
+      "objectPosition": "65% 50%",
+      "original": "docs/design-assets/academy-generated-v1/originals/philosophy.png",
+      "generated": true,
+      "bytes": 129112
+    },
+    {
+      "key": "physical",
+      "section": "피지컬 트레이닝",
+      "src": "assets/academy-generated-v1/program-physical.webp",
+      "width": 1672,
+      "height": 941,
+      "objectPosition": "50% 50%",
+      "original": "docs/design-assets/academy-generated-v1/originals/program-physical.png",
+      "generated": true,
+      "bytes": 266192
+    },
+    {
+      "key": "boxing",
+      "section": "모두의 복싱",
+      "src": "assets/academy-generated-v1/program-boxing.webp",
+      "width": 1672,
+      "height": 941,
+      "objectPosition": "50% 50%",
+      "original": "docs/design-assets/academy-generated-v1/originals/program-boxing.png",
+      "generated": true,
+      "bytes": 144466
+    },
+    {
+      "key": "kids",
+      "section": "키즈복싱",
+      "src": "assets/academy-generated-v1/program-kids.webp",
+      "width": 1672,
+      "height": 941,
+      "objectPosition": "65% 50%",
+      "original": "docs/design-assets/academy-generated-v1/originals/program-kids.png",
+      "generated": true,
+      "bytes": 139500
+    },
+    {
+      "key": "morning",
+      "section": "아침 수업",
+      "src": "assets/academy-generated-v1/morning.webp",
+      "width": 1672,
+      "height": 941,
+      "objectPosition": "60% 50%",
+      "original": "docs/design-assets/academy-generated-v1/originals/morning.png",
+      "generated": true,
+      "bytes": 268684
+    },
+    {
+      "key": "firstVisit",
+      "section": "첫 방문 준비물",
+      "src": "assets/academy-generated-v1/first-visit.webp",
+      "width": 1672,
+      "height": 941,
+      "objectPosition": "50% 50%",
+      "original": "docs/design-assets/academy-generated-v1/originals/first-visit.png",
+      "generated": true,
+      "bytes": 79348
+    },
+    {
+      "key": "reservation",
+      "section": "체험·상담 예약",
+      "src": "assets/academy-generated-v1/reservation.webp",
+      "width": 1672,
+      "height": 941,
+      "objectPosition": "75% 50%",
+      "original": "docs/design-assets/academy-generated-v1/originals/reservation.png",
+      "generated": true,
+      "bytes": 135802
+    }
+  ],
+  "logo": "assets/academy-generated-v1/boxing-logo-original.png",
+  "backgrounds": {
+    "charcoal": "#171A1B",
+    "ivory": "#F2F1ED",
+    "accent": "#D30A1B"
+  },
+  "facilities": {
+    "image": null,
+    "text": "샤워실 · 탈의실 구비"
+  },
+  "note": "수업 사진은 실제 회원/시설 촬영본이 아닌 AI 콘셉트 이미지입니다. 히어로만 별도 모바일 원본이 있습니다."
+}

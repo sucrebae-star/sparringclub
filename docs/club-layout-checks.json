@@ -1,0 +1,546 @@
+[
+  {
+    "action": "block",
+    "clientWidth": 305,
+    "nav": {
+      "bottom": 1000,
+      "height": 65,
+      "left": 0,
+      "right": 305,
+      "top": 935,
+      "width": 305,
+      "x": 0,
+      "y": 935
+    },
+    "page": "dashboard",
+    "scrollWidth": 305,
+    "width": 320
+  },
+  {
+    "action": "block",
+    "clientWidth": 305,
+    "nav": {
+      "bottom": 1000,
+      "height": 65,
+      "left": 0,
+      "right": 305,
+      "top": 935,
+      "width": 305,
+      "x": 0,
+      "y": 935
+    },
+    "page": "players",
+    "scrollWidth": 305,
+    "width": 320
+  },
+  {
+    "action": "block",
+    "clientWidth": 305,
+    "nav": {
+      "bottom": 1000,
+      "height": 65,
+      "left": 0,
+      "right": 305,
+      "top": 935,
+      "width": 305,
+      "x": 0,
+      "y": 935
+    },
+    "page": "gyms",
+    "scrollWidth": 305,
+    "width": 320
+  },
+  {
+    "action": "block",
+    "clientWidth": 305,
+    "nav": {
+      "bottom": 1000,
+      "height": 65,
+      "left": 0,
+      "right": 305,
+      "top": 935,
+      "width": 305,
+      "x": 0,
+      "y": 935
+    },
+    "page": "board",
+    "scrollWidth": 305,
+    "width": 320
+  },
+  {
+    "action": "block",
+    "clientWidth": 375,
+    "nav": {
+      "bottom": 1000,
+      "height": 65,
+      "left": 0,
+      "right": 375,
+      "top": 935,
+      "width": 375,
+      "x": 0,
+      "y": 935
+    },
+    "page": "dashboard",
+    "scrollWidth": 375,
+    "width": 390
+  },
+  {
+    "action": "block",
+    "clientWidth": 375,
+    "nav": {
+      "bottom": 1000,
+      "height": 65,
+      "left": 0,
+      "right": 375,
+      "top": 935,
+      "width": 375,
+      "x": 0,
+      "y": 935
+    },
+    "page": "players",
+    "scrollWidth": 375,
+    "width": 390
+  },
+  {
+    "action": "block",
+    "clientWidth": 375,
+    "nav": {
+      "bottom": 1000,
+      "height": 65,
+      "left": 0,
+      "right": 375,
+      "top": 935,
+      "width": 375,
+      "x": 0,
+      "y": 935
+    },
+    "page": "gyms",
+    "scrollWidth": 375,
+    "width": 390
+  },
+  {
+    "action": "block",
+    "clientWidth": 375,
+    "nav": {
+      "bottom": 1000,
+      "height": 65,
+      "left": 0,
+      "right": 375,
+      "top": 935,
+      "width": 375,
+      "x": 0,
+      "y": 935
+    },
+    "page": "board",
+    "scrollWidth": 375,
+    "width": 390
+  },
+  {
+    "action": "block",
+    "clientWidth": 585,
+    "nav": {
+      "bottom": 1000,
+      "height": 65,
+      "left": 0,
+      "right": 585,
+      "top": 935,
+      "width": 585,
+      "x": 0,
+      "y": 935
+    },
+    "page": "dashboard",
+    "scrollWidth": 585,
+    "width": 600
+  },
+  {
+    "action": "block",
+    "clientWidth": 585,
+    "nav": {
+      "bottom": 1000,
+      "height": 65,
+      "left": 0,
+      "right": 585,
+      "top": 935,
+      "width": 585,
+      "x": 0,
+      "y": 935
+    },
+    "page": "players",
+    "scrollWidth": 585,
+    "width": 600
+  },
+  {
+    "action": "block",
+    "clientWidth": 585,
+    "nav": {
+      "bottom": 1000,
+      "height": 65,
+      "left": 0,
+      "right": 585,
+      "top": 935,
+      "width": 585,
+      "x": 0,
+      "y": 935
+    },
+    "page": "gyms",
+    "scrollWidth": 585,
+    "width": 600
+  },
+  {
+    "action": "block",
+    "clientWidth": 585,
+    "nav": {
+      "bottom": 1000,
+      "height": 65,
+      "left": 0,
+      "right": 585,
+      "top": 935,
+      "width": 585,
+      "x": 0,
+      "y": 935
+    },
+    "page": "board",
+    "scrollWidth": 585,
+    "width": 600
+  },
+  {
+    "action": "none",
+    "clientWidth": 753,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 753,
+      "top": 112,
+      "width": 753,
+      "x": 0,
+      "y": 112
+    },
+    "page": "dashboard",
+    "scrollWidth": 753,
+    "width": 768
+  },
+  {
+    "action": "none",
+    "clientWidth": 753,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 753,
+      "top": 112,
+      "width": 753,
+      "x": 0,
+      "y": 112
+    },
+    "page": "players",
+    "scrollWidth": 753,
+    "width": 768
+  },
+  {
+    "action": "none",
+    "clientWidth": 753,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 753,
+      "top": 112,
+      "width": 753,
+      "x": 0,
+      "y": 112
+    },
+    "page": "gyms",
+    "scrollWidth": 753,
+    "width": 768
+  },
+  {
+    "action": "none",
+    "clientWidth": 753,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 753,
+      "top": 112,
+      "width": 753,
+      "x": 0,
+      "y": 112
+    },
+    "page": "board",
+    "scrollWidth": 753,
+    "width": 768
+  },
+  {
+    "action": "none",
+    "clientWidth": 1009,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 1009,
+      "top": 112,
+      "width": 1009,
+      "x": 0,
+      "y": 112
+    },
+    "page": "dashboard",
+    "scrollWidth": 1009,
+    "width": 1024
+  },
+  {
+    "action": "none",
+    "clientWidth": 1009,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 1009,
+      "top": 112,
+      "width": 1009,
+      "x": 0,
+      "y": 112
+    },
+    "page": "players",
+    "scrollWidth": 1009,
+    "width": 1024
+  },
+  {
+    "action": "none",
+    "clientWidth": 1009,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 1009,
+      "top": 112,
+      "width": 1009,
+      "x": 0,
+      "y": 112
+    },
+    "page": "gyms",
+    "scrollWidth": 1009,
+    "width": 1024
+  },
+  {
+    "action": "none",
+    "clientWidth": 1024,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 1024,
+      "top": 112,
+      "width": 1024,
+      "x": 0,
+      "y": 112
+    },
+    "page": "board",
+    "scrollWidth": 1024,
+    "width": 1024
+  },
+  {
+    "action": "none",
+    "clientWidth": 1425,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 1425,
+      "top": 112,
+      "width": 1425,
+      "x": 0,
+      "y": 112
+    },
+    "page": "dashboard",
+    "scrollWidth": 1425,
+    "width": 1440
+  },
+  {
+    "action": "none",
+    "clientWidth": 1425,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 1425,
+      "top": 112,
+      "width": 1425,
+      "x": 0,
+      "y": 112
+    },
+    "page": "players",
+    "scrollWidth": 1425,
+    "width": 1440
+  },
+  {
+    "action": "none",
+    "clientWidth": 1425,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 1425,
+      "top": 112,
+      "width": 1425,
+      "x": 0,
+      "y": 112
+    },
+    "page": "gyms",
+    "scrollWidth": 1425,
+    "width": 1440
+  },
+  {
+    "action": "none",
+    "clientWidth": 1440,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 1440,
+      "top": 112,
+      "width": 1440,
+      "x": 0,
+      "y": 112
+    },
+    "page": "board",
+    "scrollWidth": 1440,
+    "width": 1440
+  },
+  {
+    "action": "none",
+    "clientWidth": 1905,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 1905,
+      "top": 112,
+      "width": 1905,
+      "x": 0,
+      "y": 112
+    },
+    "page": "dashboard",
+    "scrollWidth": 1905,
+    "width": 1920
+  },
+  {
+    "action": "none",
+    "clientWidth": 1905,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 1905,
+      "top": 112,
+      "width": 1905,
+      "x": 0,
+      "y": 112
+    },
+    "page": "players",
+    "scrollWidth": 1905,
+    "width": 1920
+  },
+  {
+    "action": "none",
+    "clientWidth": 1905,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 1905,
+      "top": 112,
+      "width": 1905,
+      "x": 0,
+      "y": 112
+    },
+    "page": "gyms",
+    "scrollWidth": 1905,
+    "width": 1920
+  },
+  {
+    "action": "none",
+    "clientWidth": 1920,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 1920,
+      "top": 112,
+      "width": 1920,
+      "x": 0,
+      "y": 112
+    },
+    "page": "board",
+    "scrollWidth": 1920,
+    "width": 1920
+  },
+  {
+    "action": "none",
+    "clientWidth": 2545,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 2545,
+      "top": 112,
+      "width": 2545,
+      "x": 0,
+      "y": 112
+    },
+    "page": "dashboard",
+    "scrollWidth": 2545,
+    "width": 2560
+  },
+  {
+    "action": "none",
+    "clientWidth": 2545,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 2545,
+      "top": 112,
+      "width": 2545,
+      "x": 0,
+      "y": 112
+    },
+    "page": "players",
+    "scrollWidth": 2545,
+    "width": 2560
+  },
+  {
+    "action": "none",
+    "clientWidth": 2545,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 2545,
+      "top": 112,
+      "width": 2545,
+      "x": 0,
+      "y": 112
+    },
+    "page": "gyms",
+    "scrollWidth": 2545,
+    "width": 2560
+  },
+  {
+    "action": "none",
+    "clientWidth": 2560,
+    "nav": {
+      "bottom": 176,
+      "height": 64,
+      "left": 0,
+      "right": 2560,
+      "top": 112,
+      "width": 2560,
+      "x": 0,
+      "y": 112
+    },
+    "page": "board",
+    "scrollWidth": 2560,
+    "width": 2560
+  }
+]

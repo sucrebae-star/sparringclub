@@ -1,0 +1,11 @@
+name = "academy-booking-cleanup"
+main = "booking-cleanup.js"
+compatibility_date = "2026-10-15"
+
+[triggers]
+crons = ["15 * * * *"]
+
+[[d1_databases]]
+binding = "BOOKING_DB"
+database_name = "academy-bookings"
+database_id = "REPLACE_WITH_THE_SAME_D1_ID_AS_PAGES"

@@ -1,0 +1,60 @@
+{
+  "source": "RandomCut Studio 0.7.0; actual class footage",
+  "postprocess": "720p H.264 faststart, muted. Kids-2 replaces an obstructed outdoor cut with an indoor cut from kids-1.",
+  "videos": [
+    {
+      "file": "boxing-1.mp4",
+      "bytes": 5371361,
+      "duration": 15.0,
+      "width": 1280,
+      "height": 720,
+      "codec": "h264",
+      "audio": false
+    },
+    {
+      "file": "boxing-2.mp4",
+      "bytes": 5854367,
+      "duration": 15.0,
+      "width": 1280,
+      "height": 720,
+      "codec": "h264",
+      "audio": false
+    },
+    {
+      "file": "kids-1.mp4",
+      "bytes": 5207630,
+      "duration": 15.0,
+      "width": 1280,
+      "height": 720,
+      "codec": "h264",
+      "audio": false
+    },
+    {
+      "file": "kids-2.mp4",
+      "bytes": 5972992,
+      "duration": 15.0,
+      "width": 1280,
+      "height": 720,
+      "codec": "h264",
+      "audio": false
+    },
+    {
+      "file": "physical-1.mp4",
+      "bytes": 4655360,
+      "duration": 15.0,
+      "width": 1280,
+      "height": 720,
+      "codec": "h264",
+      "audio": false
+    },
+    {
+      "file": "physical-2.mp4",
+      "bytes": 4340012,
+      "duration": 15.0,
+      "width": 1280,
+      "height": 720,
+      "codec": "h264",
+      "audio": false
+    }
+  ]
+}

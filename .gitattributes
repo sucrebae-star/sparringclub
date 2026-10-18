@@ -1,0 +1,2 @@
+# Preserve the uploaded legacy app's CRLF line endings without noisy whitespace warnings.
+club.html whitespace=cr-at-eol
