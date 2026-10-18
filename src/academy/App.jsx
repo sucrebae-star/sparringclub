@@ -7,6 +7,8 @@ import {
   schedule,
 } from "./content.mjs";
 
+import Curriculum from "./Curriculum.jsx";
+
 function Arrow() {
   return <span aria-hidden="true">↗</span>;
 }
@@ -233,6 +235,23 @@ function Philosophy() {
   );
 }
 function Programs() {
+  const [selected, setSelected] = useState(null);
+  const panelRef = useRef(null);
+  const triggerRef = useRef(null);
+  function open(program, event) {
+    triggerRef.current = event.currentTarget;
+    setSelected(program);
+    requestAnimationFrame(() => {
+      const panel = panelRef.current;
+      panel?.focus({ preventScroll: true });
+      panel?.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    });
+  }
+  function close() {
+    setSelected(null);
+    triggerRef.current?.focus({ preventScroll: true });
+    triggerRef.current?.scrollIntoView({ block: "nearest", behavior: "auto" });
+  }
   return (
     <section
       id="programs"
@@ -261,18 +280,16 @@ function Programs() {
               <Photo name={program.image} alt={program.alt} />
               <h3>{program.name}</h3>
               <p>{program.description}</p>
-              <details className="program-details">
-                <summary>
-                  수업 자세히 보기 <span aria-hidden="true">+</span>
-                </summary>
-                <p>{program.detail}</p>
-                <a href="#schedule">
-                  수업 시간표 보기 <span aria-hidden="true">→</span>
-                </a>
-              </details>
+              <button type="button" className="program-open" aria-expanded={selected === program.id}
+                aria-controls="curriculum-details" onClick={event => open(program.id, event)}>
+                수업 자세히 보기 <span aria-hidden="true">{selected === program.id ? "−" : "+"}</span>
+                <span className="sr-only">: {program.name}</span>
+              </button>
+              <noscript><p>{program.detail}</p><a href="#schedule">수업 시간표 보기 →</a></noscript>
             </article>
           ))}
         </div>
+        <Curriculum selected={selected} onSelect={setSelected} onClose={close} panelRef={panelRef} />
       </div>
     </section>
   );
